@@ -1,6 +1,7 @@
 import { createRootRoute, HeadContent, Scripts } from "@tanstack/react-router"
 import { ThemeProvider } from "next-themes"
 import { Toaster } from "sonner"
+import { PwaRegister } from "@/components/pwa-register"
 import appCss from "../styles.css?url"
 
 export const Route = createRootRoute({
@@ -14,8 +15,16 @@ export const Route = createRootRoute({
         content: "Kelola dompet, transaksi, budget, tabungan, dan kewajiban dalam satu tempat.",
       },
       { name: "theme-color", content: "#f6f5f8" },
+      { name: "apple-mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-status-bar-style", content: "default" },
+      { name: "apple-mobile-web-app-title", content: "DompetKu" },
     ],
-    links: [{ rel: "stylesheet", href: appCss }],
+    links: [
+      { rel: "stylesheet", href: appCss },
+      { rel: "manifest", href: "/manifest.webmanifest" },
+      { rel: "icon", href: "/icons/icon.svg", type: "image/svg+xml" },
+      { rel: "apple-touch-icon", href: "/icons/apple-touch-icon.png" },
+    ],
   }),
   notFoundComponent: () => (
     <main className="grid min-h-svh place-items-center p-6 text-center">
@@ -37,6 +46,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       <body>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
           {children}
+          <PwaRegister />
           <Toaster closeButton position="top-center" richColors />
         </ThemeProvider>
         <Scripts />

@@ -1,11 +1,12 @@
 import {
+  BookOpen01Icon,
   Download01Icon,
   PaintBrush01Icon,
   Settings01Icon,
   Upload01Icon,
 } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { createFileRoute, useRouter } from "@tanstack/react-router"
+import { createFileRoute, Link, useRouter } from "@tanstack/react-router"
 import { type ChangeEvent, type FormEvent, useState } from "react"
 import { toast } from "sonner"
 import { CategoryDialog } from "@/components/finance-dialogs"
@@ -34,9 +35,9 @@ import {
   resetFinanceData,
   updateSettings,
 } from "@/lib/finance.functions"
-import { cn, today } from "@/lib/utils"
+import { cn, today, transactionsToCsv } from "@/lib/utils"
 
-export const Route = createFileRoute("/_app/settings")({
+export const Route = createFileRoute("/_app/app/settings")({
   loader: () => getFinanceData(),
   component: SettingsPage,
 })
@@ -79,6 +80,19 @@ function SettingsPage() {
     toast.success("Backup JSON diunduh")
   }
 
+  function exportTransactions() {
+    const blob = new Blob(["\uFEFF", transactionsToCsv(data.transactions)], {
+      type: "text/csv;charset=utf-8",
+    })
+    const url = URL.createObjectURL(blob)
+    const anchor = document.createElement("a")
+    anchor.href = url
+    anchor.download = `dompetku-transaksi-${today()}.csv`
+    anchor.click()
+    URL.revokeObjectURL(url)
+    toast.success("CSV transaksi diunduh")
+  }
+
   async function importBackup(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]
     event.target.value = ""
@@ -95,6 +109,11 @@ function SettingsPage() {
   return (
     <div className="grid gap-6">
       <PageHeader
+        action={
+          <Button render={<Link to="/help" />} variant="outline">
+            <HugeiconsIcon icon={BookOpen01Icon} /> Tutorial & FAQ
+          </Button>
+        }
         description="Sesuaikan tampilan, periode laporan, dan kendali data."
         eyebrow="Preferensi akun"
         title="Pengaturan"
@@ -232,8 +251,12 @@ function SettingsPage() {
                 type="file"
               />
             </label>
+            <Button className="sm:col-span-2" onClick={exportTransactions} variant="outline">
+              <HugeiconsIcon icon={Download01Icon} /> Export CSV transaksi
+            </Button>
             <p className="text-caption sm:col-span-2">
-              Import mengganti seluruh data finansial saat ini setelah file berhasil divalidasi.
+              JSON untuk backup lengkap. CSV untuk membaca transaksi di aplikasi spreadsheet. Import
+              JSON mengganti seluruh data finansial setelah file berhasil divalidasi.
             </p>
           </CardContent>
         </Card>

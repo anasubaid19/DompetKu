@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="theme-color" content="#7137c8" />
+    <title>DompetKu sedang offline</title>
+    <style>
+      * { box-sizing: border-box; }
+      body { margin: 0; min-height: 100svh; display: grid; place-items: center; padding: 24px; background: #f6f5f8; color: #211e26; font-family: system-ui, sans-serif; }
+      main { width: min(100%, 460px); border: 1px solid #e5e1e9; border-radius: 28px; background: #fff; padding: 32px; box-shadow: 0 24px 60px #4d2a7318; }
+      span { display: grid; width: 48px; height: 48px; place-items: center; border-radius: 16px; background: #7137c8; color: white; font-weight: 700; }
+      h1 { margin: 28px 0 10px; font-size: 28px; letter-spacing: -.04em; }
+      p { margin: 0; color: #706979; line-height: 1.6; }
+      button { margin-top: 24px; min-height: 44px; border: 0; border-radius: 12px; padding: 0 18px; background: #7137c8; color: white; font: inherit; font-weight: 600; cursor: pointer; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <span>DK</span>
+      <h1>Koneksi terputus</h1>
+      <p>Data finansial membutuhkan koneksi aman ke server. Sambungkan internet lalu coba lagi.</p>
+      <button type="button" onclick="location.reload()">Coba lagi</button>
+    </main>
+  </body>
+</html>

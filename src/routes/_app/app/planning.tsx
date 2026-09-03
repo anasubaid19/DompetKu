@@ -20,7 +20,7 @@ import { FormField } from "@/components/form-field"
 import { PageHeader } from "@/components/page-header"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card"
 import {
   Dialog,
   DialogClose,
@@ -49,7 +49,7 @@ import {
 } from "@/lib/finance.functions"
 import { cn, cycleRange, formatMoney, today } from "@/lib/utils"
 
-export const Route = createFileRoute("/_app/planning")({
+export const Route = createFileRoute("/_app/app/planning")({
   loader: () => getFinanceData(),
   component: PlanningPage,
 })
@@ -139,19 +139,20 @@ function PlanningPage() {
                 <Card key={budget.id}>
                   <CardHeader>
                     <div>
-                      <CardTitle>
+                      <h3 className="text-subtitle">
                         {category ? <CategoryLabel category={category} /> : budget.category_name}
-                      </CardTitle>
-                      <CardDescription>
+                      </h3>
+                      <CardDescription className="tabular-nums">
                         {money(spent)} dari {money(budget.amount)}
                       </CardDescription>
                     </div>
                     <Badge
-                      className={
+                      className={cn(
+                        "tabular-nums",
                         percent > 100
                           ? "bg-destructive/10 text-destructive"
-                          : "bg-primary/10 text-primary"
-                      }
+                          : "bg-primary/10 text-primary",
+                      )}
                     >
                       {percent}%
                     </Badge>
@@ -161,7 +162,7 @@ function PlanningPage() {
                       aria-label={`${budget.category_name}, ${percent}% dari batas siklus`}
                       value={Math.min(percent, 100)}
                     />
-                    <p className="text-caption mt-3">
+                    <p className="text-caption mt-3 tabular-nums">
                       {percent > 100
                         ? `Melebihi ${money(spent - budget.amount)}`
                         : `Tersisa ${money(budget.amount - spent)}`}
@@ -205,7 +206,7 @@ function PlanningPage() {
                 <Card key={saving.id}>
                   <CardHeader>
                     <div>
-                      <CardTitle>{saving.name}</CardTitle>
+                      <h3 className="text-subtitle">{saving.name}</h3>
                       <CardDescription>
                         {wallet ? <WalletLabel wallet={wallet} /> : "Belum terhubung ke dompet"}
                       </CardDescription>
@@ -216,8 +217,12 @@ function PlanningPage() {
                   </CardHeader>
                   <CardContent className="grid gap-4">
                     <div className="mb-3 flex items-end justify-between gap-3">
-                      <p className="text-lg font-semibold">{money(saving.saved_amount)}</p>
-                      <p className="text-caption">target {money(saving.target_amount)}</p>
+                      <p className="text-lg font-semibold tabular-nums">
+                        {money(saving.saved_amount)}
+                      </p>
+                      <p className="text-caption tabular-nums">
+                        target {money(saving.target_amount)}
+                      </p>
                     </div>
                     <Progress
                       aria-label={`${saving.name}, ${percent}% dari target`}
@@ -286,13 +291,13 @@ function PlanningPage() {
                     </span>
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <h2 className="font-medium">{debt.contact}</h2>
+                        <h3 className="font-medium">{debt.contact}</h3>
                         <Badge>{debt.type === "piutang" ? "Piutang" : "Hutang"}</Badge>
                         {overdue && (
                           <Badge className="bg-destructive/10 text-destructive">Terlambat</Badge>
                         )}
                       </div>
-                      <p className="text-caption mt-1">
+                      <p className="text-caption mt-1 tabular-nums">
                         {debt.due_date ? `Jatuh tempo ${debt.due_date}` : "Tanpa jatuh tempo"}
                         {debt.note ? ` · ${debt.note}` : ""}
                       </p>
@@ -349,7 +354,7 @@ function PlanningPage() {
                 <Card key={subscription.id}>
                   <CardHeader>
                     <div>
-                      <CardTitle>{subscription.name}</CardTitle>
+                      <h3 className="text-subtitle">{subscription.name}</h3>
                       <CardDescription className="flex flex-wrap items-center gap-1.5">
                         {wallet ? <WalletLabel wallet={wallet} /> : "Tanpa dompet"}
                         <span aria-hidden>·</span>
@@ -361,8 +366,10 @@ function PlanningPage() {
                     </span>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-xl font-semibold">{money(subscription.amount)}</p>
-                    <p className="text-caption mt-2 flex items-center gap-1.5">
+                    <p className="text-lg font-semibold tabular-nums">
+                      {money(subscription.amount)}
+                    </p>
+                    <p className="text-caption mt-2 flex items-center gap-1.5 tabular-nums">
                       <HugeiconsIcon icon={Calendar03Icon} className="size-3.5" />{" "}
                       {subscription.next_due_date}
                     </p>

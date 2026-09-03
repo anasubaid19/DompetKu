@@ -22,7 +22,26 @@ export function ThemeToggle() {
       size="icon"
       variant="ghost"
     >
-      {mounted && <HugeiconsIcon icon={resolvedTheme === "dark" ? Sun03Icon : Moon02Icon} />}
+      {mounted && (
+        <span aria-hidden className="relative size-4">
+          <HugeiconsIcon
+            className={`absolute inset-0 transition-[opacity,scale,filter] duration-normal ease-[cubic-bezier(0.2,0,0,1)] ${
+              resolvedTheme === "dark"
+                ? "scale-100 opacity-100 blur-0"
+                : "scale-25 opacity-0 blur-[4px]"
+            }`}
+            icon={Sun03Icon}
+          />
+          <HugeiconsIcon
+            className={`absolute inset-0 transition-[opacity,scale,filter] duration-normal ease-[cubic-bezier(0.2,0,0,1)] ${
+              resolvedTheme === "dark"
+                ? "scale-25 opacity-0 blur-[4px]"
+                : "scale-100 opacity-100 blur-0"
+            }`}
+            icon={Moon02Icon}
+          />
+        </span>
+      )}
     </Button>
   )
 }

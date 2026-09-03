@@ -14,9 +14,15 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { getFinanceData } from "@/lib/finance.functions"
-import { cycleRange, formatMoney, formatTransactionAmount, recentCycles } from "@/lib/utils"
+import {
+  cashFlowMessage,
+  cycleRange,
+  formatMoney,
+  formatTransactionAmount,
+  recentCycles,
+} from "@/lib/utils"
 
-export const Route = createFileRoute("/_app/")({
+export const Route = createFileRoute("/_app/app/")({
   loader: () => getFinanceData(),
   component: DashboardPage,
 })
@@ -66,7 +72,11 @@ function DashboardPage() {
         action={
           <>
             <WalletDialog />
-            <TransactionDialog categories={data.categories} wallets={data.wallets} />
+            <TransactionDialog
+              categories={data.categories}
+              recentTransactions={data.transactions}
+              wallets={data.wallets}
+            />
           </>
         }
         description={`${cycle.label}. Pantau arus kas tanpa tenggelam dalam angka.`}
@@ -110,6 +120,11 @@ function DashboardPage() {
           label="Pengeluaran siklus ini"
           value={money(expense)}
         />
+      </div>
+
+      <div className="flex items-center gap-3 rounded-2xl border border-primary/15 bg-primary/[0.04] px-4 py-3 text-sm">
+        <span className="size-2 shrink-0 rounded-full bg-primary" />
+        <p>{cashFlowMessage(income, expense)}</p>
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.55fr)_minmax(320px,0.75fr)]">
@@ -252,7 +267,7 @@ function DashboardPage() {
             <CardDescription>Aktivitas terakhir dari semua dompet.</CardDescription>
           </div>
           {data.transactions.length > 0 && (
-            <Button render={<Link to="/transactions" />} size="sm" variant="ghost">
+            <Button render={<Link to="/app/transactions" />} size="sm" variant="ghost">
               Lihat semua
             </Button>
           )}
@@ -291,14 +306,14 @@ function DashboardPage() {
                     {targetWallet && <span aria-hidden>→</span>}
                     {targetWallet && <WalletLabel wallet={targetWallet} />}
                     <span aria-hidden>·</span>
-                    <span>{item.transaction_date}</span>
+                    <span className="tabular-nums">{item.transaction_date}</span>
                   </div>
                 </div>
                 <p
                   className={
                     item.type === "income"
-                      ? "text-sm font-semibold text-success"
-                      : "text-sm font-semibold"
+                      ? "text-sm font-semibold tabular-nums text-success"
+                      : "text-sm font-semibold tabular-nums"
                   }
                 >
                   {formatTransactionAmount(item.type, item.amount, currency, hide)}
@@ -317,7 +332,11 @@ function DashboardPage() {
               </div>
               <div>
                 {data.wallets.length > 0 ? (
-                  <TransactionDialog categories={data.categories} wallets={data.wallets} />
+                  <TransactionDialog
+                    categories={data.categories}
+                    recentTransactions={data.transactions}
+                    wallets={data.wallets}
+                  />
                 ) : (
                   <WalletDialog />
                 )}

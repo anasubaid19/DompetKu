@@ -1,7 +1,7 @@
 import { Add01Icon, Delete02Icon, Edit02Icon } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { useRouter } from "@tanstack/react-router"
-import { type FormEvent, useId, useState } from "react"
+import { type FormEvent, useId, useRef, useState } from "react"
 import { toast } from "sonner"
 import {
   CategorySelect,
@@ -36,7 +36,7 @@ import {
   type Wallet,
 } from "@/lib/finance.functions"
 import { CATEGORY_COLORS, CATEGORY_ICONS } from "@/lib/finance-options"
-import { cn, formatNumberInput, parseNumberInput, today } from "@/lib/utils"
+import { cn, dateKey, formatNumberInput, parseNumberInput, today } from "@/lib/utils"
 
 export function WalletDialog({ wallet }: { wallet?: Wallet } = {}) {
   const router = useRouter()
@@ -338,15 +338,20 @@ export function CategoryDialog({ type }: { type?: "expense" | "income" } = {}) {
 export function TransactionDialog({
   wallets,
   categories,
+  recentTransactions = [],
   transaction,
 }: {
   wallets: Wallet[]
   categories: Category[]
+  recentTransactions?: FinanceTransaction[]
   transaction?: FinanceTransaction
 }) {
   const router = useRouter()
   const formId = useId()
   const categoryFieldId = useId()
+  const amountRef = useRef<HTMLInputElement>(null)
+  const dateRef = useRef<HTMLInputElement>(null)
+  const descriptionRef = useRef<HTMLInputElement>(null)
   const [open, setOpen] = useState(false)
   const [pending, setPending] = useState(false)
   const [type, setType] = useState<"expense" | "income" | "transfer">(
@@ -381,6 +386,22 @@ export function TransactionDialog({
   }
 
   const validCategories = categories.filter((category) => category.type === type)
+  const recentForType = recentTransactions.filter((item) => item.type === type)
+  const quickAmounts = [
+    ...new Set(recentForType.map((item) => item.amount)),
+    50_000,
+    100_000,
+    250_000,
+  ].slice(0, 3)
+  const quickNotes = [
+    ...new Set(recentForType.map((item) => item.description.trim()).filter(Boolean)),
+  ].slice(0, 3)
+
+  function setYesterday() {
+    const yesterday = new Date()
+    yesterday.setDate(yesterday.getDate() - 1)
+    if (dateRef.current) dateRef.current.value = dateKey(yesterday)
+  }
 
   return (
     <Dialog
@@ -423,19 +444,41 @@ export function TransactionDialog({
           value={type}
         />
         <form className="grid gap-5" id={formId} onSubmit={submit}>
-          <FormField label="Nominal">
-            <Input
-              defaultValue={formatNumberInput(transaction?.amount)}
-              inputMode="numeric"
-              name="amount"
-              onInput={(event) => {
-                event.currentTarget.value = formatNumberInput(event.currentTarget.value)
-              }}
-              pattern="[0-9.]*"
-              placeholder="0"
-              required
-            />
-          </FormField>
+          <div className="grid gap-2">
+            <FormField label="Nominal">
+              <Input
+                defaultValue={formatNumberInput(transaction?.amount)}
+                inputMode="numeric"
+                name="amount"
+                onInput={(event) => {
+                  event.currentTarget.value = formatNumberInput(event.currentTarget.value)
+                }}
+                pattern="[0-9.]*"
+                placeholder="0"
+                ref={amountRef}
+                required
+              />
+            </FormField>
+            {!transaction && (
+              <fieldset className="flex flex-wrap gap-2 border-0 p-0">
+                <legend className="sr-only">Nominal cepat</legend>
+                {quickAmounts.map((amount) => (
+                  <Button
+                    className="h-9 tabular-nums"
+                    key={amount}
+                    onClick={() => {
+                      if (amountRef.current) amountRef.current.value = formatNumberInput(amount)
+                    }}
+                    size="sm"
+                    type="button"
+                    variant="outline"
+                  >
+                    {formatNumberInput(amount)}
+                  </Button>
+                ))}
+              </fieldset>
+            )}
+          </div>
           <FormField label={type === "income" ? "Dompet tujuan" : "Dompet sumber"}>
             <WalletSelect
               defaultValue={transaction?.wallet_id}
@@ -487,22 +530,59 @@ export function TransactionDialog({
             </div>
           )}
           <div className="grid gap-5 sm:grid-cols-2">
-            <FormField label="Tanggal">
-              <Input
-                defaultValue={transaction?.transaction_date ?? today()}
-                name="date"
-                required
-                type="date"
-              />
-            </FormField>
-            <FormField label="Catatan">
-              <Input
-                defaultValue={transaction?.description}
-                maxLength={240}
-                name="description"
-                placeholder="Opsional"
-              />
-            </FormField>
+            <div className="grid gap-2">
+              <FormField label="Tanggal">
+                <Input
+                  defaultValue={transaction?.transaction_date ?? today()}
+                  name="date"
+                  ref={dateRef}
+                  required
+                  type="date"
+                />
+              </FormField>
+              {!transaction && (
+                <Button
+                  className="h-9 justify-self-start"
+                  onClick={setYesterday}
+                  size="sm"
+                  type="button"
+                  variant="outline"
+                >
+                  Kemarin
+                </Button>
+              )}
+            </div>
+            <div className="grid gap-2">
+              <FormField label="Catatan">
+                <Input
+                  defaultValue={transaction?.description}
+                  maxLength={240}
+                  name="description"
+                  placeholder="Opsional"
+                  ref={descriptionRef}
+                />
+              </FormField>
+              {!transaction && quickNotes.length > 0 && (
+                <fieldset className="flex flex-wrap gap-2 border-0 p-0">
+                  <legend className="sr-only">Catatan terakhir</legend>
+                  {quickNotes.map((note) => (
+                    <Button
+                      className="h-auto min-h-9 max-w-full whitespace-normal py-2 text-left"
+                      key={note}
+                      onClick={() => {
+                        if (descriptionRef.current) descriptionRef.current.value = note
+                      }}
+                      size="sm"
+                      title={note}
+                      type="button"
+                      variant="outline"
+                    >
+                      {note}
+                    </Button>
+                  ))}
+                </fieldset>
+              )}
+            </div>
           </div>
         </form>
         <DialogFooter>

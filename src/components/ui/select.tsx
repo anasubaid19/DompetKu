@@ -7,7 +7,7 @@ function Select({ className, ...props }: React.ComponentProps<"select">) {
   return (
     <div className={cn("relative w-full", className)}>
       <select
-        className="h-11 w-full min-w-0 appearance-none rounded-xl border border-transparent bg-input px-3.5 pr-9 text-base outline-none transition-[background-color,border-color,box-shadow] focus-visible:border-ring focus-visible:bg-card focus-visible:ring-3 focus-visible:ring-ring/20 disabled:opacity-50 md:text-sm"
+        className="h-11 w-full min-w-0 appearance-none rounded-xl border border-transparent bg-input px-3.5 pr-9 text-base outline-none transition-[background-color,border-color,box-shadow] focus-visible:border-ring focus-visible:bg-card focus-visible:ring-3 focus-visible:ring-ring/20 disabled:opacity-50 md:text-sm pointer-coarse:text-base"
         data-slot="select"
         {...props}
       />

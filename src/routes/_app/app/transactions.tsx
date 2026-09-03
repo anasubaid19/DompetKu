@@ -31,7 +31,7 @@ import { Select } from "@/components/ui/select"
 import { deleteTransaction, type FinanceTransaction, getFinanceData } from "@/lib/finance.functions"
 import { cn, cycleRange, formatMoney, formatTransactionAmount } from "@/lib/utils"
 
-export const Route = createFileRoute("/_app/transactions")({
+export const Route = createFileRoute("/_app/app/transactions")({
   loader: () => getFinanceData(),
   component: TransactionsPage,
 })
@@ -67,7 +67,13 @@ function TransactionsPage() {
   return (
     <div className="grid gap-6">
       <PageHeader
-        action={<TransactionDialog categories={data.categories} wallets={data.wallets} />}
+        action={
+          <TransactionDialog
+            categories={data.categories}
+            recentTransactions={data.transactions}
+            wallets={data.wallets}
+          />
+        }
         description="Cari dan tinjau pergerakan uang dari semua dompet."
         eyebrow="Catatan keuangan"
         title="Transaksi"
@@ -185,7 +191,9 @@ function TransactionsPage() {
                         )}
                       </p>
                       {item.type === "transfer" && item.fee > 0 && (
-                        <p className="text-caption mt-0.5">Biaya transfer {money(item.fee)}</p>
+                        <p className="text-caption mt-0.5 tabular-nums">
+                          Biaya transfer {money(item.fee)}
+                        </p>
                       )}
                     </div>
                     <div className="flex shrink-0 items-center gap-1">
@@ -195,6 +203,7 @@ function TransactionsPage() {
                         <>
                           <TransactionDialog
                             categories={data.categories}
+                            recentTransactions={data.transactions}
                             transaction={item}
                             wallets={data.wallets}
                           />
@@ -224,7 +233,11 @@ function TransactionsPage() {
                 <div className="mt-4">
                   {data.transactions.length === 0 ? (
                     data.wallets.length > 0 ? (
-                      <TransactionDialog categories={data.categories} wallets={data.wallets} />
+                      <TransactionDialog
+                        categories={data.categories}
+                        recentTransactions={data.transactions}
+                        wallets={data.wallets}
+                      />
                     ) : (
                       <WalletDialog />
                     )

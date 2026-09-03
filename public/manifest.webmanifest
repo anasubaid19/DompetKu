@@ -1,0 +1,30 @@
+{
+  "name": "DompetKu — Keuangan pribadi",
+  "short_name": "DompetKu",
+  "description": "Kelola dompet, transaksi, budget, tabungan, dan kewajiban dalam satu tempat.",
+  "lang": "id",
+  "start_url": "/app?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f6f5f8",
+  "theme_color": "#7137c8",
+  "categories": ["finance", "productivity"],
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

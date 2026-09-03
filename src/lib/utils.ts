@@ -22,6 +22,13 @@ export function formatCompactNumber(amount: number) {
   }).format(amount)
 }
 
+export function cashFlowMessage(income: number, expense: number) {
+  if (income === 0 && expense === 0)
+    return "Mulai catat transaksi untuk melihat kondisi arus kasmu."
+  if (income >= expense) return "Arus kasmu positif. Pertahankan ruang untuk menabung."
+  return "Pengeluaran melebihi pemasukan. Tinjau kategori terbesar."
+}
+
 export function formatNumberInput(value: string | number | null | undefined) {
   const digits = String(value ?? "")
     .replace(/\D/g, "")
@@ -31,6 +38,50 @@ export function formatNumberInput(value: string | number | null | undefined) {
 
 export function parseNumberInput(value: FormDataEntryValue | null) {
   return Number(String(value ?? "").replaceAll(".", ""))
+}
+
+type CsvTransaction = {
+  transaction_date: string
+  type: "income" | "expense" | "transfer"
+  amount: number
+  fee: number
+  wallet_name: string
+  target_wallet_name: string | null
+  category_name: string | null
+  description: string
+}
+
+export function transactionsToCsv(transactions: CsvTransaction[]) {
+  const cell = (value: string | number | null) => {
+    let text = String(value ?? "")
+    if (/^[=+\-@]/.test(text)) text = `'${text}`
+    return /[",\r\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text
+  }
+  const labels = { income: "Pemasukan", expense: "Pengeluaran", transfer: "Transfer" }
+  return [
+    [
+      "Tanggal",
+      "Jenis",
+      "Nominal",
+      "Biaya admin",
+      "Dompet sumber",
+      "Dompet tujuan",
+      "Kategori",
+      "Catatan",
+    ],
+    ...transactions.map((item) => [
+      item.transaction_date,
+      labels[item.type],
+      item.amount,
+      item.fee,
+      item.wallet_name,
+      item.target_wallet_name,
+      item.category_name,
+      item.description,
+    ]),
+  ]
+    .map((row) => row.map(cell).join(","))
+    .join("\r\n")
 }
 
 export function formatTransactionAmount(

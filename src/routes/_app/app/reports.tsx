@@ -10,7 +10,7 @@ import { Progress } from "@/components/ui/progress"
 import { getFinanceData } from "@/lib/finance.functions"
 import { formatCompactNumber, formatMoney, recentCycles } from "@/lib/utils"
 
-export const Route = createFileRoute("/_app/reports")({
+export const Route = createFileRoute("/_app/app/reports")({
   loader: () => getFinanceData(),
   component: ReportsPage,
 })

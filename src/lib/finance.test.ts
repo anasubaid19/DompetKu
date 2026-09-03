@@ -2,12 +2,14 @@ import { describe, expect, test } from "bun:test"
 import { calculateLedgerBalances } from "@/lib/finance.functions"
 import { isCategoryColor, isCategoryIcon, isFinancialInstitution } from "@/lib/finance-options"
 import {
+  cashFlowMessage,
   cycleRange,
   formatCompactNumber,
   formatNumberInput,
   formatTransactionAmount,
   parseNumberInput,
   recentCycles,
+  transactionsToCsv,
 } from "@/lib/utils"
 
 describe("balance invariants", () => {
@@ -92,6 +94,16 @@ test("financial presentation keeps transfers neutral and chart values meaningful
   expect(formatCompactNumber(125_000)).not.toContain("0jt")
 })
 
+test("cash-flow health uses a useful message for empty, positive, and negative periods", () => {
+  expect(cashFlowMessage(0, 0)).toBe("Mulai catat transaksi untuk melihat kondisi arus kasmu.")
+  expect(cashFlowMessage(5_000_000, 3_000_000)).toBe(
+    "Arus kasmu positif. Pertahankan ruang untuk menabung.",
+  )
+  expect(cashFlowMessage(3_000_000, 5_000_000)).toBe(
+    "Pengeluaran melebihi pemasukan. Tinjau kategori terbesar.",
+  )
+})
+
 test("money inputs format thousands and recover the raw integer", () => {
   expect(formatNumberInput("001500000")).toBe("1.500.000")
   expect(formatNumberInput(25_000)).toBe("25.000")
@@ -107,4 +119,36 @@ test("finance visual options reject unknown persisted values", () => {
   expect(isCategoryIcon("unknown")).toBe(false)
   expect(isFinancialInstitution("bca")).toBe(true)
   expect(isFinancialInstitution("not-a-bank")).toBe(false)
+})
+
+test("transaction CSV keeps Indonesian labels and escapes spreadsheet values", () => {
+  const csv = transactionsToCsv([
+    {
+      transaction_date: "2026-09-04",
+      type: "expense",
+      amount: 25_000,
+      fee: 0,
+      wallet_name: "Tunai",
+      target_wallet_name: null,
+      category_name: "Makanan",
+      description: 'Makan, "siang"\nbersama',
+    },
+  ])
+  expect(csv).toBe(
+    'Tanggal,Jenis,Nominal,Biaya admin,Dompet sumber,Dompet tujuan,Kategori,Catatan\r\n2026-09-04,Pengeluaran,25000,0,Tunai,,Makanan,"Makan, ""siang""\nbersama"',
+  )
+  expect(
+    transactionsToCsv([
+      {
+        transaction_date: "2026-09-04",
+        type: "income",
+        amount: 25_000,
+        fee: 0,
+        wallet_name: "Bank",
+        target_wallet_name: null,
+        category_name: "Gaji",
+        description: "=SUM(A1:A2)",
+      },
+    ]),
+  ).toContain("'=SUM(A1:A2)")
 })

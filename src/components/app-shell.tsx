@@ -15,11 +15,11 @@ import { Button } from "@/components/ui/button"
 import { authClient } from "@/lib/auth-client"
 
 const navigation = [
-  { to: "/", label: "Ringkasan", icon: Home01Icon },
-  { to: "/transactions", label: "Transaksi", icon: TransactionHistoryIcon },
-  { to: "/planning", label: "Rencana", icon: Target01Icon },
-  { to: "/reports", label: "Laporan", icon: Chart03Icon },
-  { to: "/settings", label: "Pengaturan", icon: Settings01Icon },
+  { to: "/app", label: "Ringkasan", icon: Home01Icon },
+  { to: "/app/transactions", label: "Transaksi", icon: TransactionHistoryIcon },
+  { to: "/app/planning", label: "Rencana", icon: Target01Icon },
+  { to: "/app/reports", label: "Laporan", icon: Chart03Icon },
+  { to: "/app/settings", label: "Pengaturan", icon: Settings01Icon },
 ] as const
 
 export function AppShell({
@@ -35,7 +35,7 @@ export function AppShell({
   async function signOut() {
     setSigningOut(true)
     await authClient.signOut()
-    await router.navigate({ to: "/login", search: { redirect: "/" } })
+    await router.navigate({ to: "/login", search: { redirect: "/app" } })
   }
 
   return (
@@ -47,7 +47,7 @@ export function AppShell({
         Lewati ke konten utama
       </a>
       <aside className="translucent fixed inset-y-0 left-0 z-40 hidden w-64 flex-col border-r bg-sidebar/88 px-3 py-4 backdrop-blur-xl lg:flex">
-        <Link className="mb-7 flex items-center gap-3 px-2" to="/">
+        <Link className="mb-7 flex items-center gap-3 px-2" to="/app">
           <span className="grid size-10 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-md shadow-primary/20">
             <HugeiconsIcon icon={Wallet01Icon} className="size-5" />
           </span>
@@ -98,7 +98,7 @@ export function AppShell({
           <div className="mx-auto flex h-full w-full max-w-[1200px] items-center justify-between">
             <Link
               className="flex items-center gap-2 font-semibold tracking-[-0.03em] lg:hidden"
-              to="/"
+              to="/app"
             >
               <span className="grid size-8 place-items-center rounded-xl bg-primary text-primary-foreground">
                 <HugeiconsIcon icon={Wallet01Icon} className="size-4" />

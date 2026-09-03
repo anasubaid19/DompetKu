@@ -35,7 +35,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
       setPending(false)
       return
     }
-    await router.navigate({ to: "/" })
+    await router.navigate({ to: "/app" })
   }
 
   return (
@@ -46,11 +46,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
         className="absolute left-1/2 top-[-18rem] size-[34rem] -translate-x-1/2 rounded-full bg-primary/12 blur-3xl"
       />
       <section className="relative w-full max-w-md rounded-4xl bg-card p-6 shadow-xl ring-1 ring-foreground/6 sm:p-8">
-        <Link
-          className="mb-8 inline-flex items-center gap-2.5"
-          search={{ redirect: "/" }}
-          to="/login"
-        >
+        <Link className="mb-8 inline-flex items-center gap-2.5" to="/">
           <span className="grid size-10 place-items-center rounded-2xl bg-primary text-primary-foreground">
             <HugeiconsIcon icon={Wallet01Icon} className="size-5" />
           </span>
@@ -107,7 +103,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
           {mode === "register" ? (
             <Link
               className="font-medium text-primary hover:underline"
-              search={{ redirect: "/" }}
+              search={{ redirect: "/app" }}
               to="/login"
             >
               Masuk
