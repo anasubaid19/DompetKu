@@ -1,7 +1,14 @@
 import { describe, expect, test } from "bun:test"
 import { calculateLedgerBalances } from "@/lib/finance.functions"
 import { isCategoryColor, isCategoryIcon, isFinancialInstitution } from "@/lib/finance-options"
-import { cycleRange, formatCompactNumber, formatTransactionAmount, recentCycles } from "@/lib/utils"
+import {
+  cycleRange,
+  formatCompactNumber,
+  formatNumberInput,
+  formatTransactionAmount,
+  parseNumberInput,
+  recentCycles,
+} from "@/lib/utils"
 
 describe("balance invariants", () => {
   test("income, expense, and transfer preserve the expected balances", () => {
@@ -83,6 +90,14 @@ test("financial presentation keeps transfers neutral and chart values meaningful
   expect(formatTransactionAmount("transfer", 50_000, "IDR", true)).toBe("••••••")
   expect(formatCompactNumber(125_000)).toContain("125")
   expect(formatCompactNumber(125_000)).not.toContain("0jt")
+})
+
+test("money inputs format thousands and recover the raw integer", () => {
+  expect(formatNumberInput("001500000")).toBe("1.500.000")
+  expect(formatNumberInput(25_000)).toBe("25.000")
+  expect(formatNumberInput(0)).toBe("0")
+  expect(formatNumberInput("")).toBe("")
+  expect(parseNumberInput("1.500.000")).toBe(1_500_000)
 })
 
 test("finance visual options reject unknown persisted values", () => {
