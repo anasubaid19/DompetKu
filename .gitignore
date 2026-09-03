@@ -1,0 +1,17 @@
+node_modules/
+.output/
+.vinxi/
+.tanstack/
+dist/
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+.env
+.env.local
+.DS_Store
+idn-finlogos-svg-v2.5.0/
+idn-finlogos-svg-v2.5.0.zip
+faiz-ui-app/
+graphify-out/
+legacy/
+index.html
