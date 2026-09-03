@@ -1,7 +1,6 @@
 import {
   ArrowDown01Icon,
   ArrowUp01Icon,
-  EyeIcon,
   TransactionHistoryIcon,
   Wallet01Icon,
 } from "@hugeicons/core-free-icons"
@@ -59,6 +58,7 @@ function DashboardPage() {
       ),
     }
   })
+  const hasCashFlow = chart.some((item) => item.masuk > 0 || item.keluar > 0)
 
   return (
     <div className="grid gap-6">
@@ -91,18 +91,23 @@ function DashboardPage() {
         </Card>
       )}
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <SummaryCard icon={Wallet01Icon} label="Total saldo" value={money(balance)} />
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4">
+        <SummaryCard
+          cardClassName="col-span-2 md:col-span-1"
+          icon={Wallet01Icon}
+          label="Total saldo"
+          value={money(balance)}
+        />
         <SummaryCard
           className="text-success"
           icon={ArrowDown01Icon}
-          label="Pemasukan"
+          label="Pemasukan siklus ini"
           value={money(income)}
         />
         <SummaryCard
           className="text-destructive"
           icon={ArrowUp01Icon}
-          label="Pengeluaran"
+          label="Pengeluaran siklus ini"
           value={money(expense)}
         />
       </div>
@@ -117,89 +122,105 @@ function DashboardPage() {
             <Badge>{data.settings.cycle_length} bln/siklus</Badge>
           </CardHeader>
           <CardContent>
-            <div
-              aria-describedby="cash-flow-summary"
-              aria-label={`Grafik arus kas enam siklus, ${data.settings.cycle_length} bulan per siklus`}
-              className="flex h-64 w-full flex-col"
-              role="img"
-            >
-              <p className="sr-only" id="cash-flow-summary">
-                {chart
-                  .map(
-                    (item) =>
-                      `${item.month}: pemasukan ${money(item.masuk)}, pengeluaran ${money(item.keluar)}`,
-                  )
-                  .join(". ")}
-              </p>
+            {hasCashFlow ? (
               <div
-                aria-hidden
-                className="mb-2 flex items-center justify-end gap-4 text-xs text-muted-foreground"
+                aria-describedby="cash-flow-summary"
+                aria-label={`Grafik arus kas enam siklus, ${data.settings.cycle_length} bulan per siklus`}
+                className="flex h-64 w-full flex-col"
+                role="img"
               >
-                <span className="inline-flex items-center gap-1.5">
-                  <span className="size-2 rounded-full bg-[var(--chart-3)]" /> Pemasukan
-                </span>
-                <span className="inline-flex items-center gap-1.5">
-                  <span className="size-2 rounded-full bg-[var(--chart-1)]" /> Pengeluaran
-                </span>
+                <p className="sr-only" id="cash-flow-summary">
+                  {chart
+                    .map(
+                      (item) =>
+                        `${item.month}: pemasukan ${money(item.masuk)}, pengeluaran ${money(item.keluar)}`,
+                    )
+                    .join(". ")}
+                </p>
+                <div
+                  aria-hidden
+                  className="mb-2 flex items-center justify-end gap-4 text-xs text-muted-foreground"
+                >
+                  <span className="inline-flex items-center gap-1.5">
+                    <span className="size-2 rounded-full bg-[var(--chart-3)]" /> Pemasukan
+                  </span>
+                  <span className="inline-flex items-center gap-1.5">
+                    <span className="size-2 rounded-full bg-[var(--chart-1)]" /> Pengeluaran
+                  </span>
+                </div>
+                <div className="min-h-0 flex-1">
+                  <ResponsiveContainer height="100%" width="100%">
+                    <AreaChart
+                      accessibilityLayer={false}
+                      data={chart}
+                      margin={{ left: 0, right: 0, top: 16, bottom: 0 }}
+                    >
+                      <defs>
+                        <linearGradient id="income" x1="0" x2="0" y1="0" y2="1">
+                          <stop offset="0%" stopColor="var(--chart-3)" stopOpacity={0.28} />
+                          <stop offset="100%" stopColor="var(--chart-3)" stopOpacity={0} />
+                        </linearGradient>
+                        <linearGradient id="expense" x1="0" x2="0" y1="0" y2="1">
+                          <stop offset="0%" stopColor="var(--chart-1)" stopOpacity={0.22} />
+                          <stop offset="100%" stopColor="var(--chart-1)" stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid
+                        stroke="var(--border)"
+                        strokeDasharray="3 6"
+                        vertical={false}
+                      />
+                      <XAxis
+                        axisLine={false}
+                        dataKey="month"
+                        fontSize={11}
+                        interval={0}
+                        tick={{ fill: "var(--muted-foreground)" }}
+                        tickLine={false}
+                      />
+                      <Tooltip formatter={(value) => money(Number(value))} />
+                      <Area
+                        dataKey="masuk"
+                        fill="url(#income)"
+                        isAnimationActive={false}
+                        name="Pemasukan"
+                        stroke="var(--chart-3)"
+                        strokeWidth={2}
+                        type="monotone"
+                      />
+                      <Area
+                        dataKey="keluar"
+                        fill="url(#expense)"
+                        isAnimationActive={false}
+                        name="Pengeluaran"
+                        stroke="var(--chart-1)"
+                        strokeWidth={2}
+                        type="monotone"
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
               </div>
-              <div className="min-h-0 flex-1">
-                <ResponsiveContainer height="100%" width="100%">
-                  <AreaChart
-                    accessibilityLayer={false}
-                    data={chart}
-                    margin={{ left: 0, right: 0, top: 16, bottom: 0 }}
-                  >
-                    <defs>
-                      <linearGradient id="income" x1="0" x2="0" y1="0" y2="1">
-                        <stop offset="0%" stopColor="var(--chart-3)" stopOpacity={0.28} />
-                        <stop offset="100%" stopColor="var(--chart-3)" stopOpacity={0} />
-                      </linearGradient>
-                      <linearGradient id="expense" x1="0" x2="0" y1="0" y2="1">
-                        <stop offset="0%" stopColor="var(--chart-1)" stopOpacity={0.22} />
-                        <stop offset="100%" stopColor="var(--chart-1)" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid stroke="var(--border)" strokeDasharray="3 6" vertical={false} />
-                    <XAxis
-                      axisLine={false}
-                      dataKey="month"
-                      fontSize={11}
-                      tick={{ fill: "var(--muted-foreground)" }}
-                      tickLine={false}
-                    />
-                    <Tooltip formatter={(value) => money(Number(value))} />
-                    <Area
-                      dataKey="masuk"
-                      fill="url(#income)"
-                      isAnimationActive={false}
-                      name="Pemasukan"
-                      stroke="var(--chart-3)"
-                      strokeWidth={2}
-                      type="monotone"
-                    />
-                    <Area
-                      dataKey="keluar"
-                      fill="url(#expense)"
-                      isAnimationActive={false}
-                      name="Pengeluaran"
-                      stroke="var(--chart-1)"
-                      strokeWidth={2}
-                      type="monotone"
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center gap-3 py-4">
+                <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-secondary text-muted-foreground">
+                  <HugeiconsIcon icon={TransactionHistoryIcon} />
+                </span>
+                <div>
+                  <p className="text-sm font-medium">Belum ada arus kas</p>
+                  <p className="text-caption mt-1">Grafik akan terisi setelah ada transaksi.</p>
+                </div>
               </div>
-            </div>
+            )}
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="order-first xl:order-last">
           <CardHeader>
             <div>
               <CardTitle>Dompet</CardTitle>
               <CardDescription>{data.wallets.length} sumber dana aktif</CardDescription>
             </div>
-            <HugeiconsIcon icon={EyeIcon} className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent className="grid gap-2">
             {data.wallets.slice(0, 5).map((wallet) => (
@@ -230,9 +251,11 @@ function DashboardPage() {
             <CardTitle>Transaksi terbaru</CardTitle>
             <CardDescription>Aktivitas terakhir dari semua dompet.</CardDescription>
           </div>
-          <Button render={<Link to="/transactions" />} size="sm" variant="ghost">
-            Lihat semua
-          </Button>
+          {data.transactions.length > 0 && (
+            <Button render={<Link to="/transactions" />} size="sm" variant="ghost">
+              Lihat semua
+            </Button>
+          )}
         </CardHeader>
         <CardContent className="grid gap-1">
           {data.transactions.slice(0, 6).map((item) => {
@@ -284,7 +307,22 @@ function DashboardPage() {
             )
           })}
           {data.transactions.length === 0 && (
-            <p className="py-10 text-center text-sm text-muted-foreground">Belum ada transaksi.</p>
+            <div className="flex flex-col items-start gap-4 py-4 sm:flex-row sm:items-center">
+              <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-secondary text-muted-foreground">
+                <HugeiconsIcon icon={TransactionHistoryIcon} />
+              </span>
+              <div className="flex-1">
+                <p className="text-sm font-medium">Belum ada transaksi</p>
+                <p className="text-caption mt-1">Mulai catat pemasukan atau pengeluaranmu.</p>
+              </div>
+              <div>
+                {data.wallets.length > 0 ? (
+                  <TransactionDialog categories={data.categories} wallets={data.wallets} />
+                ) : (
+                  <WalletDialog />
+                )}
+              </div>
+            </div>
           )}
         </CardContent>
       </Card>
@@ -297,21 +335,25 @@ function SummaryCard({
   value,
   icon,
   className,
+  cardClassName,
 }: {
   label: string
   value: string
   icon: typeof Wallet01Icon
   className?: string
+  cardClassName?: string
 }) {
   return (
-    <Card>
-      <CardContent className="flex items-start justify-between gap-4">
-        <div>
+    <Card className={cardClassName}>
+      <CardContent className="flex items-start justify-between gap-3 p-4 sm:gap-4 sm:p-5">
+        <div className="min-w-0">
           <p className="text-sm text-muted-foreground">{label}</p>
-          <p className="mt-3 text-2xl font-semibold tracking-[-0.04em] tabular-nums">{value}</p>
+          <p className="mt-2 text-lg font-semibold tracking-[-0.04em] tabular-nums sm:mt-3 sm:text-2xl">
+            {value}
+          </p>
         </div>
         <span
-          className={`grid size-10 place-items-center rounded-2xl bg-secondary ${className ?? "text-primary"}`}
+          className={`hidden size-10 place-items-center rounded-2xl bg-secondary sm:grid ${className ?? "text-primary"}`}
         >
           <HugeiconsIcon icon={icon} />
         </span>

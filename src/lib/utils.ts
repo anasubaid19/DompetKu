@@ -10,7 +10,9 @@ export function formatMoney(amount: number, currency = "IDR") {
     style: "currency",
     currency,
     maximumFractionDigits: currency === "IDR" ? 0 : 2,
-  }).format(amount)
+  })
+    .format(amount)
+    .replace(/\s/g, "")
 }
 
 export function formatCompactNumber(amount: number) {

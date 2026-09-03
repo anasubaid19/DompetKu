@@ -9,7 +9,7 @@ import { HugeiconsIcon } from "@hugeicons/react"
 import { createFileRoute, useRouter } from "@tanstack/react-router"
 import { useDeferredValue, useState } from "react"
 import { toast } from "sonner"
-import { TransactionDialog } from "@/components/finance-dialogs"
+import { TransactionDialog, WalletDialog } from "@/components/finance-dialogs"
 import { CategoryLabel, WalletLabel } from "@/components/finance-visuals"
 import { PageHeader } from "@/components/page-header"
 import { Badge } from "@/components/ui/badge"
@@ -57,6 +57,12 @@ function TransactionsPage() {
       `${item.description} ${item.category_name} ${item.wallet_name} ${item.target_wallet_name}`.toLowerCase()
     return matchesType && matchesPeriod && haystack.includes(deferredQuery)
   })
+
+  function resetFilters() {
+    setQuery("")
+    setFilter("all")
+    setPeriod("all")
+  }
 
   return (
     <div className="grid gap-6">
@@ -201,12 +207,33 @@ function TransactionsPage() {
               )
             })}
             {transactions.length === 0 && (
-              <div className="grid place-items-center py-16 text-center">
+              <div className="grid place-items-center py-12 text-center sm:py-16">
                 <span className="grid size-12 place-items-center rounded-2xl bg-secondary text-muted-foreground">
                   <HugeiconsIcon icon={TransactionHistoryIcon} />
                 </span>
-                <p className="mt-4 text-sm font-medium">Tidak ada transaksi yang cocok</p>
-                <p className="text-caption mt-1">Ubah kata kunci atau filter transaksi.</p>
+                <p className="mt-4 text-sm font-medium">
+                  {data.transactions.length === 0
+                    ? "Belum ada transaksi"
+                    : "Tidak ada transaksi yang cocok"}
+                </p>
+                <p className="text-caption mt-1">
+                  {data.transactions.length === 0
+                    ? "Catat transaksi pertama untuk mulai melihat arus kas."
+                    : "Reset filter untuk menampilkan seluruh transaksi."}
+                </p>
+                <div className="mt-4">
+                  {data.transactions.length === 0 ? (
+                    data.wallets.length > 0 ? (
+                      <TransactionDialog categories={data.categories} wallets={data.wallets} />
+                    ) : (
+                      <WalletDialog />
+                    )
+                  ) : (
+                    <Button onClick={resetFilters} variant="outline">
+                      Reset filter
+                    </Button>
+                  )}
+                </div>
               </div>
             )}
           </div>

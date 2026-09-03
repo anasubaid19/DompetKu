@@ -123,12 +123,12 @@ export function AppShell({
 
       <nav
         aria-label="Navigasi seluler"
-        className="translucent fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-40 grid grid-cols-5 rounded-3xl bg-card/88 p-1.5 shadow-xl ring-1 ring-foreground/8 backdrop-blur-xl lg:hidden"
+        className="translucent fixed inset-x-4 bottom-[max(0.5rem,env(safe-area-inset-bottom))] z-40 grid grid-cols-5 rounded-2xl bg-card/88 p-1 shadow-lg ring-1 ring-foreground/8 backdrop-blur-xl lg:hidden"
       >
         {navigation.map((item) => (
           <Link
-            activeProps={{ className: "text-primary" }}
-            className="relative flex min-h-12 flex-col items-center justify-center gap-1 rounded-2xl text-xs font-medium text-muted-foreground"
+            activeProps={{ className: "bg-primary/10 text-primary" }}
+            className="relative flex min-h-11 flex-col items-center justify-center gap-0.5 rounded-xl text-xs font-medium text-muted-foreground"
             key={item.to}
             to={item.to}
           >

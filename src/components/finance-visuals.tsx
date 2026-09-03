@@ -44,7 +44,10 @@ function InstitutionLogo({
   className?: string
 }) {
   return (
-    <span aria-hidden className={cn("inline-flex size-6 shrink-0", className)}>
+    <span
+      aria-hidden
+      className={cn("inline-flex h-5 w-8 shrink-0 items-center justify-center", className)}
+    >
       <img
         alt=""
         className={cn("size-full object-contain", institution.darkLogo && "dark:hidden")}
