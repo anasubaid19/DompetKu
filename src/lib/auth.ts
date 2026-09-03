@@ -4,14 +4,14 @@ import { db } from "@/lib/db"
 
 const developmentBaseURL = {
   allowedHosts: [
-    "localhost:3001",
-    "127.0.0.1:3001",
-    "192.168.*.*:3001",
-    "169.254.*.*:3001",
-    "100.78.228.127:3001",
-    "unas.tailab2d6c.ts.net:3001",
+    "localhost:9026",
+    "127.0.0.1:9026",
+    "192.168.*.*:9026",
+    "169.254.*.*:9026",
+    "100.78.228.127:9026",
+    "unas.tailab2d6c.ts.net:9026",
   ],
-  fallback: "http://localhost:3001",
+  fallback: "http://localhost:9026",
   protocol: "auto" as const,
 }
 
