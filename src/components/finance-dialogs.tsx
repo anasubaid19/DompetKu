@@ -1,4 +1,4 @@
-import { Add01Icon, Edit02Icon } from "@hugeicons/core-free-icons"
+import { Add01Icon, Delete02Icon, Edit02Icon } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { useRouter } from "@tanstack/react-router"
 import { type FormEvent, useId, useState } from "react"
@@ -23,6 +23,7 @@ import {
   type Category,
   createTransaction,
   createWallet,
+  deleteWallet,
   type FinanceTransaction,
   updateTransaction,
   updateWallet,
@@ -35,6 +36,12 @@ export function WalletDialog({ wallet }: { wallet?: Wallet } = {}) {
   const formId = useId()
   const [open, setOpen] = useState(false)
   const [pending, setPending] = useState(false)
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
+
+  function changeOpen(nextOpen: boolean) {
+    setOpen(nextOpen)
+    if (!nextOpen) setConfirmingDelete(false)
+  }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -64,8 +71,23 @@ export function WalletDialog({ wallet }: { wallet?: Wallet } = {}) {
     }
   }
 
+  async function remove() {
+    if (!wallet) return
+    setPending(true)
+    try {
+      await deleteWallet({ data: { id: wallet.id } })
+      changeOpen(false)
+      await router.invalidate()
+      toast.success("Dompet dihapus")
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Dompet gagal dihapus")
+    } finally {
+      setPending(false)
+    }
+  }
+
   return (
-    <Dialog onOpenChange={setOpen} open={open}>
+    <Dialog onOpenChange={changeOpen} open={open}>
       <DialogTrigger
         render={
           <Button
@@ -78,55 +100,96 @@ export function WalletDialog({ wallet }: { wallet?: Wallet } = {}) {
         <HugeiconsIcon icon={wallet ? Edit02Icon : Add01Icon} /> {!wallet && "Tambah dompet"}
       </DialogTrigger>
       <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{wallet ? "Edit dompet" : "Dompet baru"}</DialogTitle>
-          <DialogDescription>
-            {wallet
-              ? "Perbarui nama dan logo tanpa mengubah saldo atau jenis dompet."
-              : "Tambahkan rekening, uang tunai, atau dompet khusus tabungan."}
-          </DialogDescription>
-        </DialogHeader>
-        <form className="grid gap-5" id={formId} onSubmit={submit}>
-          <FormField label="Nama dompet">
-            <Input
-              autoFocus
-              defaultValue={wallet?.name}
-              maxLength={60}
-              name="name"
-              placeholder="Contoh: BCA Utama"
-              required
-            />
-          </FormField>
-          <FormField hint="Opsional" label="Bank atau e-wallet">
-            <InstitutionSelect defaultValue={wallet?.icon} />
-          </FormField>
-          {!wallet && (
-            <>
-              <FormField label="Jenis">
-                <Select defaultValue="daily" name="type">
-                  <option value="daily">Dompet harian</option>
-                  <option value="saving">Dompet tabungan</option>
-                </Select>
-              </FormField>
-              <FormField hint="Tidak boleh negatif" label="Saldo awal">
+        {confirmingDelete && wallet ? (
+          <>
+            <DialogHeader>
+              <DialogTitle>Hapus dompet?</DialogTitle>
+              <DialogDescription>
+                Dompet {wallet.name} akan dihapus permanen. Dompet yang masih memiliki transaksi
+                tidak dapat dihapus.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button
+                autoFocus
+                disabled={pending}
+                onClick={() => setConfirmingDelete(false)}
+                variant="ghost"
+              >
+                Kembali
+              </Button>
+              <Button disabled={pending} onClick={remove} variant="destructive">
+                <HugeiconsIcon icon={Delete02Icon} />
+                {pending ? "Menghapus…" : "Hapus dompet"}
+              </Button>
+            </DialogFooter>
+          </>
+        ) : (
+          <>
+            <DialogHeader>
+              <DialogTitle>{wallet ? "Edit dompet" : "Dompet baru"}</DialogTitle>
+              <DialogDescription>
+                {wallet
+                  ? "Perbarui nama dan logo tanpa mengubah saldo atau jenis dompet."
+                  : "Tambahkan rekening, uang tunai, atau dompet khusus tabungan."}
+              </DialogDescription>
+            </DialogHeader>
+            <form className="grid gap-5" id={formId} onSubmit={submit}>
+              <FormField label="Nama dompet">
                 <Input
-                  defaultValue="0"
-                  inputMode="numeric"
-                  min="0"
-                  name="balance"
+                  autoFocus
+                  defaultValue={wallet?.name}
+                  maxLength={60}
+                  name="name"
+                  placeholder="Contoh: BCA Utama"
                   required
-                  type="number"
                 />
               </FormField>
-            </>
-          )}
-        </form>
-        <DialogFooter>
-          <DialogClose render={<Button variant="ghost" />}>Batal</DialogClose>
-          <Button disabled={pending} form={formId} type="submit">
-            {pending ? "Menyimpan…" : wallet ? "Simpan perubahan" : "Simpan dompet"}
-          </Button>
-        </DialogFooter>
+              <FormField hint="Opsional" label="Bank atau e-wallet">
+                <InstitutionSelect defaultValue={wallet?.icon} />
+              </FormField>
+              {!wallet && (
+                <>
+                  <FormField label="Jenis">
+                    <Select defaultValue="daily" name="type">
+                      <option value="daily">Dompet harian</option>
+                      <option value="saving">Dompet tabungan</option>
+                    </Select>
+                  </FormField>
+                  <FormField hint="Tidak boleh negatif" label="Saldo awal">
+                    <Input
+                      defaultValue="0"
+                      inputMode="numeric"
+                      min="0"
+                      name="balance"
+                      required
+                      type="number"
+                    />
+                  </FormField>
+                </>
+              )}
+            </form>
+            <DialogFooter className={wallet ? "sm:justify-between" : undefined}>
+              {wallet && (
+                <Button
+                  className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                  disabled={pending}
+                  onClick={() => setConfirmingDelete(true)}
+                  variant="ghost"
+                >
+                  <HugeiconsIcon icon={Delete02Icon} />
+                  Hapus dompet
+                </Button>
+              )}
+              <div className="flex flex-col-reverse gap-2 sm:flex-row">
+                <DialogClose render={<Button variant="ghost" />}>Batal</DialogClose>
+                <Button disabled={pending} form={formId} type="submit">
+                  {pending ? "Menyimpan…" : wallet ? "Simpan perubahan" : "Simpan dompet"}
+                </Button>
+              </div>
+            </DialogFooter>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   )

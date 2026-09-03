@@ -279,6 +279,21 @@ export const updateWallet = createServerFn({ method: "POST" })
     if (result.changes !== 1) throw new Error("Dompet tidak ditemukan")
   })
 
+export const deleteWallet = createServerFn({ method: "POST" })
+  .validator((data: { id: string }) => data)
+  .handler(async ({ data }) => {
+    const user = await requireUser()
+    const wallet = ownedWallet(user.id, data.id)
+    const transaction = db
+      .query(
+        "SELECT 1 FROM transactions WHERE user_id = ? AND (wallet_id = ? OR target_wallet_id = ?) LIMIT 1",
+      )
+      .get(user.id, wallet.id, wallet.id)
+    if (transaction) throw new Error("Hapus transaksi dompet ini terlebih dahulu")
+
+    db.query("DELETE FROM wallets WHERE id = ? AND user_id = ?").run(wallet.id, user.id)
+  })
+
 type TransactionInput = {
   type: "income" | "expense" | "transfer"
   amount: number
