@@ -33,3 +33,5 @@ export const auth = betterAuth({
   },
   plugins: [tanstackStartCookies()],
 })
+
+await (await auth.$context).runMigrations()
