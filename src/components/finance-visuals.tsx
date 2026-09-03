@@ -130,12 +130,14 @@ export function WalletLabel({ wallet, className }: { wallet: Wallet; className?:
 export function CategorySelect({
   categories,
   defaultValue = "",
+  id,
   name,
   placeholder = "Pilih kategori",
   required,
 }: {
   categories: Category[]
   defaultValue?: string | null
+  id?: string
   name: string
   placeholder?: string
   required?: boolean
@@ -152,6 +154,7 @@ export function CategorySelect({
       )}
       <Select
         className={selected && "[&_select]:pl-[4.25rem]"}
+        id={id}
         name={name}
         onChange={(event) => setValue(event.target.value)}
         required={required}

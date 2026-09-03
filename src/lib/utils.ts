@@ -22,6 +22,17 @@ export function formatCompactNumber(amount: number) {
   }).format(amount)
 }
 
+export function formatNumberInput(value: string | number | null | undefined) {
+  const digits = String(value ?? "")
+    .replace(/\D/g, "")
+    .replace(/^0+(?=\d)/, "")
+  return digits.replace(/\B(?=(\d{3})+(?!\d))/g, ".")
+}
+
+export function parseNumberInput(value: FormDataEntryValue | null) {
+  return Number(String(value ?? "").replaceAll(".", ""))
+}
+
 export function formatTransactionAmount(
   type: "income" | "expense" | "transfer",
   amount: number,

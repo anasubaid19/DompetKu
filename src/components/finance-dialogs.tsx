@@ -3,7 +3,12 @@ import { HugeiconsIcon } from "@hugeicons/react"
 import { useRouter } from "@tanstack/react-router"
 import { type FormEvent, useId, useState } from "react"
 import { toast } from "sonner"
-import { CategorySelect, InstitutionSelect, WalletSelect } from "@/components/finance-visuals"
+import {
+  CategorySelect,
+  categoryIcons,
+  InstitutionSelect,
+  WalletSelect,
+} from "@/components/finance-visuals"
 import { FormField } from "@/components/form-field"
 import { Button } from "@/components/ui/button"
 import {
@@ -21,6 +26,7 @@ import { SegmentedControl } from "@/components/ui/segmented-control"
 import { Select } from "@/components/ui/select"
 import {
   type Category,
+  createCategory,
   createTransaction,
   createWallet,
   deleteWallet,
@@ -29,7 +35,8 @@ import {
   updateWallet,
   type Wallet,
 } from "@/lib/finance.functions"
-import { today } from "@/lib/utils"
+import { CATEGORY_COLORS, CATEGORY_ICONS } from "@/lib/finance-options"
+import { cn, formatNumberInput, parseNumberInput, today } from "@/lib/utils"
 
 export function WalletDialog({ wallet }: { wallet?: Wallet } = {}) {
   const router = useRouter()
@@ -195,6 +202,139 @@ export function WalletDialog({ wallet }: { wallet?: Wallet } = {}) {
   )
 }
 
+export function CategoryDialog({ type }: { type?: "expense" | "income" } = {}) {
+  const router = useRouter()
+  const formId = useId()
+  const [open, setOpen] = useState(false)
+  const [pending, setPending] = useState(false)
+  const [color, setColor] = useState("violet")
+  const [icon, setIcon] = useState("receipt")
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    event.stopPropagation()
+    setPending(true)
+    const form = new FormData(event.currentTarget)
+    try {
+      await createCategory({
+        data: {
+          name: String(form.get("name")),
+          type: type ?? (form.get("type") === "income" ? "income" : "expense"),
+          color,
+          icon,
+        },
+      })
+      setOpen(false)
+      await router.invalidate()
+      toast.success("Kategori ditambahkan")
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Kategori gagal ditambahkan")
+    } finally {
+      setPending(false)
+    }
+  }
+
+  return (
+    <Dialog
+      onOpenChange={(value) => {
+        setOpen(value)
+        if (value) {
+          setColor("violet")
+          setIcon("receipt")
+        }
+      }}
+      open={open}
+    >
+      <DialogTrigger
+        render={
+          <Button
+            aria-label={
+              type
+                ? `Tambah kategori ${type === "income" ? "pemasukan" : "pengeluaran"}`
+                : "Tambah kategori"
+            }
+            size="icon"
+            variant="outline"
+          />
+        }
+      >
+        <HugeiconsIcon icon={Add01Icon} />
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Kategori baru</DialogTitle>
+          <DialogDescription>
+            Gunakan nama singkat yang mudah ditemukan saat mencatat transaksi.
+          </DialogDescription>
+        </DialogHeader>
+        <form className="grid gap-5" id={formId} onSubmit={submit}>
+          <FormField label="Nama kategori">
+            <Input autoFocus maxLength={50} name="name" required />
+          </FormField>
+          {!type && (
+            <FormField label="Jenis">
+              <Select name="type">
+                <option value="expense">Pengeluaran</option>
+                <option value="income">Pemasukan</option>
+              </Select>
+            </FormField>
+          )}
+          <fieldset className="grid gap-2">
+            <legend className="text-label">Warna aksen</legend>
+            <div className="flex flex-wrap gap-2">
+              {CATEGORY_COLORS.map((option) => (
+                <button
+                  aria-label={option.label}
+                  aria-pressed={color === option.value}
+                  className={cn(
+                    "grid size-11 place-items-center rounded-xl border transition-[border-color,box-shadow] focus-visible:ring-3 focus-visible:ring-ring/20",
+                    color === option.value ? "border-ring ring-2 ring-ring/20" : "border-border",
+                  )}
+                  key={option.value}
+                  onClick={() => setColor(option.value)}
+                  title={option.label}
+                  type="button"
+                >
+                  <span className={cn("size-3 rounded-full", option.className)} />
+                </button>
+              ))}
+            </div>
+          </fieldset>
+          <fieldset className="grid gap-2">
+            <legend className="text-label">Icon</legend>
+            <div className="grid grid-cols-6 gap-2">
+              {CATEGORY_ICONS.map((option) => (
+                <button
+                  aria-label={option.label}
+                  aria-pressed={icon === option.value}
+                  className={cn(
+                    "grid size-11 place-items-center rounded-xl border text-muted-foreground transition-[border-color,color,box-shadow] focus-visible:ring-3 focus-visible:ring-ring/20",
+                    icon === option.value
+                      ? "border-ring bg-primary/10 text-primary ring-2 ring-ring/20"
+                      : "border-border hover:bg-secondary",
+                  )}
+                  key={option.value}
+                  onClick={() => setIcon(option.value)}
+                  title={option.label}
+                  type="button"
+                >
+                  <HugeiconsIcon className="size-5" icon={categoryIcons[option.value]} />
+                </button>
+              ))}
+            </div>
+          </fieldset>
+        </form>
+        <DialogFooter>
+          <DialogClose render={<Button variant="ghost" />}>Batal</DialogClose>
+          <Button disabled={pending} form={formId} type="submit">
+            {pending ? "Menambahkan…" : "Tambah"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 export function TransactionDialog({
   wallets,
   categories,
@@ -206,6 +346,7 @@ export function TransactionDialog({
 }) {
   const router = useRouter()
   const formId = useId()
+  const categoryFieldId = useId()
   const [open, setOpen] = useState(false)
   const [pending, setPending] = useState(false)
   const [type, setType] = useState<"expense" | "income" | "transfer">(
@@ -219,8 +360,8 @@ export function TransactionDialog({
     try {
       const data = {
         type,
-        amount: Number(form.get("amount")),
-        fee: Number(form.get("fee") ?? 0),
+        amount: parseNumberInput(form.get("amount")),
+        fee: parseNumberInput(form.get("fee")),
         walletId: String(form.get("walletId")),
         targetWalletId: String(form.get("targetWalletId") ?? ""),
         categoryId: String(form.get("categoryId") ?? ""),
@@ -284,13 +425,15 @@ export function TransactionDialog({
         <form className="grid gap-5" id={formId} onSubmit={submit}>
           <FormField label="Nominal">
             <Input
+              defaultValue={formatNumberInput(transaction?.amount)}
               inputMode="numeric"
-              min="1"
               name="amount"
+              onInput={(event) => {
+                event.currentTarget.value = formatNumberInput(event.currentTarget.value)
+              }}
+              pattern="[0-9.]*"
               placeholder="0"
               required
-              type="number"
-              defaultValue={transaction?.amount}
             />
           </FormField>
           <FormField label={type === "income" ? "Dompet tujuan" : "Dompet sumber"}>
@@ -312,19 +455,36 @@ export function TransactionDialog({
                 />
               </FormField>
               <FormField label="Biaya admin">
-                <Input defaultValue={transaction?.fee ?? 0} min="0" name="fee" type="number" />
+                <Input
+                  defaultValue={formatNumberInput(transaction?.fee ?? 0)}
+                  inputMode="numeric"
+                  name="fee"
+                  onInput={(event) => {
+                    event.currentTarget.value = formatNumberInput(event.currentTarget.value)
+                  }}
+                  pattern="[0-9.]*"
+                />
               </FormField>
             </>
           ) : (
-            <FormField label="Kategori">
-              <CategorySelect
-                categories={validCategories}
-                defaultValue={transaction?.category_id}
-                key={type}
-                name="categoryId"
-                required
-              />
-            </FormField>
+            <div className="grid gap-2">
+              <label className="text-label" htmlFor={categoryFieldId}>
+                Kategori
+              </label>
+              <div className="flex gap-2">
+                <div className="min-w-0 flex-1">
+                  <CategorySelect
+                    categories={validCategories}
+                    defaultValue={transaction?.category_id}
+                    id={categoryFieldId}
+                    key={type}
+                    name="categoryId"
+                    required
+                  />
+                </div>
+                <CategoryDialog type={type} />
+              </div>
+            </div>
           )}
           <div className="grid gap-5 sm:grid-cols-2">
             <FormField label="Tanggal">

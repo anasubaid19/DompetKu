@@ -1,5 +1,4 @@
 import {
-  Add01Icon,
   Download01Icon,
   PaintBrush01Icon,
   Settings01Icon,
@@ -9,7 +8,8 @@ import { HugeiconsIcon } from "@hugeicons/react"
 import { createFileRoute, useRouter } from "@tanstack/react-router"
 import { type ChangeEvent, type FormEvent, useState } from "react"
 import { toast } from "sonner"
-import { CategoryIndicator, categoryIcons } from "@/components/finance-visuals"
+import { CategoryDialog } from "@/components/finance-dialogs"
+import { CategoryIndicator } from "@/components/finance-visuals"
 import { FormField } from "@/components/form-field"
 import { PageHeader } from "@/components/page-header"
 import { ThemeToggle } from "@/components/theme-toggle"
@@ -29,13 +29,11 @@ import {
 import { Input } from "@/components/ui/input"
 import { Select } from "@/components/ui/select"
 import {
-  createCategory,
   getFinanceData,
   importFinanceData,
   resetFinanceData,
   updateSettings,
 } from "@/lib/finance.functions"
-import { CATEGORY_COLORS, CATEGORY_ICONS } from "@/lib/finance-options"
 import { cn, today } from "@/lib/utils"
 
 export const Route = createFileRoute("/_app/settings")({
@@ -256,121 +254,6 @@ function SettingsPage() {
         </Card>
       </div>
     </div>
-  )
-}
-
-function CategoryDialog() {
-  const router = useRouter()
-  const [open, setOpen] = useState(false)
-  const [pending, setPending] = useState(false)
-  const [color, setColor] = useState("violet")
-  const [icon, setIcon] = useState("receipt")
-  async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    setPending(true)
-    const form = new FormData(event.currentTarget)
-    try {
-      await createCategory({
-        data: {
-          name: String(form.get("name")),
-          type: form.get("type") === "income" ? "income" : "expense",
-          color,
-          icon,
-        },
-      })
-      setOpen(false)
-      await router.invalidate()
-      toast.success("Kategori ditambahkan")
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Kategori gagal ditambahkan")
-    } finally {
-      setPending(false)
-    }
-  }
-  return (
-    <Dialog
-      onOpenChange={(value) => {
-        setOpen(value)
-        if (value) {
-          setColor("violet")
-          setIcon("receipt")
-        }
-      }}
-      open={open}
-    >
-      <DialogTrigger render={<Button aria-label="Tambah kategori" size="icon" variant="outline" />}>
-        <HugeiconsIcon icon={Add01Icon} />
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Kategori baru</DialogTitle>
-          <DialogDescription>
-            Gunakan nama singkat yang mudah ditemukan saat mencatat transaksi.
-          </DialogDescription>
-        </DialogHeader>
-        <form className="grid gap-5" id="category-form" onSubmit={submit}>
-          <FormField label="Nama kategori">
-            <Input name="name" required />
-          </FormField>
-          <FormField label="Jenis">
-            <Select name="type">
-              <option value="expense">Pengeluaran</option>
-              <option value="income">Pemasukan</option>
-            </Select>
-          </FormField>
-          <fieldset className="grid gap-2">
-            <legend className="text-label">Warna aksen</legend>
-            <div className="flex flex-wrap gap-2">
-              {CATEGORY_COLORS.map((option) => (
-                <button
-                  aria-label={option.label}
-                  aria-pressed={color === option.value}
-                  className={cn(
-                    "grid size-11 place-items-center rounded-xl border transition-[border-color,box-shadow] focus-visible:ring-3 focus-visible:ring-ring/20",
-                    color === option.value ? "border-ring ring-2 ring-ring/20" : "border-border",
-                  )}
-                  key={option.value}
-                  onClick={() => setColor(option.value)}
-                  title={option.label}
-                  type="button"
-                >
-                  <span className={cn("size-3 rounded-full", option.className)} />
-                </button>
-              ))}
-            </div>
-          </fieldset>
-          <fieldset className="grid gap-2">
-            <legend className="text-label">Icon</legend>
-            <div className="grid grid-cols-6 gap-2">
-              {CATEGORY_ICONS.map((option) => (
-                <button
-                  aria-label={option.label}
-                  aria-pressed={icon === option.value}
-                  className={cn(
-                    "grid size-11 place-items-center rounded-xl border text-muted-foreground transition-[border-color,color,box-shadow] focus-visible:ring-3 focus-visible:ring-ring/20",
-                    icon === option.value
-                      ? "border-ring bg-primary/10 text-primary ring-2 ring-ring/20"
-                      : "border-border hover:bg-secondary",
-                  )}
-                  key={option.value}
-                  onClick={() => setIcon(option.value)}
-                  title={option.label}
-                  type="button"
-                >
-                  <HugeiconsIcon className="size-5" icon={categoryIcons[option.value]} />
-                </button>
-              ))}
-            </div>
-          </fieldset>
-        </form>
-        <DialogFooter>
-          <DialogClose render={<Button variant="ghost" />}>Batal</DialogClose>
-          <Button disabled={pending} form="category-form" type="submit">
-            {pending ? "Menambahkan…" : "Tambah"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
   )
 }
 
