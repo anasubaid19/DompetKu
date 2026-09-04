@@ -3,7 +3,7 @@
   "short_name": "DompetKu",
   "description": "Kelola dompet, transaksi, budget, tabungan, dan kewajiban dalam satu tempat.",
   "lang": "id",
-  "start_url": "/app?source=pwa",
+  "start_url": "/app",
   "scope": "/",
   "display": "standalone",
   "background_color": "#f6f5f8",
