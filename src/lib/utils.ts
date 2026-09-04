@@ -139,3 +139,27 @@ export function recentCycles(settings: CycleSettings, count: number, now = new D
     )
   })
 }
+
+export function currentCycleWeeks(settings: CycleSettings, now = new Date()) {
+  const cycle = cycleRange(settings, now)
+  const toDate = (value: string) => {
+    const [year, month, day] = value.split("-").map(Number)
+    return new Date(year, month - 1, day)
+  }
+  const cycleEnd = toDate(cycle.end)
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const visibleEnd = today < cycleEnd ? today : cycleEnd
+  const label = new Intl.DateTimeFormat("id-ID", { day: "numeric", month: "short" })
+  const weeks = []
+
+  for (let start = toDate(cycle.start); start <= visibleEnd; ) {
+    const end = new Date(start)
+    end.setDate(end.getDate() + 6)
+    if (end > visibleEnd) end.setTime(visibleEnd.getTime())
+    weeks.push({ start: dateKey(start), end: dateKey(end), shortLabel: label.format(start) })
+    start = new Date(end)
+    start.setDate(start.getDate() + 1)
+  }
+
+  return weeks
+}

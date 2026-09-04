@@ -1,21 +1,25 @@
 import {
   ArrowDown01Icon,
   ArrowUp01Icon,
+  CalendarDaysIcon,
+  CalendarRangeIcon,
   TransactionHistoryIcon,
   Wallet01Icon,
 } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { createFileRoute, Link } from "@tanstack/react-router"
+import { useState } from "react"
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis } from "recharts"
 import { TransactionDialog, WalletDialog } from "@/components/finance-dialogs"
 import { CategoryLabel, WalletLabel, WalletLogo } from "@/components/finance-visuals"
 import { PageHeader } from "@/components/page-header"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { SegmentedControl } from "@/components/ui/segmented-control"
 import { getFinanceData } from "@/lib/finance.functions"
 import {
   cashFlowMessage,
+  currentCycleWeeks,
   cycleRange,
   formatMoney,
   formatTransactionAmount,
@@ -27,8 +31,30 @@ export const Route = createFileRoute("/_app/app/")({
   component: DashboardPage,
 })
 
+const chartRangeOptions = [
+  {
+    label: (
+      <span className="inline-flex items-center gap-1.5">
+        <HugeiconsIcon aria-hidden className="size-4" icon={CalendarRangeIcon} />
+        Siklus
+      </span>
+    ),
+    value: "cycle",
+  },
+  {
+    label: (
+      <span className="inline-flex items-center gap-1.5">
+        <HugeiconsIcon aria-hidden className="size-4" icon={CalendarDaysIcon} />
+        Mingguan
+      </span>
+    ),
+    value: "weekly",
+  },
+] as const
+
 function DashboardPage() {
   const data = Route.useLoaderData()
+  const [chartRange, setChartRange] = useState<"cycle" | "weekly">("cycle")
   const currency = data.settings.currency
   const cycle = cycleRange(data.settings)
   const periodTransactions = data.transactions.filter(
@@ -48,16 +74,18 @@ function DashboardPage() {
   const categoriesById = new Map(data.categories.map((category) => [category.id, category]))
   const walletsById = new Map(data.wallets.map((wallet) => [wallet.id, wallet]))
 
-  const chart = recentCycles(data.settings, 6).map(({ start, end, shortLabel }) => {
-    const monthly = data.transactions.filter(
+  const chartRanges =
+    chartRange === "weekly" ? currentCycleWeeks(data.settings) : recentCycles(data.settings, 6)
+  const chart = chartRanges.map(({ start, end, shortLabel }) => {
+    const transactions = data.transactions.filter(
       (item) => item.transaction_date >= start && item.transaction_date <= end,
     )
     return {
-      month: shortLabel,
-      masuk: monthly
+      label: shortLabel,
+      masuk: transactions
         .filter((item) => item.type === "income")
         .reduce((sum, item) => sum + item.amount, 0),
-      keluar: monthly.reduce(
+      keluar: transactions.reduce(
         (sum, item) =>
           sum + (item.type === "expense" ? item.amount : item.type === "transfer" ? item.fee : 0),
         0,
@@ -129,18 +157,35 @@ function DashboardPage() {
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.55fr)_minmax(320px,0.75fr)]">
         <Card>
-          <CardHeader>
+          <CardHeader className="flex-col sm:flex-row">
             <div>
-              <CardTitle>Arus kas 6 siklus</CardTitle>
-              <CardDescription>Perbandingan sesuai rentang laporanmu.</CardDescription>
+              <CardTitle>
+                {chartRange === "weekly" ? "Arus kas mingguan" : "Arus kas 6 siklus"}
+              </CardTitle>
+              <CardDescription>
+                {chartRange === "weekly"
+                  ? "Per minggu dalam siklus aktif hingga hari ini."
+                  : "Perbandingan sesuai rentang laporanmu."}
+              </CardDescription>
             </div>
-            <Badge>{data.settings.cycle_length} bln/siklus</Badge>
+            <SegmentedControl
+              ariaLabel="Rentang arus kas"
+              className="w-full shrink-0 sm:w-auto"
+              itemClassName="flex flex-1 items-center justify-center px-2.5 sm:flex-none"
+              onChange={setChartRange}
+              options={chartRangeOptions}
+              value={chartRange}
+            />
           </CardHeader>
           <CardContent>
             {hasCashFlow ? (
               <div
                 aria-describedby="cash-flow-summary"
-                aria-label={`Grafik arus kas enam siklus, ${data.settings.cycle_length} bulan per siklus`}
+                aria-label={
+                  chartRange === "weekly"
+                    ? "Grafik arus kas mingguan dalam siklus aktif"
+                    : `Grafik arus kas enam siklus, ${data.settings.cycle_length} bulan per siklus`
+                }
                 className="flex h-64 w-full flex-col"
                 role="img"
               >
@@ -148,7 +193,7 @@ function DashboardPage() {
                   {chart
                     .map(
                       (item) =>
-                        `${item.month}: pemasukan ${money(item.masuk)}, pengeluaran ${money(item.keluar)}`,
+                        `${item.label}: pemasukan ${money(item.masuk)}, pengeluaran ${money(item.keluar)}`,
                     )
                     .join(". ")}
                 </p>
@@ -187,9 +232,10 @@ function DashboardPage() {
                       />
                       <XAxis
                         axisLine={false}
-                        dataKey="month"
+                        dataKey="label"
                         fontSize={11}
-                        interval={0}
+                        interval={chartRange === "weekly" ? "preserveStartEnd" : 0}
+                        minTickGap={24}
                         tick={{ fill: "var(--muted-foreground)" }}
                         tickLine={false}
                       />
