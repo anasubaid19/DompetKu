@@ -146,12 +146,14 @@ function SettingsPage() {
                     Sembunyikan nominal di seluruh aplikasi.
                   </span>
                 </span>
-                <input
-                  className="size-5 accent-primary"
-                  defaultChecked={Boolean(data.settings.hide_balance)}
-                  name="hideBalance"
-                  type="checkbox"
-                />
+                <span className="grid size-9 shrink-0 place-items-center pointer-coarse:size-11">
+                  <input
+                    className="size-5 accent-primary"
+                    defaultChecked={Boolean(data.settings.hide_balance)}
+                    name="hideBalance"
+                    type="checkbox"
+                  />
+                </span>
               </label>
               <FormField label="Mata uang">
                 <Select defaultValue={data.settings.currency} name="currency">
