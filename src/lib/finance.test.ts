@@ -3,13 +3,13 @@ import { calculateLedgerBalances } from "@/lib/finance.functions"
 import { isCategoryColor, isCategoryIcon, isFinancialInstitution } from "@/lib/finance-options"
 import {
   cashFlowMessage,
-  currentCycleWeeks,
   cycleRange,
   formatCompactNumber,
   formatNumberInput,
   formatTransactionAmount,
   parseNumberInput,
   recentCycles,
+  recentDays,
   transactionsToCsv,
 } from "@/lib/utils"
 
@@ -86,14 +86,17 @@ test("reporting cycles include the anchor and stay consecutive at month end", ()
   ])
 })
 
-test("weekly chart ranges follow the active cycle through today", () => {
-  expect(
-    currentCycleWeeks({ cycle_start: 25, cycle_length: 1 }, new Date(2026, 8, 4)).map(
-      ({ start, end }) => [start, end],
-    ),
-  ).toEqual([
-    ["2026-08-25", "2026-08-31"],
-    ["2026-09-01", "2026-09-04"],
+test("weekly chart shows seven rolling daily ranges", () => {
+  const days = recentDays(7, new Date(2026, 8, 4))
+  expect(days).toHaveLength(7)
+  expect(days.map(({ start, end }) => [start, end])).toEqual([
+    ["2026-08-29", "2026-08-29"],
+    ["2026-08-30", "2026-08-30"],
+    ["2026-08-31", "2026-08-31"],
+    ["2026-09-01", "2026-09-01"],
+    ["2026-09-02", "2026-09-02"],
+    ["2026-09-03", "2026-09-03"],
+    ["2026-09-04", "2026-09-04"],
   ])
 })
 

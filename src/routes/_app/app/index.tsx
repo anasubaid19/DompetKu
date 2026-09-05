@@ -19,11 +19,11 @@ import { SegmentedControl } from "@/components/ui/segmented-control"
 import { getFinanceData } from "@/lib/finance.functions"
 import {
   cashFlowMessage,
-  currentCycleWeeks,
   cycleRange,
   formatMoney,
   formatTransactionAmount,
   recentCycles,
+  recentDays,
 } from "@/lib/utils"
 
 export const Route = createFileRoute("/_app/app/")({
@@ -74,8 +74,7 @@ function DashboardPage() {
   const categoriesById = new Map(data.categories.map((category) => [category.id, category]))
   const walletsById = new Map(data.wallets.map((wallet) => [wallet.id, wallet]))
 
-  const chartRanges =
-    chartRange === "weekly" ? currentCycleWeeks(data.settings) : recentCycles(data.settings, 6)
+  const chartRanges = chartRange === "weekly" ? recentDays(7) : recentCycles(data.settings, 6)
   const chart = chartRanges.map(({ start, end, shortLabel }) => {
     const transactions = data.transactions.filter(
       (item) => item.transaction_date >= start && item.transaction_date <= end,
@@ -164,7 +163,7 @@ function DashboardPage() {
               </CardTitle>
               <CardDescription>
                 {chartRange === "weekly"
-                  ? "Per minggu dalam siklus aktif hingga hari ini."
+                  ? "Tujuh hari terakhir, per hari."
                   : "Perbandingan sesuai rentang laporanmu."}
               </CardDescription>
             </div>
@@ -183,7 +182,7 @@ function DashboardPage() {
                 aria-describedby="cash-flow-summary"
                 aria-label={
                   chartRange === "weekly"
-                    ? "Grafik arus kas mingguan dalam siklus aktif"
+                    ? "Grafik arus kas tujuh hari terakhir"
                     : `Grafik arus kas enam siklus, ${data.settings.cycle_length} bulan per siklus`
                 }
                 className="flex h-64 w-full flex-col"
