@@ -10,7 +10,7 @@ function Input({ className, ...props }: React.ComponentProps<"input">) {
         (props.type === "number" || props.type === "date" || props.inputMode === "numeric") &&
           "tabular-nums",
         props.type === "date" &&
-          "[&::-webkit-date-and-time-value]:min-w-0 [&::-webkit-datetime-edit]:min-w-0",
+          "max-w-full [&::-webkit-date-and-time-value]:min-w-0 [&::-webkit-datetime-edit]:min-w-0 supports-[(-webkit-touch-callout:none)]:appearance-none supports-[(-webkit-touch-callout:none)]:[-webkit-appearance:none]",
         className,
       )}
       data-slot="input"
