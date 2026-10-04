@@ -94,7 +94,7 @@ function DashboardPage() {
   const hasCashFlow = chart.some((item) => item.masuk > 0 || item.keluar > 0)
 
   return (
-    <div className="grid gap-6">
+    <div className="grid grid-cols-1 gap-6">
       <PageHeader
         action={
           <>
@@ -154,8 +154,8 @@ function DashboardPage() {
         <p>{cashFlowMessage(income, expense)}</p>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.55fr)_minmax(320px,0.75fr)]">
-        <Card className="min-w-0">
+      <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1.55fr)_minmax(320px,0.75fr)]">
+        <Card>
           <CardHeader className="flex-col sm:flex-row">
             <div>
               <CardTitle>
@@ -282,10 +282,10 @@ function DashboardPage() {
               <CardDescription>{data.wallets.length} sumber dana aktif</CardDescription>
             </div>
           </CardHeader>
-          <CardContent className="grid gap-2">
+          <CardContent className="grid grid-cols-1 gap-2">
             {data.wallets.slice(0, 5).map((wallet) => (
               <div
-                className="flex items-center gap-3 rounded-2xl bg-secondary/55 p-3"
+                className="flex min-w-0 items-center gap-3 rounded-2xl bg-secondary/55 p-3"
                 key={wallet.id}
               >
                 <span className="grid size-10 place-items-center rounded-xl bg-card text-primary shadow-sm">
@@ -319,7 +319,7 @@ function DashboardPage() {
             </Button>
           )}
         </CardHeader>
-        <CardContent className="grid gap-1">
+        <CardContent className="grid grid-cols-1 gap-1">
           {data.transactions.slice(0, 6).map((item) => {
             const category = item.category_id ? categoriesById.get(item.category_id) : undefined
             const wallet = walletsById.get(item.wallet_id)
@@ -328,7 +328,7 @@ function DashboardPage() {
               : undefined
             return (
               <div
-                className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 border-b py-3 last:border-0"
+                className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 border-b py-3 last:border-0"
                 key={item.id}
               >
                 <span className="grid size-10 place-items-center rounded-xl bg-secondary">

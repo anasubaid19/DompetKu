@@ -88,7 +88,7 @@ function PlanningPage() {
   }
 
   return (
-    <div className="grid gap-6">
+    <div className="grid grid-cols-1 gap-6">
       <PageHeader
         description="Satukan batas pengeluaran, target tabungan, kewajiban, dan tagihan rutin."
         eyebrow="Rencana finansial"
@@ -109,7 +109,7 @@ function PlanningPage() {
       />
 
       {tab === "budget" && (
-        <section className="grid gap-4">
+        <section className="grid grid-cols-1 gap-4">
           <SectionHeading
             action={
               <PlanningDialog
@@ -136,7 +136,7 @@ function PlanningPage() {
               return (
                 <Card key={budget.id}>
                   <CardHeader>
-                    <div>
+                    <div className="min-w-0">
                       <h3 className="text-subtitle">
                         {category ? <CategoryLabel category={category} /> : budget.category_name}
                       </h3>
@@ -177,7 +177,7 @@ function PlanningPage() {
       )}
 
       {tab === "saving" && (
-        <section className="grid gap-4">
+        <section className="grid grid-cols-1 gap-4">
           <SectionHeading
             action={
               <PlanningDialog
@@ -203,7 +203,7 @@ function PlanningPage() {
               return (
                 <Card key={saving.id}>
                   <CardHeader>
-                    <div>
+                    <div className="min-w-0">
                       <h3 className="text-subtitle">{saving.name}</h3>
                       <CardDescription>
                         {wallet ? <WalletLabel wallet={wallet} /> : "Belum terhubung ke dompet"}
@@ -257,7 +257,7 @@ function PlanningPage() {
       )}
 
       {tab === "debt" && (
-        <section className="grid gap-4">
+        <section className="grid grid-cols-1 gap-4">
           <SectionHeading
             action={
               <PlanningDialog
@@ -283,7 +283,7 @@ function PlanningPage() {
       )}
 
       {tab === "subscription" && (
-        <section className="grid gap-4">
+        <section className="grid grid-cols-1 gap-4">
           <SectionHeading
             action={
               <PlanningDialog
@@ -314,7 +314,7 @@ function PlanningPage() {
               return (
                 <Card key={subscription.id}>
                   <CardHeader>
-                    <div>
+                    <div className="min-w-0">
                       <h3 className="text-subtitle">{subscription.name}</h3>
                       <CardDescription className="flex flex-wrap items-center gap-1.5">
                         {wallet ? <WalletLabel wallet={wallet} /> : "Tanpa dompet"}
@@ -327,7 +327,7 @@ function PlanningPage() {
                     </span>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-lg font-semibold tabular-nums">
+                    <p className="text-lg font-semibold tabular-nums break-words">
                       {money(subscription.amount)}
                     </p>
                     <p className="text-caption mt-2 flex items-center gap-1.5 tabular-nums">
@@ -654,8 +654,8 @@ function DebtDialog({ debt, money }: { debt: Debt; money: (value: number) => str
               />
             )}
           </div>
-          <div className="sm:text-right">
-            <p className="text-lg font-semibold tabular-nums">{money(remaining)}</p>
+          <div className="min-w-0 sm:text-right">
+            <p className="text-lg font-semibold tabular-nums break-words">{money(remaining)}</p>
             <p className="text-caption tabular-nums">{isPaid ? "Lunas" : "Sisa"}</p>
           </div>
           <HugeiconsIcon

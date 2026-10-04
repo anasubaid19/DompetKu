@@ -107,7 +107,7 @@ function SettingsPage() {
   }
 
   return (
-    <div className="grid gap-6">
+    <div className="grid grid-cols-1 gap-6">
       <PageHeader
         action={
           <Button render={<Link to="/help" />} variant="outline">
@@ -119,7 +119,7 @@ function SettingsPage() {
         title="Pengaturan"
       />
 
-      <div className="grid gap-6 xl:grid-cols-2">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
         <Card>
           <CardHeader>
             <div>
@@ -198,29 +198,29 @@ function SettingsPage() {
             </div>
             <CategoryDialog />
           </CardHeader>
-          <CardContent className="grid gap-4">
-            <div>
+          <CardContent className="grid grid-cols-1 gap-4">
+            <div className="min-w-0">
               <p className="text-caption mb-2 uppercase tracking-wider">Pengeluaran</p>
               <div className="flex flex-wrap gap-2">
                 {data.categories
                   .filter((item) => item.type === "expense")
                   .map((item) => (
-                    <Badge className="gap-1.5" key={item.id}>
+                    <Badge className="min-w-0 max-w-full gap-1.5" key={item.id}>
                       <CategoryIndicator category={item} />
-                      {item.name}
+                      <span className="min-w-0 truncate">{item.name}</span>
                     </Badge>
                   ))}
               </div>
             </div>
-            <div>
+            <div className="min-w-0">
               <p className="text-caption mb-2 uppercase tracking-wider">Pemasukan</p>
               <div className="flex flex-wrap gap-2">
                 {data.categories
                   .filter((item) => item.type === "income")
                   .map((item) => (
-                    <Badge className="gap-1.5" key={item.id}>
+                    <Badge className="min-w-0 max-w-full gap-1.5" key={item.id}>
                       <CategoryIndicator category={item} />
-                      {item.name}
+                      <span className="min-w-0 truncate">{item.name}</span>
                     </Badge>
                   ))}
               </div>

@@ -74,7 +74,7 @@ function ReportsPage() {
   const largestCategory = categories[0]?.value ?? 1
 
   return (
-    <div className="grid gap-6">
+    <div className="grid grid-cols-1 gap-6">
       <PageHeader
         description="Lihat pola, bukan hanya angka terakhir."
         eyebrow="Pemahaman finansial"
@@ -102,7 +102,7 @@ function ReportsPage() {
         />
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.8fr)]">
+      <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.8fr)]">
         <Card>
           <CardHeader>
             <div>
@@ -115,7 +115,7 @@ function ReportsPage() {
             <div
               aria-describedby="monthly-report-summary"
               aria-label={`Grafik pemasukan dan pengeluaran enam siklus, ${data.settings.cycle_length} bulan per siklus`}
-              className="flex h-72 flex-col"
+              className="flex h-72 w-full min-w-0 flex-col"
               role="img"
             >
               <p className="sr-only" id="monthly-report-summary">
@@ -137,7 +137,7 @@ function ReportsPage() {
                   <span className="size-2 rounded-sm bg-[var(--chart-1)]" /> Pengeluaran
                 </span>
               </div>
-              <div className="min-h-0 flex-1">
+              <div className="min-h-0 min-w-0 flex-1">
                 <ResponsiveContainer height="100%" width="100%">
                   <BarChart
                     accessibilityLayer={false}
@@ -188,16 +188,18 @@ function ReportsPage() {
               <CardDescription>Akumulasi menurut kategori.</CardDescription>
             </div>
           </CardHeader>
-          <CardContent className="grid gap-5">
+          <CardContent className="grid grid-cols-1 gap-5">
             {categories.slice(0, 6).map((category) => (
-              <div className="grid gap-2" key={category.category?.id ?? category.name}>
-                <div className="flex items-center justify-between gap-3 text-sm">
+              <div className="grid min-w-0 gap-2" key={category.category?.id ?? category.name}>
+                <div className="flex min-w-0 items-center justify-between gap-3 text-sm">
                   {category.category ? (
                     <CategoryLabel category={category.category} />
                   ) : (
                     <span>{category.name}</span>
                   )}
-                  <strong className="tabular-nums">{money(category.value)}</strong>
+                  <strong className="min-w-0 tabular-nums break-words text-right">
+                    {money(category.value)}
+                  </strong>
                 </div>
                 <Progress
                   aria-label={`${category.name}, ${money(category.value)}`}
@@ -231,9 +233,11 @@ function ReportStat({
   return (
     <Card>
       <CardContent className="flex items-start justify-between">
-        <div>
+        <div className="min-w-0">
           <p className="text-sm text-muted-foreground">{label}</p>
-          <p className="mt-3 text-2xl font-semibold tracking-[-0.04em] tabular-nums">{value}</p>
+          <p className="mt-3 text-2xl font-semibold tracking-[-0.04em] tabular-nums break-words">
+            {value}
+          </p>
         </div>
         <span className={`grid size-10 place-items-center rounded-2xl bg-secondary ${tone}`}>
           <HugeiconsIcon icon={icon} />

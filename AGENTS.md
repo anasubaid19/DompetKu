@@ -24,6 +24,7 @@
 Completed on 2026-10-04:
 
 - Fixed shared progress bars rendering smaller than the stated percentage by removing the manual indicator transform and relying on Base UI width. Also hardened the mobile Ringkasan layout against horizontal overflow around the cash-flow chart and long currency values.
+- Fixed persistent mobile horizontal overflow app-wide (verified at 390px with adversarial data: zero overflowing elements on all five pages). Root causes: auto grid tracks sized by `truncate`/nowrap max-content, and `CategoryLabel`/`WalletLabel` whose outer `min-w-0` alone could not shrink them. Fix: `grid-cols-1` on page roots and single-column grids, `min-w-0` on cards/rows/items (including shared `Card` base), and `max-w-full` + inner `min-w-0` on the shared labels.
 
 Completed on 2026-10-04:
 

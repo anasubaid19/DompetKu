@@ -65,7 +65,7 @@ function TransactionsPage() {
   }
 
   return (
-    <div className="grid gap-6">
+    <div className="grid grid-cols-1 gap-6">
       <PageHeader
         action={
           <TransactionDialog
@@ -96,7 +96,7 @@ function TransactionsPage() {
           </div>
           <Select
             aria-label="Rentang transaksi"
-            className="w-auto"
+            className="w-auto max-w-full"
             onChange={(event) => setPeriod(event.target.value === "all" ? "all" : "cycle")}
             value={period}
           >
@@ -121,7 +121,7 @@ function TransactionsPage() {
 
       <Card>
         <CardContent className="p-2 sm:p-3">
-          <div className="grid gap-1">
+          <div className="grid grid-cols-1 gap-1">
             {transactions.map((item) => {
               const category = item.category_id ? categoriesById.get(item.category_id) : undefined
               const wallet = walletsById.get(item.wallet_id)
@@ -130,7 +130,7 @@ function TransactionsPage() {
                 : undefined
               return (
                 <article
-                  className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3 rounded-2xl p-3 transition-colors hover:bg-secondary/55 sm:grid-cols-[auto_minmax(0,1fr)_auto]"
+                  className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-3 rounded-2xl p-3 transition-colors hover:bg-secondary/55 sm:grid-cols-[auto_minmax(0,1fr)_auto]"
                   key={item.id}
                 >
                   <span
@@ -154,11 +154,11 @@ function TransactionsPage() {
                     />
                   </span>
                   <div className="min-w-0">
-                    <div className="flex items-center gap-2">
+                    <div className="flex min-w-0 items-center gap-2">
                       <h2 className="truncate text-sm font-medium">
                         {item.description || item.category_name || "Transfer antar-dompet"}
                       </h2>
-                      <Badge className="gap-1.5">
+                      <Badge className="min-w-0 max-w-full gap-1.5">
                         {category ? <CategoryLabel category={category} /> : item.type}
                       </Badge>
                     </div>
@@ -174,11 +174,11 @@ function TransactionsPage() {
                       </span>
                     </div>
                   </div>
-                  <div className="col-start-2 flex items-center justify-between gap-3 sm:col-start-3 sm:row-start-1">
-                    <div className="text-right">
+                  <div className="col-start-2 flex min-w-0 items-center justify-between gap-3 sm:col-start-3 sm:row-start-1">
+                    <div className="min-w-0 text-right">
                       <p
                         className={cn(
-                          "text-sm font-semibold tabular-nums",
+                          "text-sm font-semibold tabular-nums break-words",
                           item.type === "income" && "text-success",
                           item.type === "expense" && "text-destructive",
                         )}
@@ -191,7 +191,7 @@ function TransactionsPage() {
                         )}
                       </p>
                       {item.type === "transfer" && item.fee > 0 && (
-                        <p className="text-caption mt-0.5 tabular-nums">
+                        <p className="text-caption mt-0.5 tabular-nums break-words">
                           Biaya transfer {money(item.fee)}
                         </p>
                       )}

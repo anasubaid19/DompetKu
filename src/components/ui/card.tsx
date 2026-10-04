@@ -5,7 +5,7 @@ function Card({ className, ...props }: React.ComponentProps<"section">) {
   return (
     <section
       className={cn(
-        "rounded-3xl bg-card shadow-sm ring-1 ring-foreground/6 dark:ring-foreground/10",
+        "rounded-3xl bg-card shadow-sm ring-1 ring-foreground/6 dark:ring-foreground/10 min-w-0",
         className,
       )}
       data-slot="card"

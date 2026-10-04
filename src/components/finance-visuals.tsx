@@ -91,9 +91,9 @@ export function CategoryLabel({
   className?: string
 }) {
   return (
-    <span className={cn("inline-flex min-w-0 items-center gap-1.5", className)}>
+    <span className={cn("inline-flex min-w-0 max-w-full items-center gap-1.5", className)}>
       <CategoryIndicator category={category} />
-      <span className="truncate">{category.name}</span>
+      <span className="min-w-0 truncate">{category.name}</span>
     </span>
   )
 }
@@ -120,9 +120,9 @@ export function WalletLogo({
 
 export function WalletLabel({ wallet, className }: { wallet: Wallet; className?: string }) {
   return (
-    <span className={cn("inline-flex min-w-0 items-center gap-1.5", className)}>
+    <span className={cn("inline-flex min-w-0 max-w-full items-center gap-1.5", className)}>
       <WalletLogo className="size-4" wallet={wallet} />
-      <span className="truncate">{wallet.name}</span>
+      <span className="min-w-0 truncate">{wallet.name}</span>
     </span>
   )
 }
