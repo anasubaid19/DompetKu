@@ -155,7 +155,7 @@ function DashboardPage() {
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.55fr)_minmax(320px,0.75fr)]">
-        <Card>
+        <Card className="min-w-0">
           <CardHeader className="flex-col sm:flex-row">
             <div>
               <CardTitle>
@@ -185,7 +185,7 @@ function DashboardPage() {
                     ? "Grafik arus kas tujuh hari terakhir"
                     : `Grafik arus kas enam siklus, ${data.settings.cycle_length} bulan per siklus`
                 }
-                className="flex h-64 w-full flex-col"
+                className="flex h-64 w-full min-w-0 flex-col"
                 role="img"
               >
                 <p className="sr-only" id="cash-flow-summary">
@@ -207,7 +207,7 @@ function DashboardPage() {
                     <span className="size-2 rounded-full bg-[var(--chart-1)]" /> Pengeluaran
                   </span>
                 </div>
-                <div className="min-h-0 flex-1">
+                <div className="min-h-0 min-w-0 flex-1">
                   <ResponsiveContainer height="100%" width="100%">
                     <AreaChart
                       accessibilityLayer={false}
@@ -295,8 +295,10 @@ function DashboardPage() {
                   <p className="truncate text-sm font-medium">{wallet.name}</p>
                   <p className="text-caption">{wallet.type === "saving" ? "Tabungan" : "Harian"}</p>
                 </div>
-                <div className="flex items-center gap-1">
-                  <p className="text-sm font-semibold tabular-nums">{money(wallet.balance)}</p>
+                <div className="flex min-w-0 items-center gap-1">
+                  <p className="min-w-0 text-sm font-semibold tabular-nums break-words text-right">
+                    {money(wallet.balance)}
+                  </p>
                   <WalletDialog wallet={wallet} />
                 </div>
               </div>
@@ -357,8 +359,8 @@ function DashboardPage() {
                 <p
                   className={
                     item.type === "income"
-                      ? "text-sm font-semibold tabular-nums text-success"
-                      : "text-sm font-semibold tabular-nums"
+                      ? "min-w-0 text-sm font-semibold tabular-nums break-words text-right text-success"
+                      : "min-w-0 text-sm font-semibold tabular-nums break-words text-right"
                   }
                 >
                   {formatTransactionAmount(item.type, item.amount, currency, hide)}
@@ -412,7 +414,7 @@ function SummaryCard({
       <CardContent className="flex items-start justify-between gap-3 p-4 sm:gap-4 sm:p-5">
         <div className="min-w-0">
           <p className="text-sm text-muted-foreground">{label}</p>
-          <p className="mt-2 text-lg font-semibold tracking-[-0.04em] tabular-nums sm:mt-3 sm:text-2xl">
+          <p className="mt-2 text-lg font-semibold tracking-[-0.04em] tabular-nums break-words sm:mt-3 sm:text-2xl">
             {value}
           </p>
         </div>

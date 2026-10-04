@@ -23,6 +23,10 @@
 
 Completed on 2026-10-04:
 
+- Fixed shared progress bars rendering smaller than the stated percentage by removing the manual indicator transform and relying on Base UI width. Also hardened the mobile Ringkasan layout against horizontal overflow around the cash-flow chart and long currency values.
+
+Completed on 2026-10-04:
+
 - Debt cards on Rencana > Hutang & piutang are now clickable and open a management dialog with four actions: Tandai lunas, Tambah hutang, Cicil hutang, and Hapus hutang. Cards show the remaining amount (plus a progress bar when partially paid) instead of a single toggle button. New server functions: `addDebtAmount`, `payDebtInstallment`, `deleteDebt`, and a tested `nextDebtState` helper. Cicil auto-marks a debt paid when installments reach the full amount; Tambah re-activates a settled debt when the amount grows.
 
 Completed on 2026-09-02:

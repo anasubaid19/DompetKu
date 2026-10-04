@@ -8,10 +8,7 @@ function Progress({ className, value = 0, ...props }: ProgressPrimitive.Root.Pro
       value={value}
       {...props}
     >
-      <ProgressPrimitive.Indicator
-        className="h-full rounded-full bg-primary transition-transform duration-slow ease-entrance"
-        style={{ transform: `translateX(-${100 - Math.min(100, Math.max(0, value ?? 0))}%)` }}
-      />
+      <ProgressPrimitive.Indicator className="h-full rounded-full bg-primary transition-[width] duration-slow ease-entrance" />
     </ProgressPrimitive.Root>
   )
 }
