@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import { calculateLedgerBalances } from "@/lib/finance.functions"
+import { calculateLedgerBalances, nextDebtState } from "@/lib/finance.functions"
 import { isCategoryColor, isCategoryIcon, isFinancialInstitution } from "@/lib/finance-options"
 import {
   cashFlowMessage,
@@ -166,4 +166,31 @@ test("transaction CSV keeps Indonesian labels and escapes spreadsheet values", (
       },
     ]),
   ).toContain("'=SUM(A1:A2)")
+})
+
+test("debt installments accumulate and additions reactivate a settled debt", () => {
+  const active = { amount: 100_000, paid_amount: 0, status: "active" as const }
+  expect(nextDebtState(active, { type: "pay", amount: 40_000 })).toEqual({
+    amount: 100_000,
+    paid_amount: 40_000,
+    status: "active",
+  })
+  expect(
+    nextDebtState(
+      { amount: 100_000, paid_amount: 60_000, status: "active" as const },
+      { type: "pay", amount: 40_000 },
+    ),
+  ).toEqual({ amount: 100_000, paid_amount: 100_000, status: "paid" })
+  expect(() =>
+    nextDebtState(
+      { amount: 100_000, paid_amount: 60_000, status: "active" as const },
+      { type: "pay", amount: 41_000 },
+    ),
+  ).toThrow("Nominal cicilan melebihi sisa kewajiban")
+  expect(
+    nextDebtState(
+      { amount: 100_000, paid_amount: 100_000, status: "paid" as const },
+      { type: "add", amount: 50_000 },
+    ),
+  ).toEqual({ amount: 150_000, paid_amount: 100_000, status: "active" })
 })

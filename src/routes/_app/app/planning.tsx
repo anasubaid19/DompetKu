@@ -1,10 +1,15 @@
 import {
   Add01Icon,
+  BadgeCheckIcon,
   Calendar03Icon,
+  ChevronRightIcon,
+  Delete02Icon,
   Invoice01Icon,
+  MoneyAdd01Icon,
   MoneySavingJarIcon,
   Target01Icon,
   UserIcon,
+  WalletAdd01Icon,
 } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { createFileRoute, useRouter } from "@tanstack/react-router"
@@ -36,13 +41,17 @@ import { Progress } from "@/components/ui/progress"
 import { SegmentedControl } from "@/components/ui/segmented-control"
 import { Select } from "@/components/ui/select"
 import {
+  addDebtAmount,
   type Category,
   createBudget,
   createDebt,
   createSaving,
   createSubscription,
+  type Debt,
+  deleteDebt,
   getFinanceData,
   moveSavingFunds,
+  payDebtInstallment,
   type Saving,
   toggleDebtPaid,
   type Wallet,
@@ -56,7 +65,6 @@ export const Route = createFileRoute("/_app/app/planning")({
 
 function PlanningPage() {
   const data = Route.useLoaderData()
-  const router = useRouter()
   const [tab, setTab] = useState<"budget" | "saving" | "debt" | "subscription">("budget")
   const money = (value: number) =>
     data.settings.hide_balance ? "••••••" : formatMoney(value, data.settings.currency)
@@ -76,16 +84,6 @@ function PlanningPage() {
         item.category_id,
         (expenseByCategory.get(item.category_id) ?? 0) + item.amount,
       )
-    }
-  }
-
-  async function markDebt(id: string) {
-    try {
-      await toggleDebtPaid({ data: { id } })
-      await router.invalidate()
-      toast.success("Status kewajiban diperbarui")
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Status gagal diperbarui")
     }
   }
 
@@ -274,46 +272,9 @@ function PlanningPage() {
             title="Hutang & piutang"
           />
           <div className="grid gap-3">
-            {data.debts.map((debt) => {
-              const overdue = debt.status === "active" && debt.due_date && debt.due_date < today()
-              return (
-                <Card className={cn(overdue && "ring-destructive/30")} key={debt.id}>
-                  <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center">
-                    <span
-                      className={cn(
-                        "grid size-11 place-items-center rounded-2xl",
-                        debt.type === "piutang"
-                          ? "bg-success/10 text-success"
-                          : "bg-destructive/10 text-destructive",
-                      )}
-                    >
-                      <HugeiconsIcon icon={UserIcon} />
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="font-medium">{debt.contact}</h3>
-                        <Badge>{debt.type === "piutang" ? "Piutang" : "Hutang"}</Badge>
-                        {overdue && (
-                          <Badge className="bg-destructive/10 text-destructive">Terlambat</Badge>
-                        )}
-                      </div>
-                      <p className="text-caption mt-1 tabular-nums">
-                        {debt.due_date ? `Jatuh tempo ${debt.due_date}` : "Tanpa jatuh tempo"}
-                        {debt.note ? ` · ${debt.note}` : ""}
-                      </p>
-                    </div>
-                    <p className="text-lg font-semibold tabular-nums">{money(debt.amount)}</p>
-                    <Button
-                      onClick={() => markDebt(debt.id)}
-                      size="sm"
-                      variant={debt.status === "paid" ? "secondary" : "outline"}
-                    >
-                      {debt.status === "paid" ? "Aktifkan" : "Tandai lunas"}
-                    </Button>
-                  </CardContent>
-                </Card>
-              )
-            })}
+            {data.debts.map((debt) => (
+              <DebtDialog debt={debt} key={debt.id} money={money} />
+            ))}
           </div>
           {data.debts.length === 0 && (
             <Empty icon={UserIcon} text="Belum ada hutang atau piutang." />
@@ -604,6 +565,211 @@ function DebtForm({ close }: { close: () => void }) {
         </FormField>
       </div>
     </MutationForm>
+  )
+}
+
+function DebtDialog({ debt, money }: { debt: Debt; money: (value: number) => string }) {
+  const router = useRouter()
+  const [open, setOpen] = useState(false)
+  const [mode, setMode] = useState<"menu" | "add" | "pay" | "delete">("menu")
+  const [pending, setPending] = useState(false)
+  const overdue = debt.status === "active" && debt.due_date && debt.due_date < today()
+  const isPaid = debt.status === "paid"
+  const remaining = Math.max(0, debt.amount - debt.paid_amount)
+  const paidPercent = Math.round((debt.paid_amount / debt.amount) * 100)
+
+  function changeOpen(nextOpen: boolean) {
+    setOpen(nextOpen)
+    if (!nextOpen) setMode("menu")
+  }
+
+  async function markPaid() {
+    setPending(true)
+    try {
+      await toggleDebtPaid({ data: { id: debt.id } })
+      changeOpen(false)
+      await router.invalidate()
+      toast.success("Status kewajiban diperbarui")
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Status gagal diperbarui")
+    } finally {
+      setPending(false)
+    }
+  }
+
+  async function remove() {
+    setPending(true)
+    try {
+      await deleteDebt({ data: { id: debt.id } })
+      changeOpen(false)
+      await router.invalidate()
+      toast.success("Kewajiban dihapus")
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Kewajiban gagal dihapus")
+    } finally {
+      setPending(false)
+    }
+  }
+
+  return (
+    <Dialog onOpenChange={changeOpen} open={open}>
+      <DialogTrigger
+        nativeButton={false}
+        render={
+          <Card
+            className={cn(
+              "cursor-pointer transition-[box-shadow,ring-color] focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+              overdue && "ring-destructive/30",
+            )}
+          />
+        }
+      >
+        <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center">
+          <span
+            className={cn(
+              "grid size-11 shrink-0 place-items-center rounded-2xl",
+              debt.type === "piutang"
+                ? "bg-success/10 text-success"
+                : "bg-destructive/10 text-destructive",
+            )}
+          >
+            <HugeiconsIcon icon={UserIcon} />
+          </span>
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="font-medium">{debt.contact}</h3>
+              <Badge>{debt.type === "piutang" ? "Piutang" : "Hutang"}</Badge>
+              {overdue && <Badge className="bg-destructive/10 text-destructive">Terlambat</Badge>}
+              {isPaid && <Badge className="bg-success/10 text-success">Lunas</Badge>}
+            </div>
+            <p className="text-caption mt-1 tabular-nums">
+              {debt.due_date ? `Jatuh tempo ${debt.due_date}` : "Tanpa jatuh tempo"}
+              {debt.note ? ` · ${debt.note}` : ""}
+            </p>
+            {!isPaid && debt.paid_amount > 0 && (
+              <Progress
+                aria-label={`Terbayar ${money(debt.paid_amount)} dari ${money(debt.amount)}`}
+                className="mt-3"
+                value={paidPercent}
+              />
+            )}
+          </div>
+          <div className="sm:text-right">
+            <p className="text-lg font-semibold tabular-nums">{money(remaining)}</p>
+            <p className="text-caption tabular-nums">{isPaid ? "Lunas" : "Sisa"}</p>
+          </div>
+          <HugeiconsIcon
+            className="hidden shrink-0 text-muted-foreground sm:block"
+            icon={ChevronRightIcon}
+          />
+        </CardContent>
+      </DialogTrigger>
+      <DialogContent>
+        {mode === "delete" ? (
+          <>
+            <DialogHeader>
+              <DialogTitle>Hapus kewajiban?</DialogTitle>
+              <DialogDescription>
+                Catatan {debt.contact} sebesar {money(debt.amount)} akan dihapus permanen.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button disabled={pending} onClick={() => setMode("menu")} variant="ghost">
+                Kembali
+              </Button>
+              <Button disabled={pending} onClick={remove} variant="destructive">
+                <HugeiconsIcon icon={Delete02Icon} />
+                {pending ? "Menghapus…" : "Hapus kewajiban"}
+              </Button>
+            </DialogFooter>
+          </>
+        ) : (
+          <>
+            <DialogHeader>
+              <DialogTitle>{debt.contact}</DialogTitle>
+              <DialogDescription>
+                {debt.type === "piutang" ? "Piutang — saya meminjamkan" : "Hutang — saya meminjam"}
+                {debt.due_date ? ` · Jatuh tempo ${debt.due_date}` : ""}
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="flex items-end justify-between gap-3 rounded-2xl bg-secondary/60 p-4">
+              <div>
+                <p className="text-caption">Sisa kewajiban</p>
+                <p className="mt-1 text-xl font-semibold tabular-nums">{money(remaining)}</p>
+              </div>
+              {debt.paid_amount > 0 && (
+                <p className="text-caption tabular-nums">Terbayar {money(debt.paid_amount)}</p>
+              )}
+            </div>
+
+            {mode === "menu" && (
+              <div className="grid gap-2">
+                <Button disabled={pending} onClick={markPaid} variant="outline">
+                  <HugeiconsIcon icon={BadgeCheckIcon} />
+                  {isPaid ? "Aktifkan" : "Tandai lunas"}
+                </Button>
+                <Button onClick={() => setMode("add")} variant="outline">
+                  <HugeiconsIcon icon={MoneyAdd01Icon} />
+                  Tambah hutang
+                </Button>
+                <Button disabled={isPaid} onClick={() => setMode("pay")} variant="outline">
+                  <HugeiconsIcon icon={WalletAdd01Icon} />
+                  Cicil hutang
+                </Button>
+                <Button onClick={() => setMode("delete")} variant="destructive">
+                  <HugeiconsIcon icon={Delete02Icon} />
+                  Hapus hutang
+                </Button>
+              </div>
+            )}
+
+            {mode === "add" && (
+              <MutationForm
+                action={(form) =>
+                  addDebtAmount({ data: { id: debt.id, amount: Number(form.get("amount")) } })
+                }
+                close={() => changeOpen(false)}
+                id={`debt-add-${debt.id}`}
+                success="Nominal hutang ditambahkan"
+              >
+                <FormField
+                  hint={
+                    isPaid ? "Kewajiban akan aktif kembali karena nominal bertambah." : undefined
+                  }
+                  label="Nominal ditambahkan"
+                >
+                  <Input autoFocus min="1" name="amount" placeholder="0" required type="number" />
+                </FormField>
+              </MutationForm>
+            )}
+
+            {mode === "pay" && (
+              <MutationForm
+                action={(form) =>
+                  payDebtInstallment({ data: { id: debt.id, amount: Number(form.get("amount")) } })
+                }
+                close={() => changeOpen(false)}
+                id={`debt-pay-${debt.id}`}
+                success="Cicilan dicatat"
+              >
+                <FormField hint={`Sisa kewajiban ${money(remaining)}`} label="Nominal cicilan">
+                  <Input
+                    autoFocus
+                    max={remaining}
+                    min="1"
+                    name="amount"
+                    placeholder="0"
+                    required
+                    type="number"
+                  />
+                </FormField>
+              </MutationForm>
+            )}
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
   )
 }
 

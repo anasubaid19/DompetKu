@@ -21,6 +21,10 @@
 
 ## Current State
 
+Completed on 2026-10-04:
+
+- Debt cards on Rencana > Hutang & piutang are now clickable and open a management dialog with four actions: Tandai lunas, Tambah hutang, Cicil hutang, and Hapus hutang. Cards show the remaining amount (plus a progress bar when partially paid) instead of a single toggle button. New server functions: `addDebtAmount`, `payDebtInstallment`, `deleteDebt`, and a tested `nextDebtState` helper. Cicil auto-marks a debt paid when installments reach the full amount; Tambah re-activates a settled debt when the amount grows.
+
 Completed on 2026-09-02:
 
 - Unified dropdown appearance app-wide in `src/components/ui/select.tsx` with `appearance-none`, consistent padding, and `ChevronDownIcon`.

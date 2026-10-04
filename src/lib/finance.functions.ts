@@ -48,6 +48,29 @@ export type Debt = {
   status: "active" | "paid"
 }
 
+type DebtState = Pick<Debt, "amount" | "paid_amount" | "status">
+
+export function nextDebtState(
+  debt: DebtState,
+  operation: { type: "add" | "pay"; amount: number },
+): DebtState {
+  if (operation.type === "add") {
+    const amount = debt.amount + operation.amount
+    return {
+      amount,
+      paid_amount: debt.paid_amount,
+      status: debt.paid_amount >= amount ? "paid" : "active",
+    }
+  }
+  const paidAmount = debt.paid_amount + operation.amount
+  if (paidAmount > debt.amount) throw new Error("Nominal cicilan melebihi sisa kewajiban")
+  return {
+    amount: debt.amount,
+    paid_amount: paidAmount,
+    status: paidAmount >= debt.amount ? "paid" : "active",
+  }
+}
+
 export type Budget = {
   id: string
   category_id: string
@@ -489,6 +512,58 @@ export const toggleDebtPaid = createServerFn({ method: "POST" })
       .query(
         "UPDATE debts SET status = CASE status WHEN 'active' THEN 'paid' ELSE 'active' END, paid_amount = CASE status WHEN 'active' THEN amount ELSE 0 END WHERE id = ? AND user_id = ?",
       )
+      .run(requiredText(data.id, "Hutang", 64), user.id)
+    if (result.changes !== 1) throw new Error("Hutang tidak ditemukan")
+  })
+
+export const addDebtAmount = createServerFn({ method: "POST" })
+  .validator((data: { id: string; amount: number }) => data)
+  .handler(async ({ data }) => {
+    const user = await requireUser()
+    const id = requiredText(data.id, "Hutang", 64)
+    const commit = db.transaction(() => {
+      const debt = db
+        .query("SELECT amount, paid_amount, status FROM debts WHERE id = ? AND user_id = ?")
+        .get(id, user.id) as DebtState | null
+      if (!debt) throw new Error("Hutang tidak ditemukan")
+      const next = nextDebtState(debt, { type: "add", amount: positiveMoney(data.amount) })
+      db.query("UPDATE debts SET amount = ?, status = ? WHERE id = ? AND user_id = ?").run(
+        next.amount,
+        next.status,
+        id,
+        user.id,
+      )
+    })
+    commit.immediate()
+  })
+
+export const payDebtInstallment = createServerFn({ method: "POST" })
+  .validator((data: { id: string; amount: number }) => data)
+  .handler(async ({ data }) => {
+    const user = await requireUser()
+    const id = requiredText(data.id, "Hutang", 64)
+    const commit = db.transaction(() => {
+      const debt = db
+        .query("SELECT amount, paid_amount, status FROM debts WHERE id = ? AND user_id = ?")
+        .get(id, user.id) as DebtState | null
+      if (!debt) throw new Error("Hutang tidak ditemukan")
+      const next = nextDebtState(debt, { type: "pay", amount: positiveMoney(data.amount) })
+      db.query("UPDATE debts SET paid_amount = ?, status = ? WHERE id = ? AND user_id = ?").run(
+        next.paid_amount,
+        next.status,
+        id,
+        user.id,
+      )
+    })
+    commit.immediate()
+  })
+
+export const deleteDebt = createServerFn({ method: "POST" })
+  .validator((data: { id: string }) => data)
+  .handler(async ({ data }) => {
+    const user = await requireUser()
+    const result = db
+      .query("DELETE FROM debts WHERE id = ? AND user_id = ?")
       .run(requiredText(data.id, "Hutang", 64), user.id)
     if (result.changes !== 1) throw new Error("Hutang tidak ditemukan")
   })
