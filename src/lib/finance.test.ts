@@ -2,8 +2,10 @@ import { describe, expect, test } from "bun:test"
 import { calculateLedgerBalances, debtPaymentDraft, nextDebtState } from "@/lib/finance.functions"
 import { isCategoryColor, isCategoryIcon, isFinancialInstitution } from "@/lib/finance-options"
 import {
+  addMonths,
   cashFlowMessage,
   cycleRange,
+  daysUntil,
   formatCompactNumber,
   formatNumberInput,
   formatTransactionAmount,
@@ -220,4 +222,19 @@ test("debt money movements map to the correct transaction type and description",
     txType: "expense",
     description: "Tambahan piutang: Ani",
   })
+})
+
+test("billing dates roll forward by whole months and clamp to month end", () => {
+  expect(addMonths("2026-01-15", 1)).toBe("2026-02-15")
+  expect(addMonths("2026-12-01", 1)).toBe("2027-01-01")
+  expect(addMonths("2026-01-31", 1)).toBe("2026-02-28")
+  expect(addMonths("2026-01-31", 3)).toBe("2026-04-30")
+  expect(addMonths("2026-03-31", 1)).toBe("2026-04-30")
+})
+
+test("days until a due date counts calendar days", () => {
+  const now = new Date(2026, 9, 4)
+  expect(daysUntil("2026-10-04", now)).toBe(0)
+  expect(daysUntil("2026-10-06", now)).toBe(2)
+  expect(daysUntil("2026-10-01", now)).toBe(-3)
 })

@@ -28,7 +28,12 @@ import {
 import { Input } from "@/components/ui/input"
 import { SegmentedControl } from "@/components/ui/segmented-control"
 import { Select } from "@/components/ui/select"
-import { deleteTransaction, type FinanceTransaction, getFinanceData } from "@/lib/finance.functions"
+import {
+  createTransaction,
+  deleteTransaction,
+  type FinanceTransaction,
+  getFinanceData,
+} from "@/lib/finance.functions"
 import {
   cn,
   cycleRange,
@@ -277,7 +282,25 @@ function DeleteTransactionDialog({ transaction }: { transaction: FinanceTransact
       await deleteTransaction({ data: { id: transaction.id } })
       setOpen(false)
       await router.invalidate()
-      toast.success("Transaksi dihapus dan saldo dikembalikan")
+      toast.success("Transaksi dihapus dan saldo dikembalikan", {
+        action: {
+          label: "Urungkan",
+          onClick: () => {
+            void createTransaction({
+              data: {
+                type: transaction.type,
+                amount: transaction.amount,
+                fee: transaction.fee,
+                walletId: transaction.wallet_id,
+                targetWalletId: transaction.target_wallet_id ?? "",
+                categoryId: transaction.category_id ?? "",
+                description: transaction.description,
+                date: transaction.transaction_date,
+              },
+            }).then(() => router.invalidate())
+          },
+        },
+      })
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Transaksi gagal dihapus")
     } finally {

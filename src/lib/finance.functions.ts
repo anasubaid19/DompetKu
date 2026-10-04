@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start"
 import { requireUser } from "@/lib/auth.server"
 import { db, ensureDefaults } from "@/lib/db"
 import { isCategoryColor, isCategoryIcon, isFinancialInstitution } from "@/lib/finance-options"
-import { today } from "@/lib/utils"
+import { addMonths, today } from "@/lib/utils"
 
 export type Wallet = {
   id: string
@@ -98,6 +98,7 @@ export type Subscription = {
   wallet_id: string | null
   category_id: string | null
   next_due_date: string
+  interval_months: number
   active: number
   wallet_name: string | null
   category_name: string | null
@@ -238,8 +239,8 @@ export const getFinanceData = createServerFn({ method: "GET" }).handler(async ()
     .all(user.id) as Saving[]
   const subscriptions = db
     .query(`
-      SELECT s.id, s.name, s.amount, s.wallet_id, s.category_id, s.next_due_date, s.active,
-        w.name AS wallet_name, c.name AS category_name
+      SELECT s.id, s.name, s.amount, s.wallet_id, s.category_id, s.next_due_date,
+        s.interval_months, s.active, w.name AS wallet_name, c.name AS category_name
       FROM subscriptions s
       LEFT JOIN wallets w ON w.id = s.wallet_id
       LEFT JOIN categories c ON c.id = s.category_id
@@ -616,6 +617,22 @@ export const createDebt = createServerFn({ method: "POST" })
     commit.immediate()
   })
 
+export const updateDebt = createServerFn({ method: "POST" })
+  .validator((data: { id: string; contact: string; dueDate?: string; note?: string }) => data)
+  .handler(async ({ data }) => {
+    const user = await requireUser()
+    const result = db
+      .query("UPDATE debts SET contact = ?, due_date = ?, note = ? WHERE id = ? AND user_id = ?")
+      .run(
+        requiredText(data.contact, "Nama kontak", 80),
+        data.dueDate ? requiredText(data.dueDate, "Jatuh tempo", 10) : null,
+        optionalText(data.note),
+        requiredText(data.id, "Hutang", 64),
+        user.id,
+      )
+    if (result.changes !== 1) throw new Error("Hutang tidak ditemukan")
+  })
+
 export const addDebtAmount = createServerFn({ method: "POST" })
   .validator((data: { id: string; amount: number; walletId?: string }) => data)
   .handler(async ({ data }) => {
@@ -856,6 +873,12 @@ type SubscriptionInput = {
   walletId?: string
   categoryId?: string
   nextDueDate: string
+  intervalMonths?: number
+}
+
+function positiveMonths(value: unknown) {
+  const months = Number(value)
+  return Number.isInteger(months) && months >= 1 && months <= 60 ? months : 1
 }
 
 export const createSubscription = createServerFn({ method: "POST" })
@@ -872,7 +895,7 @@ export const createSubscription = createServerFn({ method: "POST" })
       if (!category) throw new Error("Kategori tidak ditemukan")
     }
     db.query(
-      "INSERT INTO subscriptions (id, user_id, name, amount, wallet_id, category_id, next_due_date) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      "INSERT INTO subscriptions (id, user_id, name, amount, wallet_id, category_id, next_due_date, interval_months) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
     ).run(
       crypto.randomUUID(),
       user.id,
@@ -881,6 +904,7 @@ export const createSubscription = createServerFn({ method: "POST" })
       wallet?.id ?? null,
       categoryId,
       requiredText(data.nextDueDate, "Tanggal tagihan", 10),
+      positiveMonths(data.intervalMonths),
     )
   })
 
@@ -899,7 +923,7 @@ export const updateSubscription = createServerFn({ method: "POST" })
     }
     const result = db
       .query(
-        "UPDATE subscriptions SET name = ?, amount = ?, wallet_id = ?, category_id = ?, next_due_date = ? WHERE id = ? AND user_id = ?",
+        "UPDATE subscriptions SET name = ?, amount = ?, wallet_id = ?, category_id = ?, next_due_date = ?, interval_months = ? WHERE id = ? AND user_id = ?",
       )
       .run(
         requiredText(data.name, "Nama langganan", 80),
@@ -907,10 +931,83 @@ export const updateSubscription = createServerFn({ method: "POST" })
         wallet?.id ?? null,
         categoryId,
         requiredText(data.nextDueDate, "Tanggal tagihan", 10),
+        positiveMonths(data.intervalMonths),
         requiredText(data.id, "Langganan", 64),
         user.id,
       )
     if (result.changes !== 1) throw new Error("Langganan tidak ditemukan")
+  })
+
+function ensureSubscriptionCategoryId(userId: string, current: string | null) {
+  if (current) return current
+  const existing = db
+    .query(
+      "SELECT id FROM categories WHERE user_id = ? AND name = 'Langganan' AND type = 'expense'",
+    )
+    .get(userId) as { id: string } | null
+  if (existing) return existing.id
+  const id = crypto.randomUUID()
+  db.query(
+    "INSERT INTO categories (id, user_id, name, type, color, icon) VALUES (?, ?, 'Langganan', 'expense', 'violet', 'invoice')",
+  ).run(id, userId)
+  return id
+}
+
+export const paySubscription = createServerFn({ method: "POST" })
+  .validator((data: { id: string; walletId: string; date?: string }) => data)
+  .handler(async ({ data }) => {
+    const user = await requireUser()
+    const id = requiredText(data.id, "Langganan", 64)
+    const commit = db.transaction(() => {
+      const subscription = db
+        .query(
+          "SELECT id, name, amount, wallet_id, category_id, next_due_date, interval_months FROM subscriptions WHERE id = ? AND user_id = ?",
+        )
+        .get(id, user.id) as Pick<
+        Subscription,
+        "id" | "name" | "amount" | "wallet_id" | "category_id" | "next_due_date" | "interval_months"
+      > | null
+      if (!subscription) throw new Error("Langganan tidak ditemukan")
+
+      const walletId = data.walletId
+        ? ownedWallet(user.id, data.walletId).id
+        : subscription.wallet_id
+      if (!walletId) throw new Error("Pilih dompet untuk membayar langganan ini")
+      const categoryId = ensureSubscriptionCategoryId(user.id, subscription.category_id)
+      const date = data.date ? requiredText(data.date, "Tanggal", 10) : today()
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error("Tanggal tidak valid")
+
+      const movement: LedgerEntry = {
+        type: "expense",
+        amount: subscription.amount,
+        fee: 0,
+        walletId,
+        targetWalletId: null,
+      }
+      updateWalletBalances(user.id, null, movement)
+      db.query(`
+        INSERT INTO transactions
+          (id, user_id, type, amount, fee, wallet_id, target_wallet_id, category_id, description, transaction_date)
+        VALUES (?, ?, 'expense', ?, 0, ?, NULL, ?, ?, ?)
+      `).run(
+        crypto.randomUUID(),
+        user.id,
+        subscription.amount,
+        walletId,
+        categoryId,
+        `Langganan: ${subscription.name}`,
+        date,
+      )
+      db.query(
+        "UPDATE subscriptions SET next_due_date = ?, wallet_id = ? WHERE id = ? AND user_id = ?",
+      ).run(
+        addMonths(subscription.next_due_date, subscription.interval_months),
+        walletId,
+        id,
+        user.id,
+      )
+    })
+    commit.immediate()
   })
 
 export const deleteSubscription = createServerFn({ method: "POST" })

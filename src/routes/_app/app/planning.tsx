@@ -8,6 +8,7 @@ import {
   Invoice01Icon,
   MoneyAdd01Icon,
   MoneySavingJarIcon,
+  Search02Icon,
   Target01Icon,
   UserIcon,
   WalletAdd01Icon,
@@ -57,16 +58,18 @@ import {
   type FinanceTransaction,
   getFinanceData,
   moveSavingFunds,
+  paySubscription,
   recordDebtPayment,
   reopenDebt,
   type Saving,
   type Subscription,
   settleDebt,
+  updateDebt,
   updateSaving,
   updateSubscription,
   type Wallet,
 } from "@/lib/finance.functions"
-import { cn, cycleRange, formatMoney, parseNumberInput, today } from "@/lib/utils"
+import { cn, cycleRange, daysUntil, formatMoney, parseNumberInput, today } from "@/lib/utils"
 
 export const Route = createFileRoute("/_app/app/planning")({
   loader: () => getFinanceData(),
@@ -76,11 +79,21 @@ export const Route = createFileRoute("/_app/app/planning")({
 function PlanningPage() {
   const data = Route.useLoaderData()
   const [tab, setTab] = useState<"budget" | "saving" | "debt" | "subscription">("budget")
+  const [query, setQuery] = useState("")
   const money = (value: number) =>
     data.settings.hide_balance ? "••••••" : formatMoney(value, data.settings.currency)
   const cycle = cycleRange(data.settings)
   const categoriesById = new Map(data.categories.map((category) => [category.id, category]))
   const walletsById = new Map(data.wallets.map((wallet) => [wallet.id, wallet]))
+  const q = query.trim().toLowerCase()
+  const budgets = data.budgets.filter((budget) => budget.category_name.toLowerCase().includes(q))
+  const savings = data.savings.filter((saving) => saving.name.toLowerCase().includes(q))
+  const debts = data.debts.filter((debt) =>
+    `${debt.contact} ${debt.note}`.toLowerCase().includes(q),
+  )
+  const subscriptions = data.subscriptions.filter((subscription) =>
+    subscription.name.toLowerCase().includes(q),
+  )
 
   const expenseByCategory = new Map<string, number>()
   for (const item of data.transactions) {
@@ -104,6 +117,20 @@ function PlanningPage() {
         eyebrow="Rencana finansial"
         title="Rencanakan sebelum uang pergi."
       />
+
+      <div className="relative max-w-md">
+        <HugeiconsIcon
+          className="absolute left-3.5 top-1/2 z-10 size-4 -translate-y-1/2 text-muted-foreground"
+          icon={Search02Icon}
+        />
+        <Input
+          aria-label="Cari rencana"
+          className="pl-10"
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="Cari budget, target, kontak, atau langganan…"
+          value={query}
+        />
+      </div>
 
       <SegmentedControl
         ariaLabel="Bagian perencanaan"
@@ -139,7 +166,7 @@ function PlanningPage() {
             title="Batas pengeluaran"
           />
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {data.budgets.map((budget) => {
+            {budgets.map((budget) => {
               const spent = expenseByCategory.get(budget.category_id) ?? 0
               const percent = Math.round((spent / budget.amount) * 100)
               const category = categoriesById.get(budget.category_id)
@@ -183,6 +210,11 @@ function PlanningPage() {
                         description={`Batas pengeluaran untuk ${budget.category_name} akan dihapus.`}
                         success="Budget dihapus"
                         title="Hapus budget?"
+                        undo={() =>
+                          createBudget({
+                            data: { categoryId: budget.category_id, amount: budget.amount },
+                          })
+                        }
                       />
                     </div>
                   </CardContent>
@@ -190,9 +222,7 @@ function PlanningPage() {
               )
             })}
           </div>
-          {data.budgets.length === 0 && (
-            <Empty icon={Target01Icon} text="Belum ada budget kategori." />
-          )}
+          {budgets.length === 0 && <Empty icon={Target01Icon} text="Belum ada budget kategori." />}
         </section>
       )}
 
@@ -217,7 +247,7 @@ function PlanningPage() {
             title="Target tabungan"
           />
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {data.savings.map((saving) => {
+            {savings.map((saving) => {
               const percent = Math.round((saving.saved_amount / saving.target_amount) * 100)
               const wallet = saving.wallet_id ? walletsById.get(saving.wallet_id) : undefined
               return (
@@ -278,7 +308,7 @@ function PlanningPage() {
               )
             })}
           </div>
-          {data.savings.length === 0 && (
+          {savings.length === 0 && (
             <Empty icon={MoneySavingJarIcon} text="Belum ada target tabungan." />
           )}
         </section>
@@ -300,7 +330,7 @@ function PlanningPage() {
             title="Hutang & piutang"
           />
           <div className="grid gap-3">
-            {data.debts.map((debt) => (
+            {debts.map((debt) => (
               <DebtDialog
                 debt={debt}
                 key={debt.id}
@@ -310,9 +340,7 @@ function PlanningPage() {
               />
             ))}
           </div>
-          {data.debts.length === 0 && (
-            <Empty icon={UserIcon} text="Belum ada hutang atau piutang." />
-          )}
+          {debts.length === 0 && <Empty icon={UserIcon} text="Belum ada hutang atau piutang." />}
         </section>
       )}
 
@@ -338,7 +366,7 @@ function PlanningPage() {
             title="Langganan"
           />
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {data.subscriptions.map((subscription) => {
+            {subscriptions.map((subscription) => {
               const wallet = subscription.wallet_id
                 ? walletsById.get(subscription.wallet_id)
                 : undefined
@@ -360,7 +388,7 @@ function PlanningPage() {
                       <HugeiconsIcon icon={Invoice01Icon} />
                     </span>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="grid gap-3">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <p className="text-lg font-semibold tabular-nums break-words">
@@ -369,6 +397,8 @@ function PlanningPage() {
                         <p className="text-caption mt-2 flex items-center gap-1.5 tabular-nums">
                           <HugeiconsIcon icon={Calendar03Icon} className="size-3.5" />{" "}
                           {subscription.next_due_date}
+                          <span aria-hidden>·</span>
+                          tiap {subscription.interval_months} bulan
                         </p>
                       </div>
                       <SubscriptionEditDialog
@@ -379,12 +409,17 @@ function PlanningPage() {
                         wallets={data.wallets}
                       />
                     </div>
+                    <PaySubscriptionDialog
+                      money={money}
+                      subscription={subscription}
+                      wallets={data.wallets}
+                    />
                   </CardContent>
                 </Card>
               )
             })}
           </div>
-          {data.subscriptions.length === 0 && (
+          {subscriptions.length === 0 && (
             <Empty icon={Invoice01Icon} text="Belum ada langganan rutin." />
           )}
         </section>
@@ -666,10 +701,14 @@ function DebtDialog({
 }) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
-  const [mode, setMode] = useState<"menu" | "add" | "pay" | "settle" | "reopen" | "delete">("menu")
+  const [mode, setMode] = useState<
+    "menu" | "add" | "edit" | "pay" | "settle" | "reopen" | "delete"
+  >("menu")
   const [pending, setPending] = useState(false)
   const overdue = debt.status === "active" && debt.due_date && debt.due_date < today()
   const isPaid = debt.status === "paid"
+  const dueIn = debt.due_date ? daysUntil(debt.due_date) : null
+  const dueSoon = debt.status === "active" && dueIn !== null && dueIn >= 0 && dueIn <= 7
   const remaining = Math.max(0, debt.amount - debt.paid_amount)
   const paidPercent = Math.round((debt.paid_amount / debt.amount) * 100)
   const payments = transactions.filter((item) => item.debt_id === debt.id)
@@ -699,7 +738,22 @@ function DebtDialog({
       await deleteDebt({ data: { id: debt.id } })
       changeOpen(false)
       await router.invalidate()
-      toast.success("Kewajiban dihapus")
+      toast.success("Kewajiban dihapus", {
+        action: {
+          label: "Urungkan",
+          onClick: () => {
+            void createDebt({
+              data: {
+                type: debt.type,
+                contact: debt.contact,
+                amount: debt.amount,
+                dueDate: debt.due_date ?? "",
+                note: debt.note,
+              },
+            }).then(() => router.invalidate())
+          },
+        },
+      })
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Kewajiban gagal dihapus")
     } finally {
@@ -736,6 +790,11 @@ function DebtDialog({
               <h3 className="font-medium">{debt.contact}</h3>
               <Badge>{debt.type === "piutang" ? "Piutang" : "Hutang"}</Badge>
               {overdue && <Badge className="bg-destructive/10 text-destructive">Terlambat</Badge>}
+              {dueSoon && (
+                <Badge className="bg-warning/12 text-warning">
+                  {dueIn === 0 ? "Jatuh tempo hari ini" : `${dueIn} hari lagi`}
+                </Badge>
+              )}
               {isPaid && <Badge className="bg-success/10 text-success">Lunas</Badge>}
             </div>
             <p className="text-caption mt-1 tabular-nums">
@@ -839,6 +898,10 @@ function DebtDialog({
                   <HugeiconsIcon icon={WalletAdd01Icon} />
                   {debt.type === "piutang" ? "Terima cicilan" : "Cicil hutang"}
                 </Button>
+                <Button onClick={() => setMode("edit")} variant="outline">
+                  <HugeiconsIcon icon={Edit02Icon} />
+                  Edit catatan
+                </Button>
                 <Button onClick={() => setMode("delete")} variant="destructive">
                   <HugeiconsIcon icon={Delete02Icon} />
                   {debt.type === "piutang" ? "Hapus piutang" : "Hapus hutang"}
@@ -893,6 +956,42 @@ function DebtDialog({
                 >
                   <WalletSelect name="wallet" placeholder="Hanya catatan" wallets={wallets} />
                 </FormField>
+              </MutationForm>
+            )}
+
+            {mode === "edit" && (
+              <MutationForm
+                action={(form) =>
+                  updateDebt({
+                    data: {
+                      id: debt.id,
+                      contact: String(form.get("contact")),
+                      dueDate: String(form.get("date")),
+                      note: String(form.get("note")),
+                    },
+                  })
+                }
+                close={() => changeOpen(false)}
+                id={`debt-edit-${debt.id}`}
+                success="Catatan kewajiban diperbarui"
+              >
+                <FormField label="Nama kontak">
+                  <Input
+                    autoFocus
+                    defaultValue={debt.contact}
+                    maxLength={80}
+                    name="contact"
+                    required
+                  />
+                </FormField>
+                <div className="grid gap-5 sm:grid-cols-2">
+                  <FormField label="Jatuh tempo">
+                    <Input defaultValue={debt.due_date ?? ""} name="date" type="date" />
+                  </FormField>
+                  <FormField label="Catatan">
+                    <Input defaultValue={debt.note} name="note" />
+                  </FormField>
+                </div>
               </MutationForm>
             )}
 
@@ -983,6 +1082,7 @@ function SubscriptionForm({
             walletId: String(form.get("wallet")),
             categoryId: String(form.get("category")),
             nextDueDate: String(form.get("date")),
+            intervalMonths: Number(form.get("interval")),
           },
         })
       }
@@ -1003,9 +1103,19 @@ function SubscriptionForm({
           <CategorySelect categories={categories} name="category" placeholder="Tanpa kategori" />
         </FormField>
       </div>
-      <FormField label="Tagihan berikutnya">
-        <Input defaultValue={today()} name="date" required type="date" />
-      </FormField>
+      <div className="grid gap-5 sm:grid-cols-2">
+        <FormField label="Ulang tiap">
+          <Select defaultValue="1" name="interval">
+            <option value="1">1 bulan</option>
+            <option value="3">3 bulan</option>
+            <option value="6">6 bulan</option>
+            <option value="12">12 bulan</option>
+          </Select>
+        </FormField>
+        <FormField label="Tagihan berikutnya">
+          <Input defaultValue={today()} name="date" required type="date" />
+        </FormField>
+      </div>
     </MutationForm>
   )
 }
@@ -1017,6 +1127,7 @@ function ConfirmDeleteDialog({
   ariaLabel,
   success = "Data dihapus",
   action,
+  undo,
 }: {
   title: string
   description: string
@@ -1024,6 +1135,7 @@ function ConfirmDeleteDialog({
   ariaLabel: string
   success?: string
   action: () => Promise<void>
+  undo?: () => Promise<void>
 }) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
@@ -1035,7 +1147,16 @@ function ConfirmDeleteDialog({
       await action()
       setOpen(false)
       await router.invalidate()
-      toast.success(success)
+      toast.success(success, {
+        action: undo
+          ? {
+              label: "Urungkan",
+              onClick: () => {
+                void undo().then(() => router.invalidate())
+              },
+            }
+          : undefined,
+      })
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Data gagal dihapus")
     } finally {
@@ -1116,7 +1237,21 @@ function SavingEditDialog({ saving, wallets }: { saving: Saving; wallets: Wallet
       await deleteSaving({ data: { id: saving.id } })
       changeOpen(false)
       await router.invalidate()
-      toast.success("Target tabungan dihapus")
+      toast.success("Target tabungan dihapus", {
+        action: {
+          label: "Urungkan",
+          onClick: () => {
+            void createSaving({
+              data: {
+                name: saving.name,
+                targetAmount: saving.target_amount,
+                walletId: saving.wallet_id ?? "",
+                targetDate: saving.target_date ?? "",
+              },
+            }).then(() => router.invalidate())
+          },
+        },
+      })
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Target gagal dihapus")
     } finally {
@@ -1249,6 +1384,7 @@ function SubscriptionEditDialog({
           walletId: String(form.get("wallet") ?? ""),
           categoryId: String(form.get("category") ?? ""),
           nextDueDate: String(form.get("date")),
+          intervalMonths: Number(form.get("interval")),
         },
       })
       changeOpen(false)
@@ -1267,7 +1403,23 @@ function SubscriptionEditDialog({
       await deleteSubscription({ data: { id: subscription.id } })
       changeOpen(false)
       await router.invalidate()
-      toast.success("Langganan dihapus")
+      toast.success("Langganan dihapus", {
+        action: {
+          label: "Urungkan",
+          onClick: () => {
+            void createSubscription({
+              data: {
+                name: subscription.name,
+                amount: subscription.amount,
+                walletId: subscription.wallet_id ?? "",
+                categoryId: subscription.category_id ?? "",
+                nextDueDate: subscription.next_due_date,
+                intervalMonths: subscription.interval_months,
+              },
+            }).then(() => router.invalidate())
+          },
+        },
+      })
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Langganan gagal dihapus")
     } finally {
@@ -1342,9 +1494,24 @@ function SubscriptionEditDialog({
                   />
                 </FormField>
               </div>
-              <FormField label="Tagihan berikutnya">
-                <Input defaultValue={subscription.next_due_date} name="date" required type="date" />
-              </FormField>
+              <div className="grid gap-5 sm:grid-cols-2">
+                <FormField label="Ulang tiap">
+                  <Select defaultValue={String(subscription.interval_months)} name="interval">
+                    <option value="1">1 bulan</option>
+                    <option value="3">3 bulan</option>
+                    <option value="6">6 bulan</option>
+                    <option value="12">12 bulan</option>
+                  </Select>
+                </FormField>
+                <FormField label="Tagihan berikutnya">
+                  <Input
+                    defaultValue={subscription.next_due_date}
+                    name="date"
+                    required
+                    type="date"
+                  />
+                </FormField>
+              </div>
             </form>
             <DialogFooter className="sm:justify-between">
               <Button
@@ -1365,6 +1532,91 @@ function SubscriptionEditDialog({
             </DialogFooter>
           </>
         )}
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function PaySubscriptionDialog({
+  subscription,
+  wallets,
+  money,
+}: {
+  subscription: Subscription
+  wallets: Wallet[]
+  money: (value: number) => string
+}) {
+  const router = useRouter()
+  const [open, setOpen] = useState(false)
+  const [pending, setPending] = useState(false)
+  const formId = `subscription-pay-${subscription.id}`
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setPending(true)
+    const form = new FormData(event.currentTarget)
+    try {
+      await paySubscription({
+        data: {
+          id: subscription.id,
+          walletId: String(form.get("wallet")),
+          date: String(form.get("date")),
+        },
+      })
+      setOpen(false)
+      await router.invalidate()
+      toast.success("Langganan dibayar dan saldo dompet diperbarui")
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Pembayaran gagal")
+    } finally {
+      setPending(false)
+    }
+  }
+
+  return (
+    <Dialog onOpenChange={setOpen} open={open}>
+      <DialogTrigger render={<Button className="w-full" variant="outline" />}>
+        <HugeiconsIcon icon={BadgeCheckIcon} />
+        Tandai dibayar
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Bayar {subscription.name}?</DialogTitle>
+          <DialogDescription>
+            Saldo dompet berkurang {money(subscription.amount)} dan tagihan maju{" "}
+            {subscription.interval_months} bulan.
+          </DialogDescription>
+        </DialogHeader>
+        <form className="grid gap-5" id={formId} onSubmit={submit}>
+          <div className="flex items-end justify-between gap-3 rounded-2xl bg-secondary/60 p-4">
+            <div>
+              <p className="text-caption">Nominal dibayar</p>
+              <p className="mt-1 text-xl font-semibold tabular-nums">
+                {money(subscription.amount)}
+              </p>
+            </div>
+          </div>
+          <FormField
+            hint={wallets.length === 0 ? "Buat dompet terlebih dahulu dari dashboard." : undefined}
+            label="Dompet pembayar"
+          >
+            <WalletSelect
+              defaultValue={subscription.wallet_id ?? ""}
+              name="wallet"
+              required
+              wallets={wallets}
+            />
+          </FormField>
+          <FormField label="Tanggal bayar">
+            <Input defaultValue={today()} name="date" required type="date" />
+          </FormField>
+        </form>
+        <DialogFooter>
+          <DialogClose render={<Button variant="ghost" />}>Batal</DialogClose>
+          <Button disabled={pending} form={formId} type="submit">
+            {pending ? "Menyimpan…" : "Bayar langganan"}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )

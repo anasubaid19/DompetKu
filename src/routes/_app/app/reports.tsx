@@ -1,7 +1,17 @@
 import { Chart03Icon, Money01Icon, Wallet01Icon } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { createFileRoute } from "@tanstack/react-router"
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
+import {
+  Area,
+  AreaChart,
+  Bar,
+  BarChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts"
 import { CategoryLabel } from "@/components/finance-visuals"
 import { PageHeader } from "@/components/page-header"
 import { Badge } from "@/components/ui/badge"
@@ -45,6 +55,14 @@ function ReportsPage() {
       ),
     }
   })
+
+  const netWorthTrend: { month: string; kekayaan: number }[] = []
+  let runningNetWorth = netWorth
+  for (let index = months.length - 1; index >= 0; index -= 1) {
+    netWorthTrend[index] = { month: months[index].month, kekayaan: runningNetWorth }
+    runningNetWorth -= months[index].pemasukan - months[index].pengeluaran
+  }
+  const hasNetWorth = netWorthTrend.some((item) => item.kekayaan !== 0)
 
   const categoriesById = new Map(data.categories.map((category) => [category.id, category]))
   const categoryTotals = new Map<
@@ -215,6 +233,68 @@ function ReportsPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <div>
+            <CardTitle>Tren kekayaan bersih</CardTitle>
+            <CardDescription>Perkiraan saldo total di akhir tiap siklus.</CardDescription>
+          </div>
+          <Badge>Perkiraan</Badge>
+        </CardHeader>
+        <CardContent>
+          {hasNetWorth ? (
+            <div
+              aria-describedby="net-worth-summary"
+              aria-label="Grafik tren kekayaan bersih enam siklus terakhir"
+              className="flex h-64 w-full min-w-0 flex-col"
+              role="img"
+            >
+              <p className="sr-only" id="net-worth-summary">
+                {netWorthTrend.map((item) => `${item.month}: ${money(item.kekayaan)}`).join(". ")}
+              </p>
+              <div className="min-h-0 min-w-0 flex-1">
+                <ResponsiveContainer height="100%" width="100%">
+                  <AreaChart
+                    accessibilityLayer={false}
+                    data={netWorthTrend}
+                    margin={{ left: 0, right: 0, top: 12, bottom: 0 }}
+                  >
+                    <defs>
+                      <linearGradient id="netWorth" x1="0" x2="0" y1="0" y2="1">
+                        <stop offset="0%" stopColor="var(--chart-1)" stopOpacity={0.3} />
+                        <stop offset="100%" stopColor="var(--chart-1)" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid stroke="var(--border)" strokeDasharray="3 6" vertical={false} />
+                    <XAxis
+                      axisLine={false}
+                      dataKey="month"
+                      fontSize={11}
+                      tick={{ fill: "var(--muted-foreground)" }}
+                      tickLine={false}
+                    />
+                    <Tooltip formatter={(value) => money(Number(value))} />
+                    <Area
+                      dataKey="kekayaan"
+                      fill="url(#netWorth)"
+                      isAnimationActive={false}
+                      name="Kekayaan bersih"
+                      stroke="var(--chart-1)"
+                      strokeWidth={2}
+                      type="monotone"
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          ) : (
+            <p className="py-10 text-center text-sm text-muted-foreground">
+              Belum ada data kekayaan bersih.
+            </p>
+          )}
+        </CardContent>
+      </Card>
     </div>
   )
 }

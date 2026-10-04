@@ -154,3 +154,18 @@ export function recentDays(count = 7, now = new Date()) {
     return { start: key, end: key, shortLabel: label.format(day) }
   })
 }
+
+export function addMonths(value: string, months: number) {
+  const [year, month, day] = value.split("-").map(Number)
+  const target = new Date(year, month - 1 + months, 1)
+  const lastDay = new Date(target.getFullYear(), target.getMonth() + 1, 0).getDate()
+  target.setDate(Math.min(day, lastDay))
+  return dateKey(target)
+}
+
+export function daysUntil(value: string, now = new Date()) {
+  const [year, month, day] = value.split("-").map(Number)
+  const target = new Date(year, month - 1, day)
+  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  return Math.round((target.getTime() - start.getTime()) / 86_400_000)
+}

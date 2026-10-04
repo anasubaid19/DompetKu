@@ -97,6 +97,7 @@ db.exec(`
     wallet_id TEXT REFERENCES wallets(id) ON DELETE SET NULL,
     category_id TEXT REFERENCES categories(id) ON DELETE SET NULL,
     next_due_date TEXT NOT NULL,
+    interval_months INTEGER NOT NULL DEFAULT 1,
     active INTEGER NOT NULL DEFAULT 1,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
   );
@@ -123,6 +124,11 @@ if (!transactionColumns.some((column) => column.name === "debt_id")) {
   db.exec(
     "ALTER TABLE transactions ADD COLUMN debt_id TEXT REFERENCES debts(id) ON DELETE SET NULL",
   )
+}
+
+const subscriptionColumns = db.query("PRAGMA table_info(subscriptions)").all() as { name: string }[]
+if (!subscriptionColumns.some((column) => column.name === "interval_months")) {
+  db.exec("ALTER TABLE subscriptions ADD COLUMN interval_months INTEGER NOT NULL DEFAULT 1")
 }
 
 export function ensureDefaults(userId: string) {

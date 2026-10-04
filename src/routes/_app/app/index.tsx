@@ -4,6 +4,7 @@ import {
   CalendarDaysIcon,
   CalendarRangeIcon,
   TransactionHistoryIcon,
+  UserIcon,
   Wallet01Icon,
 } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
@@ -24,6 +25,7 @@ import {
   formatTransactionAmount,
   recentCycles,
   recentDays,
+  today,
 } from "@/lib/utils"
 
 export const Route = createFileRoute("/_app/app/")({
@@ -73,6 +75,9 @@ function DashboardPage() {
   const money = (value: number) => (hide ? "••••••" : formatMoney(value, currency))
   const categoriesById = new Map(data.categories.map((category) => [category.id, category]))
   const walletsById = new Map(data.wallets.map((wallet) => [wallet.id, wallet]))
+  const overdueDebts = data.debts.filter(
+    (debt) => debt.status === "active" && debt.due_date && debt.due_date < today(),
+  )
 
   const chartRanges = chartRange === "weekly" ? recentDays(7) : recentCycles(data.settings, 6)
   const chart = chartRanges.map(({ start, end, shortLabel }) => {
@@ -153,6 +158,27 @@ function DashboardPage() {
         <span className="size-2 shrink-0 rounded-full bg-primary" />
         <p>{cashFlowMessage(income, expense)}</p>
       </div>
+
+      {overdueDebts.length > 0 && (
+        <Card className="border border-destructive/20 bg-destructive/[0.04]">
+          <CardContent className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
+            <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-destructive/10 text-destructive">
+              <HugeiconsIcon icon={UserIcon} />
+            </span>
+            <div className="min-w-0 flex-1">
+              <h2 className="font-semibold">
+                {overdueDebts.length} kewajiban sudah lewat jatuh tempo
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Tinjau hutang & piutang agar tidak menumpuk.
+              </p>
+            </div>
+            <Button render={<Link to="/app/planning" />} size="sm" variant="outline">
+              Lihat di Rencana
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1.55fr)_minmax(320px,0.75fr)]">
         <Card>

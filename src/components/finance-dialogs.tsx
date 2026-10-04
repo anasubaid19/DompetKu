@@ -86,7 +86,22 @@ export function WalletDialog({ wallet }: { wallet?: Wallet } = {}) {
       await deleteWallet({ data: { id: wallet.id } })
       changeOpen(false)
       await router.invalidate()
-      toast.success("Dompet dihapus")
+      toast.success("Dompet dihapus", {
+        action: {
+          label: "Urungkan",
+          onClick: () => {
+            void createWallet({
+              data: {
+                name: wallet.name,
+                type: wallet.type,
+                balance: wallet.balance,
+                color: wallet.color,
+                icon: wallet.icon,
+              },
+            }).then(() => router.invalidate())
+          },
+        },
+      })
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Dompet gagal dihapus")
     } finally {
