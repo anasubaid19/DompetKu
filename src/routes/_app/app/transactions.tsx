@@ -85,7 +85,7 @@ function TransactionsPage() {
             wallets={data.wallets}
           />
         }
-        description="Cari dan tinjau pergerakan uang dari semua dompet."
+        description="Cari dan lihat semua catatan pemasukan dan pengeluaran."
         eyebrow="Catatan keuangan"
         title="Transaksi"
       />

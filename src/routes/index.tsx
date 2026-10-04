@@ -15,11 +15,11 @@ import { Button } from "@/components/ui/button"
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "DompetKu — Keuangan pribadi, lebih tenang" },
+      { title: "DompetKu — Catatan keuangan pribadi" },
       {
         name: "description",
         content:
-          "Catat transaksi, atur budget, kejar target tabungan, dan pahami arus kas dalam satu ruang finansial pribadi.",
+          "Catat transaksi, atur anggaran, capai target tabungan, dan pantau arus kas dalam satu aplikasi keuangan pribadi.",
       },
     ],
   }),
@@ -30,26 +30,26 @@ const features = [
   {
     icon: Wallet01Icon,
     number: "01",
-    title: "Semua dompet, satu pandangan",
-    text: "Satukan rekening, uang tunai, dan tabungan tanpa kehilangan konteks sumber dana.",
+    title: "Semua dompet dalam satu tempat",
+    text: "Kumpulkan rekening, uang tunai, dan tabungan agar mudah dilihat asalnya.",
   },
   {
     icon: TransactionHistoryIcon,
     number: "02",
-    title: "Transaksi yang mudah dilacak",
+    title: "Catat transaksi dengan mudah",
     text: "Catat pemasukan, pengeluaran, dan transfer lengkap dengan kategori dan catatan.",
   },
   {
     icon: Target01Icon,
     number: "03",
-    title: "Rencana yang benar-benar terhubung",
-    text: "Budget, target tabungan, hutang, piutang, dan langganan hidup bersama data aktualmu.",
+    title: "Rencana yang terhubung ke data",
+    text: "Anggaran, target tabungan, hutang, piutang, dan langganan memakai data yang sama.",
   },
   {
     icon: Chart03Icon,
     number: "04",
-    title: "Laporan tanpa kebisingan",
-    text: "Lihat pola enam siklus, kategori terbesar, dan arus kas yang perlu perhatian.",
+    title: "Laporan yang mudah dibaca",
+    text: "Lihat perbandingan enam siklus, kategori terbesar, dan arus kas yang perlu perhatian.",
   },
 ] as const
 
@@ -75,15 +75,15 @@ function LandingPage() {
             <div className="max-w-2xl">
               <div className="mb-7 inline-flex items-center gap-2 rounded-full border bg-card/80 px-3 py-1.5 text-xs font-medium text-muted-foreground shadow-sm">
                 <span className="size-1.5 rounded-full bg-success" />
-                Ruang finansial pribadi yang tenang
+                Aplikasi catatan keuangan pribadi
               </div>
               <h1 className="max-w-[720px] text-[clamp(2.8rem,7vw,6.4rem)] font-semibold leading-[0.92] tracking-[-0.075em]">
-                Uangmu jelas.
-                <span className="block text-primary">Pikiranmu lega.</span>
+                Catat keuangan,
+                <span className="block text-primary">jadi lebih rapi.</span>
               </h1>
               <p className="mt-7 max-w-xl text-base leading-7 text-muted-foreground sm:text-lg sm:leading-8">
-                DompetKu menyatukan transaksi, budget, tabungan, dan kewajiban dalam satu pandangan
-                yang mudah dipahami.
+                DompetKu membantu kamu mencatat transaksi, mengatur anggaran, menabung, dan memantau
+                hutang dalam satu aplikasi.
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <Button className="h-12 px-5" render={<Link to="/register" />} size="lg">
@@ -117,13 +117,12 @@ function LandingPage() {
         <section className="mx-auto max-w-[1200px] px-4 py-20 sm:px-6 sm:py-28 lg:px-9" id="fitur">
           <div className="grid gap-8 lg:grid-cols-[0.65fr_1.35fr] lg:gap-16">
             <div className="lg:sticky lg:top-28 lg:self-start">
-              <p className="text-caption uppercase tracking-[0.16em]">Satu alur, bukan lima alat</p>
+              <p className="text-caption uppercase tracking-[0.16em]">Satu aplikasi untuk semua</p>
               <h2 className="mt-3 text-3xl font-semibold tracking-[-0.045em] sm:text-5xl">
-                Catat hari ini. Pahami besok.
+                Catat sekarang, lihat hasilnya nanti.
               </h2>
               <p className="mt-5 max-w-md leading-7 text-muted-foreground">
-                Setiap fitur memakai data yang sama. Tidak ada angka yang perlu disalin dari satu
-                tempat ke tempat lain.
+                Semua fitur terhubung. Data yang kamu isi langsung dipakai di seluruh aplikasi.
               </p>
             </div>
             <div className="grid border-t">
@@ -153,10 +152,10 @@ function LandingPage() {
               <div className="relative flex h-full flex-col justify-between gap-16">
                 <div className="flex items-center justify-between text-xs opacity-60">
                   <span className="uppercase">Siklus aktif</span>
-                  <span className="uppercase tabular-nums">01 — 30 Sep</span>
+                  <span className="uppercase tabular-nums">1–30 Sep</span>
                 </div>
                 <div>
-                  <p className="text-sm opacity-60">Sisa budget bulan ini</p>
+                  <p className="text-sm opacity-60">Sisa anggaran bulan ini</p>
                   <p className="mt-3 text-5xl font-semibold tracking-[-0.06em] sm:text-6xl">
                     Rp2.475.000
                   </p>
@@ -172,7 +171,7 @@ function LandingPage() {
             <div>
               <p className="text-caption uppercase tracking-[0.16em]">Cara kerja</p>
               <h2 className="mt-3 text-3xl font-semibold tracking-[-0.045em] sm:text-5xl">
-                Mulai tanpa ritual rumit.
+                Mulai dalam beberapa langkah.
               </h2>
               <ol className="mt-9 grid gap-7">
                 {[
@@ -182,12 +181,8 @@ function LandingPage() {
                     "Masukkan rekening, uang tunai, atau dompet tabungan.",
                   ],
                   ["02", "Catat transaksi", "Pilih sumber dana, kategori, nominal, dan tanggal."],
-                  [
-                    "03",
-                    "Buat rencana",
-                    "Pasang budget dan target dari kondisi keuanganmu sendiri.",
-                  ],
-                  ["04", "Tinjau laporan", "Lihat pola, bukan sekadar tumpukan angka."],
+                  ["03", "Buat rencana", "Atur anggaran dan target sesuai kebutuhanmu."],
+                  ["04", "Tinjau laporan", "Lihat laporan untuk memahami kebiasaanmu."],
                 ].map(([number, title, text]) => (
                   <li className="grid grid-cols-[2.5rem_1fr] gap-4" key={number}>
                     <span className="text-sm font-semibold text-primary">{number}</span>
@@ -221,7 +216,7 @@ function LandingPage() {
                 Panduan interaktif
               </p>
               <h2 className="mt-5 text-3xl font-semibold tracking-[-0.045em]">
-                Tidak perlu menebak tombol berikutnya.
+                Panduan langkah demi langkah.
               </h2>
               <p className="mt-4 leading-7 opacity-80">
                 Ikuti demo untuk instalasi Android dan iOS, backup, kategori, dan transaksi.
@@ -238,9 +233,9 @@ function LandingPage() {
 
         <section className="border-t">
           <div className="mx-auto max-w-[1200px] px-4 py-20 text-center sm:px-6 sm:py-28 lg:px-9">
-            <p className="text-caption uppercase tracking-[0.16em]">Mulai dari satu catatan</p>
+            <p className="text-caption uppercase tracking-[0.16em]">Mulai sekarang</p>
             <h2 className="mx-auto mt-4 max-w-3xl text-4xl font-semibold tracking-[-0.055em] sm:text-6xl">
-              Beri setiap rupiah tempat yang jelas.
+              Mulai rapikan keuanganmu hari ini.
             </h2>
             <Button className="mt-8 h-12 px-6" render={<Link to="/register" />} size="lg">
               Buat ruang finansialmu <HugeiconsIcon icon={ArrowRight01Icon} />
@@ -269,7 +264,7 @@ function DashboardPreview() {
             <span className="text-sm font-semibold">Ringkasan</span>
           </div>
           <span className="rounded-full bg-success/10 px-2.5 py-1 text-xs font-medium text-success">
-            Siklus sehat
+            Keuangan sehat
           </span>
         </div>
         <div className="mt-5 grid gap-3 sm:grid-cols-2">

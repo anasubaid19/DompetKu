@@ -113,9 +113,9 @@ function PlanningPage() {
   return (
     <div className="grid grid-cols-1 gap-6">
       <PageHeader
-        description="Satukan batas pengeluaran, target tabungan, kewajiban, dan tagihan rutin."
+        description="Atur batas pengeluaran, target tabungan, hutang, dan langganan."
         eyebrow="Rencana finansial"
-        title="Rencanakan sebelum uang pergi."
+        title="Atur rencana keuanganmu."
       />
 
       <div className="relative max-w-md">
@@ -127,7 +127,7 @@ function PlanningPage() {
           aria-label="Cari rencana"
           className="pl-10"
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="Cari budget, target, kontak, atau langganan…"
+          placeholder="Cari anggaran, target, kontak, atau langganan…"
           value={query}
         />
       </div>
@@ -137,7 +137,7 @@ function PlanningPage() {
         className="grid grid-cols-2 sm:flex sm:w-fit"
         onChange={setTab}
         options={[
-          { label: "Budget", value: "budget" },
+          { label: "Anggaran", value: "budget" },
           { label: "Tabungan", value: "saving" },
           { label: "Hutang & piutang", value: "debt" },
           { label: "Langganan", value: "subscription" },
@@ -150,9 +150,9 @@ function PlanningPage() {
           <SectionHeading
             action={
               <PlanningDialog
-                button="Atur budget"
-                description="Budget berlaku pada kategori pengeluaran untuk siklus aktif."
-                title="Budget kategori"
+                button="Atur anggaran"
+                description="Anggaran berlaku pada kategori pengeluaran untuk siklus aktif."
+                title="Anggaran kategori"
               >
                 {(close) => (
                   <BudgetForm
@@ -206,10 +206,10 @@ function PlanningPage() {
                       <ConfirmDeleteDialog
                         action={() => deleteBudget({ data: { id: budget.id } })}
                         ariaLabel={`Hapus budget ${budget.category_name}`}
-                        confirmLabel="Hapus budget"
+                        confirmLabel="Hapus anggaran"
                         description={`Batas pengeluaran untuk ${budget.category_name} akan dihapus.`}
-                        success="Budget dihapus"
-                        title="Hapus budget?"
+                        success="Anggaran dihapus"
+                        title="Hapus anggaran?"
                         undo={() =>
                           createBudget({
                             data: { categoryId: budget.category_id, amount: budget.amount },
@@ -222,7 +222,9 @@ function PlanningPage() {
               )
             })}
           </div>
-          {budgets.length === 0 && <Empty icon={Target01Icon} text="Belum ada budget kategori." />}
+          {budgets.length === 0 && (
+            <Empty icon={Target01Icon} text="Belum ada anggaran kategori." />
+          )}
         </section>
       )}
 

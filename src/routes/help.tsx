@@ -118,7 +118,7 @@ function HelpPage() {
             </span>
             <p className="text-caption mt-8 uppercase tracking-[0.16em]">Tutorial & FAQ</p>
             <h1 className="mt-3 max-w-3xl text-4xl font-semibold tracking-[-0.055em] sm:text-6xl">
-              Belajar sambil mencoba.
+              Panduan penggunaan DompetKu.
             </h1>
             <p className="mt-5 max-w-2xl text-base leading-7 text-muted-foreground sm:text-lg">
               Pilih panduan, lanjutkan setiap langkah, lalu buka bagian aplikasi yang terkait saat
@@ -247,7 +247,9 @@ function HelpPage() {
 
         <section className="border-t bg-card">
           <div className="mx-auto max-w-[900px] px-4 py-16 sm:px-6 sm:py-20">
-            <p className="text-caption uppercase tracking-[0.16em]">Pertanyaan umum</p>
+            <p className="text-caption uppercase tracking-[0.16em]">
+              Pertanyaan yang sering diajukan
+            </p>
             <h2 className="mt-3 text-3xl font-semibold tracking-[-0.04em]">
               Hal yang perlu diketahui
             </h2>

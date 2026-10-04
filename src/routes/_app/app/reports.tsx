@@ -94,8 +94,8 @@ function ReportsPage() {
   return (
     <div className="grid grid-cols-1 gap-6">
       <PageHeader
-        description="Lihat pola, bukan hanya angka terakhir."
-        eyebrow="Pemahaman finansial"
+        description="Bandingkan pemasukan dan pengeluaran antar siklus."
+        eyebrow="Analisis keuangan"
         title="Laporan"
       />
 

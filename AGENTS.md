@@ -23,6 +23,7 @@
 
 Completed on 2026-10-04:
 
+- Rewrote user-facing copy in plain Indonesian (better-writing) on the landing page, app headers, auth, help, and meta; aligned the term "Budget" → "Anggaran", and used an en dash for cycle ranges (better-typography).
 - Added a custom pull-to-refresh for the app pages (`src/components/pull-to-refresh.tsx`, mounted in `AppShell`): pulling down at the top of a page shows a progress spinner with a "release to reload" cue and re-runs the route loader via `router.invalidate()`. Skips gestures inside dialogs and scrollable widgets, honours reduced motion, and sets `overscroll-behavior-y: contain` while mounted. Built for the standalone PWA where the native gesture is unreliable.
 - P2-P7 shipped. P2: Langganan can be paid from a wallet (`paySubscription` posts a linked expense, advances `next_due_date` by `interval_months`, and the interval is editable). P3: debt due-soon badges plus an overdue-reminder card on Ringkasan. P4: "Urungkan" in the delete toasts for transactions, wallets, debts, budgets, and subscriptions. P5: net-worth trend chart on Laporan. P6: debt details (contact/due date/note) are editable via `updateDebt`. P7: search across Rencana.
 - Schema changes are additive only: `subscriptions.interval_months INTEGER NOT NULL DEFAULT 1` via a guarded `ALTER TABLE ADD COLUMN`. Verified on a copy of the real database: identical row counts before/after.

@@ -53,12 +53,12 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
           <span className="font-semibold tracking-[-0.03em]">DompetKu</span>
         </Link>
         <h1 className="text-title">
-          {mode === "register" ? "Mulai dengan tenang" : "Selamat datang kembali"}
+          {mode === "register" ? "Buat akun DompetKu" : "Masuk ke akunmu"}
         </h1>
         <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
           {mode === "register"
-            ? "Buat ruang privat untuk semua catatan finansialmu."
-            : "Masuk untuk melanjutkan mengelola keuanganmu."}
+            ? "Buat akun untuk mulai mencatat keuanganmu."
+            : "Lanjutkan mengelola keuanganmu."}
         </p>
 
         <form className="mt-7 grid gap-5" onSubmit={submit}>

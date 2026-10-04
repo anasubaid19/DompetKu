@@ -9,10 +9,10 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
-      { title: "DompetKu — Keuangan pribadi, lebih tenang" },
+      { title: "DompetKu — Catatan keuangan pribadi" },
       {
         name: "description",
-        content: "Kelola dompet, transaksi, budget, tabungan, dan kewajiban dalam satu tempat.",
+        content: "Kelola dompet, transaksi, anggaran, tabungan, dan hutang dalam satu aplikasi.",
       },
       { name: "theme-color", content: "#f6f5f8" },
       { name: "apple-mobile-web-app-capable", content: "yes" },

@@ -114,7 +114,7 @@ function SettingsPage() {
             <HugeiconsIcon icon={BookOpen01Icon} /> Tutorial & FAQ
           </Button>
         }
-        description="Sesuaikan tampilan, periode laporan, dan kendali data."
+        description="Atur mata uang, tanggal siklus, kategori, dan backup data."
         eyebrow="Preferensi akun"
         title="Pengaturan"
       />
@@ -304,7 +304,7 @@ function ResetDialog() {
         <DialogHeader>
           <DialogTitle>Reset semua data?</DialogTitle>
           <DialogDescription>
-            Dompet, transaksi, budget, tabungan, hutang/piutang, dan langganan akan dihapus
+            Dompet, transaksi, anggaran, tabungan, hutang/piutang, dan langganan akan dihapus
             permanen. Akunmu tetap aktif.
           </DialogDescription>
         </DialogHeader>

@@ -55,7 +55,7 @@ export function AppShell({
           </span>
           <span>
             <strong className="block text-base tracking-[-0.03em]">DompetKu</strong>
-            <span className="text-caption">Ruang finansialmu</span>
+            <span className="text-caption">Catatan keuangan</span>
           </span>
         </Link>
 
@@ -112,7 +112,7 @@ export function AppShell({
               DompetKu
             </Link>
             <p className="hidden text-sm text-muted-foreground lg:block">
-              Keuangan pribadi, lebih tenang.
+              Catatan keuangan pribadi.
             </p>
             <ThemeToggle />
           </div>

@@ -111,9 +111,9 @@ function DashboardPage() {
             />
           </>
         }
-        description={`${cycle.label}. Pantau arus kas tanpa tenggelam dalam angka.`}
-        eyebrow="Ringkasan siklus aktif"
-        title="Uangmu, dalam satu pandangan."
+        description={`${cycle.label}. Saldo, pemasukan, dan pengeluaran siklus ini.`}
+        eyebrow="Ringkasan"
+        title="Ringkasan keuanganmu."
       />
 
       {data.wallets.length === 0 && (

@@ -131,7 +131,7 @@ export function cycleRange(settings: CycleSettings, anchor = new Date()) {
   return {
     start: dateKey(startDate),
     end: dateKey(endDate),
-    label: `${format.format(startDate)} - ${format.format(endDate)}`,
+    label: `${format.format(startDate)} – ${format.format(endDate)}`,
     shortLabel: new Intl.DateTimeFormat("id-ID", { month: "short" }).format(endDate),
   }
 }
