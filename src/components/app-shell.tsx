@@ -129,18 +129,24 @@ export function AppShell({
 
       <nav
         aria-label="Navigasi seluler"
-        className="translucent fixed inset-x-4 bottom-[max(0.5rem,env(safe-area-inset-bottom))] z-40 grid grid-cols-5 rounded-2xl bg-card/88 p-1 shadow-lg ring-1 ring-foreground/8 backdrop-blur-xl lg:hidden"
+        className="translucent fixed inset-x-4 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-40 mx-auto flex w-fit items-end gap-3 rounded-2xl bg-card/80 p-2 shadow-xl shadow-black/10 ring-1 ring-foreground/8 backdrop-blur-xl lg:hidden"
       >
         {navigation.map((item) => (
           <Link
             activeOptions={item.to === "/app" ? { exact: true } : undefined}
-            activeProps={{ className: "bg-primary/10 text-primary", "aria-current": "page" }}
-            className="relative flex min-h-11 flex-col items-center justify-center gap-0.5 rounded-xl text-xs font-medium text-muted-foreground"
+            activeProps={{
+              className: "bg-primary text-primary-foreground",
+              "aria-current": "page",
+            }}
+            aria-label={item.label}
+            className="group grid size-11 place-items-center rounded-xl shadow-md outline-none transition-[transform,background-color,color,box-shadow] duration-300 ease-entrance pointer-fine:hover:-translate-y-2 pointer-fine:hover:scale-110 focus-visible:-translate-y-2 focus-visible:scale-110 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-[0.96] motion-reduce:transform-none"
+            inactiveProps={{
+              className: "bg-secondary text-muted-foreground pointer-fine:hover:bg-secondary/80",
+            }}
             key={item.to}
             to={item.to}
           >
-            <HugeiconsIcon icon={item.icon} className="size-[18px]" />
-            <span>{item.label}</span>
+            <HugeiconsIcon aria-hidden icon={item.icon} className="size-[18px]" />
           </Link>
         ))}
       </nav>
