@@ -10,6 +10,7 @@ import {
 import { HugeiconsIcon } from "@hugeicons/react"
 import { Link, useRouter } from "@tanstack/react-router"
 import { useState } from "react"
+import { PullToRefresh } from "@/components/pull-to-refresh"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Button } from "@/components/ui/button"
 import { authClient } from "@/lib/auth-client"
@@ -40,6 +41,7 @@ export function AppShell({
 
   return (
     <div className="min-h-svh bg-background text-foreground">
+      <PullToRefresh />
       <a
         className="fixed left-4 top-3 z-[100] -translate-y-20 rounded-xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-transform focus:translate-y-0"
         href="#main-content"
