@@ -61,7 +61,10 @@ export function AppShell({
           {navigation.map((item) => (
             <Link
               activeOptions={item.to === "/app" ? { exact: true } : undefined}
-              activeProps={{ className: "bg-sidebar-accent text-sidebar-accent-foreground" }}
+              activeProps={{
+                className: "bg-sidebar-accent text-sidebar-accent-foreground",
+                "aria-current": "page",
+              }}
               className="flex h-11 items-center gap-3 rounded-xl px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-sidebar-accent/60 hover:text-foreground"
               key={item.to}
               to={item.to}
@@ -129,7 +132,7 @@ export function AppShell({
         {navigation.map((item) => (
           <Link
             activeOptions={item.to === "/app" ? { exact: true } : undefined}
-            activeProps={{ className: "bg-primary/10 text-primary" }}
+            activeProps={{ className: "bg-primary/10 text-primary", "aria-current": "page" }}
             className="relative flex min-h-11 flex-col items-center justify-center gap-0.5 rounded-xl text-xs font-medium text-muted-foreground"
             key={item.to}
             to={item.to}

@@ -733,6 +733,16 @@ export const createBudget = createServerFn({ method: "POST" })
     `).run(crypto.randomUUID(), user.id, categoryId, positiveMoney(data.amount))
   })
 
+export const deleteBudget = createServerFn({ method: "POST" })
+  .validator((data: { id: string }) => data)
+  .handler(async ({ data }) => {
+    const user = await requireUser()
+    const result = db
+      .query("DELETE FROM budgets WHERE id = ? AND user_id = ?")
+      .run(requiredText(data.id, "Budget", 64), user.id)
+    if (result.changes !== 1) throw new Error("Budget tidak ditemukan")
+  })
+
 type SavingInput = { name: string; targetAmount: number; walletId?: string; targetDate?: string }
 
 export const createSaving = createServerFn({ method: "POST" })
@@ -751,6 +761,37 @@ export const createSaving = createServerFn({ method: "POST" })
       wallet?.id ?? null,
       data.targetDate ? requiredText(data.targetDate, "Tanggal target", 10) : null,
     )
+  })
+
+export const updateSaving = createServerFn({ method: "POST" })
+  .validator((data: SavingInput & { id: string }) => data)
+  .handler(async ({ data }) => {
+    const user = await requireUser()
+    const wallet = data.walletId ? ownedWallet(user.id, data.walletId) : null
+    if (wallet && wallet.type !== "saving") throw new Error("Pilih dompet bertipe tabungan")
+    const result = db
+      .query(
+        "UPDATE savings SET name = ?, target_amount = ?, wallet_id = ?, target_date = ? WHERE id = ? AND user_id = ?",
+      )
+      .run(
+        requiredText(data.name, "Nama target", 80),
+        positiveMoney(data.targetAmount, "Target"),
+        wallet?.id ?? null,
+        data.targetDate ? requiredText(data.targetDate, "Tanggal target", 10) : null,
+        requiredText(data.id, "Target tabungan", 64),
+        user.id,
+      )
+    if (result.changes !== 1) throw new Error("Target tabungan tidak ditemukan")
+  })
+
+export const deleteSaving = createServerFn({ method: "POST" })
+  .validator((data: { id: string }) => data)
+  .handler(async ({ data }) => {
+    const user = await requireUser()
+    const result = db
+      .query("DELETE FROM savings WHERE id = ? AND user_id = ?")
+      .run(requiredText(data.id, "Target tabungan", 64), user.id)
+    if (result.changes !== 1) throw new Error("Target tabungan tidak ditemukan")
   })
 
 export const moveSavingFunds = createServerFn({ method: "POST" })
@@ -841,6 +882,45 @@ export const createSubscription = createServerFn({ method: "POST" })
       categoryId,
       requiredText(data.nextDueDate, "Tanggal tagihan", 10),
     )
+  })
+
+export const updateSubscription = createServerFn({ method: "POST" })
+  .validator((data: SubscriptionInput & { id: string }) => data)
+  .handler(async ({ data }) => {
+    const user = await requireUser()
+    const wallet = data.walletId ? ownedWallet(user.id, data.walletId) : null
+    let categoryId: string | null = null
+    if (data.categoryId) {
+      categoryId = requiredText(data.categoryId, "Kategori", 64)
+      const category = db
+        .query("SELECT id FROM categories WHERE id = ? AND user_id = ?")
+        .get(categoryId, user.id)
+      if (!category) throw new Error("Kategori tidak ditemukan")
+    }
+    const result = db
+      .query(
+        "UPDATE subscriptions SET name = ?, amount = ?, wallet_id = ?, category_id = ?, next_due_date = ? WHERE id = ? AND user_id = ?",
+      )
+      .run(
+        requiredText(data.name, "Nama langganan", 80),
+        positiveMoney(data.amount),
+        wallet?.id ?? null,
+        categoryId,
+        requiredText(data.nextDueDate, "Tanggal tagihan", 10),
+        requiredText(data.id, "Langganan", 64),
+        user.id,
+      )
+    if (result.changes !== 1) throw new Error("Langganan tidak ditemukan")
+  })
+
+export const deleteSubscription = createServerFn({ method: "POST" })
+  .validator((data: { id: string }) => data)
+  .handler(async ({ data }) => {
+    const user = await requireUser()
+    const result = db
+      .query("DELETE FROM subscriptions WHERE id = ? AND user_id = ?")
+      .run(requiredText(data.id, "Langganan", 64), user.id)
+    if (result.changes !== 1) throw new Error("Langganan tidak ditemukan")
   })
 
 export const updateSettings = createServerFn({ method: "POST" })

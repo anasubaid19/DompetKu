@@ -4,6 +4,7 @@ import {
   Calendar03Icon,
   ChevronRightIcon,
   Delete02Icon,
+  Edit02Icon,
   Invoice01Icon,
   MoneyAdd01Icon,
   MoneySavingJarIcon,
@@ -22,6 +23,7 @@ import {
   WalletSelect,
 } from "@/components/finance-visuals"
 import { FormField } from "@/components/form-field"
+import { MoneyInput } from "@/components/money-input"
 import { PageHeader } from "@/components/page-header"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -48,17 +50,23 @@ import {
   createSaving,
   createSubscription,
   type Debt,
+  deleteBudget,
   deleteDebt,
+  deleteSaving,
+  deleteSubscription,
   type FinanceTransaction,
   getFinanceData,
   moveSavingFunds,
   recordDebtPayment,
   reopenDebt,
   type Saving,
+  type Subscription,
   settleDebt,
+  updateSaving,
+  updateSubscription,
   type Wallet,
 } from "@/lib/finance.functions"
-import { cn, cycleRange, formatMoney, today } from "@/lib/utils"
+import { cn, cycleRange, formatMoney, parseNumberInput, today } from "@/lib/utils"
 
 export const Route = createFileRoute("/_app/app/planning")({
   loader: () => getFinanceData(),
@@ -139,7 +147,7 @@ function PlanningPage() {
                 <Card key={budget.id}>
                   <CardHeader>
                     <div className="min-w-0">
-                      <h3 className="text-subtitle">
+                      <h3 className="text-base font-semibold">
                         {category ? <CategoryLabel category={category} /> : budget.category_name}
                       </h3>
                       <CardDescription className="tabular-nums">
@@ -162,11 +170,21 @@ function PlanningPage() {
                       aria-label={`${budget.category_name}, ${percent}% dari batas siklus`}
                       value={Math.min(percent, 100)}
                     />
-                    <p className="text-caption mt-3 tabular-nums">
-                      {percent > 100
-                        ? `Melebihi ${money(spent - budget.amount)}`
-                        : `Tersisa ${money(budget.amount - spent)}`}
-                    </p>
+                    <div className="mt-3 flex items-center justify-between gap-3">
+                      <p className="text-caption tabular-nums">
+                        {percent > 100
+                          ? `Melebihi ${money(spent - budget.amount)}`
+                          : `Tersisa ${money(budget.amount - spent)}`}
+                      </p>
+                      <ConfirmDeleteDialog
+                        action={() => deleteBudget({ data: { id: budget.id } })}
+                        ariaLabel={`Hapus budget ${budget.category_name}`}
+                        confirmLabel="Hapus budget"
+                        description={`Batas pengeluaran untuk ${budget.category_name} akan dihapus.`}
+                        success="Budget dihapus"
+                        title="Hapus budget?"
+                      />
+                    </div>
                   </CardContent>
                 </Card>
               )
@@ -206,7 +224,7 @@ function PlanningPage() {
                 <Card key={saving.id}>
                   <CardHeader>
                     <div className="min-w-0">
-                      <h3 className="text-subtitle">{saving.name}</h3>
+                      <h3 className="text-base font-semibold">{saving.name}</h3>
                       <CardDescription>
                         {wallet ? <WalletLabel wallet={wallet} /> : "Belum terhubung ke dompet"}
                       </CardDescription>
@@ -228,25 +246,33 @@ function PlanningPage() {
                       aria-label={`${saving.name}, ${percent}% dari target`}
                       value={Math.min(percent, 100)}
                     />
-                    {saving.wallet_id ? (
-                      <PlanningDialog
-                        button="Isi / tarik"
-                        description="Pindahkan dana antara dompet harian dan target ini."
-                        title={`Kelola ${saving.name}`}
-                      >
-                        {(close) => (
-                          <SavingFundsForm
-                            close={close}
-                            saving={saving}
-                            wallets={data.wallets.filter((wallet) => wallet.type === "daily")}
-                          />
+                    <div className="flex items-start gap-2">
+                      <div className="min-w-0 flex-1">
+                        {saving.wallet_id ? (
+                          <PlanningDialog
+                            button="Isi / tarik"
+                            description="Pindahkan dana antara dompet harian dan target ini."
+                            title={`Kelola ${saving.name}`}
+                          >
+                            {(close) => (
+                              <SavingFundsForm
+                                close={close}
+                                saving={saving}
+                                wallets={data.wallets.filter((wallet) => wallet.type === "daily")}
+                              />
+                            )}
+                          </PlanningDialog>
+                        ) : (
+                          <p className="text-caption">
+                            Hubungkan dompet tabungan untuk mengisi target.
+                          </p>
                         )}
-                      </PlanningDialog>
-                    ) : (
-                      <p className="text-caption">
-                        Hubungkan dompet tabungan untuk mengisi target.
-                      </p>
-                    )}
+                      </div>
+                      <SavingEditDialog
+                        saving={saving}
+                        wallets={data.wallets.filter((wallet) => wallet.type === "saving")}
+                      />
+                    </div>
                   </CardContent>
                 </Card>
               )
@@ -323,7 +349,7 @@ function PlanningPage() {
                 <Card key={subscription.id}>
                   <CardHeader>
                     <div className="min-w-0">
-                      <h3 className="text-subtitle">{subscription.name}</h3>
+                      <h3 className="text-base font-semibold">{subscription.name}</h3>
                       <CardDescription className="flex flex-wrap items-center gap-1.5">
                         {wallet ? <WalletLabel wallet={wallet} /> : "Tanpa dompet"}
                         <span aria-hidden>·</span>
@@ -335,13 +361,24 @@ function PlanningPage() {
                     </span>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-lg font-semibold tabular-nums break-words">
-                      {money(subscription.amount)}
-                    </p>
-                    <p className="text-caption mt-2 flex items-center gap-1.5 tabular-nums">
-                      <HugeiconsIcon icon={Calendar03Icon} className="size-3.5" />{" "}
-                      {subscription.next_due_date}
-                    </p>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="text-lg font-semibold tabular-nums break-words">
+                          {money(subscription.amount)}
+                        </p>
+                        <p className="text-caption mt-2 flex items-center gap-1.5 tabular-nums">
+                          <HugeiconsIcon icon={Calendar03Icon} className="size-3.5" />{" "}
+                          {subscription.next_due_date}
+                        </p>
+                      </div>
+                      <SubscriptionEditDialog
+                        categories={data.categories.filter(
+                          (category) => category.type === "expense",
+                        )}
+                        subscription={subscription}
+                        wallets={data.wallets}
+                      />
+                    </div>
                   </CardContent>
                 </Card>
               )
@@ -433,7 +470,10 @@ function BudgetForm({ categories, close }: { categories: Category[]; close: () =
     <MutationForm
       action={(form) =>
         createBudget({
-          data: { categoryId: String(form.get("category")), amount: Number(form.get("amount")) },
+          data: {
+            categoryId: String(form.get("category")),
+            amount: parseNumberInput(form.get("amount")),
+          },
         })
       }
       close={close}
@@ -443,7 +483,7 @@ function BudgetForm({ categories, close }: { categories: Category[]; close: () =
         <CategorySelect categories={categories} name="category" required />
       </FormField>
       <FormField label="Batas per siklus">
-        <Input min="1" name="amount" placeholder="0" required type="number" />
+        <MoneyInput min="1" name="amount" required />
       </FormField>
     </MutationForm>
   )
@@ -456,7 +496,7 @@ function SavingForm({ wallets, close }: { wallets: Wallet[]; close: () => void }
         createSaving({
           data: {
             name: String(form.get("name")),
-            targetAmount: Number(form.get("amount")),
+            targetAmount: parseNumberInput(form.get("amount")),
             walletId: String(form.get("wallet")),
             targetDate: String(form.get("date")),
           },
@@ -469,7 +509,7 @@ function SavingForm({ wallets, close }: { wallets: Wallet[]; close: () => void }
         <Input name="name" placeholder="Contoh: Dana darurat" required />
       </FormField>
       <FormField label="Target nominal">
-        <Input min="1" name="amount" required type="number" />
+        <MoneyInput min="1" name="amount" required />
       </FormField>
       <FormField
         hint={
@@ -505,7 +545,7 @@ function SavingFundsForm({
           data: {
             id: saving.id,
             walletId: String(form.get("wallet")),
-            amount: Number(form.get("amount")),
+            amount: parseNumberInput(form.get("amount")),
             direction,
           },
         })
@@ -526,7 +566,7 @@ function SavingFundsForm({
         value={direction}
       />
       <FormField label={direction === "deposit" ? "Nominal ditabung" : "Nominal ditarik"}>
-        <Input min="1" name="amount" required type="number" />
+        <MoneyInput min="1" name="amount" required />
       </FormField>
       <FormField label={direction === "deposit" ? "Ambil dari dompet" : "Kirim ke dompet"}>
         <WalletSelect name="wallet" required wallets={wallets} />
@@ -541,7 +581,7 @@ function DebtForm({ close, wallets }: { close: () => void; wallets: Wallet[] }) 
   const [walletId, setWalletId] = useState("")
   const wallet = wallets.find((item) => item.id === walletId)
   const movement =
-    wallet && Number(amount) > 0
+    wallet && parseNumberInput(amount) > 0
       ? debtType === "hutang"
         ? `Akan menambah ${wallet.name} sebagai pemasukan.`
         : `Akan mengurangi ${wallet.name} sebagai pengeluaran.`
@@ -553,7 +593,7 @@ function DebtForm({ close, wallets }: { close: () => void; wallets: Wallet[] }) 
           data: {
             type: form.get("type") === "hutang" ? "hutang" : "piutang",
             contact: String(form.get("contact")),
-            amount: Number(form.get("amount")),
+            amount: parseNumberInput(form.get("amount")),
             dueDate: String(form.get("date")),
             note: String(form.get("note")),
             walletId: String(form.get("wallet") ?? ""),
@@ -577,13 +617,11 @@ function DebtForm({ close, wallets }: { close: () => void; wallets: Wallet[] }) 
         <Input name="contact" required />
       </FormField>
       <FormField label="Nominal">
-        <Input
+        <MoneyInput
           min="1"
           name="amount"
-          onChange={(event) => setAmount(event.target.value)}
+          onChange={(event) => setAmount(event.currentTarget.value)}
           required
-          type="number"
-          value={amount}
         />
       </FormField>
       <FormField
@@ -803,7 +841,7 @@ function DebtDialog({
                 </Button>
                 <Button onClick={() => setMode("delete")} variant="destructive">
                   <HugeiconsIcon icon={Delete02Icon} />
-                  Hapus hutang
+                  {debt.type === "piutang" ? "Hapus piutang" : "Hapus hutang"}
                 </Button>
               </div>
             )}
@@ -832,7 +870,7 @@ function DebtDialog({
                   addDebtAmount({
                     data: {
                       id: debt.id,
-                      amount: Number(form.get("amount")),
+                      amount: parseNumberInput(form.get("amount")),
                       walletId: String(form.get("wallet") ?? ""),
                     },
                   })
@@ -847,7 +885,7 @@ function DebtDialog({
                   }
                   label="Nominal ditambahkan"
                 >
-                  <Input autoFocus min="1" name="amount" placeholder="0" required type="number" />
+                  <MoneyInput autoFocus min="1" name="amount" required />
                 </FormField>
                 <FormField
                   hint="Kosongkan jika nominal ini sudah tercatat di pemasukan/pengeluaran."
@@ -865,7 +903,7 @@ function DebtDialog({
                     data: {
                       id: debt.id,
                       walletId: String(form.get("wallet")),
-                      amount: Number(form.get("amount")),
+                      amount: parseNumberInput(form.get("amount")),
                     },
                   })
                 }
@@ -874,15 +912,7 @@ function DebtDialog({
                 success="Cicilan dicatat dan saldo dompet diperbarui"
               >
                 <FormField hint={`Sisa kewajiban ${money(remaining)}`} label="Nominal cicilan">
-                  <Input
-                    autoFocus
-                    max={remaining}
-                    min="1"
-                    name="amount"
-                    placeholder="0"
-                    required
-                    type="number"
-                  />
+                  <MoneyInput autoFocus max={remaining} min="1" name="amount" required />
                 </FormField>
                 <FormField
                   hint={
@@ -949,7 +979,7 @@ function SubscriptionForm({
         createSubscription({
           data: {
             name: String(form.get("name")),
-            amount: Number(form.get("amount")),
+            amount: parseNumberInput(form.get("amount")),
             walletId: String(form.get("wallet")),
             categoryId: String(form.get("category")),
             nextDueDate: String(form.get("date")),
@@ -963,7 +993,7 @@ function SubscriptionForm({
         <Input name="name" placeholder="Contoh: Spotify" required />
       </FormField>
       <FormField label="Nominal">
-        <Input min="1" name="amount" required type="number" />
+        <MoneyInput min="1" name="amount" required />
       </FormField>
       <div className="grid gap-5 sm:grid-cols-2">
         <FormField label="Dompet">
@@ -977,6 +1007,366 @@ function SubscriptionForm({
         <Input defaultValue={today()} name="date" required type="date" />
       </FormField>
     </MutationForm>
+  )
+}
+
+function ConfirmDeleteDialog({
+  title,
+  description,
+  confirmLabel,
+  ariaLabel,
+  success = "Data dihapus",
+  action,
+}: {
+  title: string
+  description: string
+  confirmLabel: string
+  ariaLabel: string
+  success?: string
+  action: () => Promise<void>
+}) {
+  const router = useRouter()
+  const [open, setOpen] = useState(false)
+  const [pending, setPending] = useState(false)
+
+  async function remove() {
+    setPending(true)
+    try {
+      await action()
+      setOpen(false)
+      await router.invalidate()
+      toast.success(success)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Data gagal dihapus")
+    } finally {
+      setPending(false)
+    }
+  }
+
+  return (
+    <Dialog onOpenChange={setOpen} open={open}>
+      <DialogTrigger
+        render={
+          <Button
+            aria-label={ariaLabel}
+            className="text-muted-foreground hover:text-destructive"
+            size="icon"
+            variant="ghost"
+          />
+        }
+      >
+        <HugeiconsIcon icon={Delete02Icon} />
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <DialogClose render={<Button variant="ghost" />}>Batal</DialogClose>
+          <Button disabled={pending} onClick={remove} variant="destructive">
+            <HugeiconsIcon icon={Delete02Icon} />
+            {pending ? "Menghapus…" : confirmLabel}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function SavingEditDialog({ saving, wallets }: { saving: Saving; wallets: Wallet[] }) {
+  const router = useRouter()
+  const [open, setOpen] = useState(false)
+  const [pending, setPending] = useState(false)
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
+  const formId = `saving-edit-${saving.id}`
+
+  function changeOpen(next: boolean) {
+    setOpen(next)
+    if (!next) setConfirmingDelete(false)
+  }
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setPending(true)
+    const form = new FormData(event.currentTarget)
+    try {
+      await updateSaving({
+        data: {
+          id: saving.id,
+          name: String(form.get("name")),
+          targetAmount: parseNumberInput(form.get("amount")),
+          walletId: String(form.get("wallet") ?? ""),
+          targetDate: String(form.get("date") ?? ""),
+        },
+      })
+      changeOpen(false)
+      await router.invalidate()
+      toast.success("Target tabungan diperbarui")
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Target gagal disimpan")
+    } finally {
+      setPending(false)
+    }
+  }
+
+  async function remove() {
+    setPending(true)
+    try {
+      await deleteSaving({ data: { id: saving.id } })
+      changeOpen(false)
+      await router.invalidate()
+      toast.success("Target tabungan dihapus")
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Target gagal dihapus")
+    } finally {
+      setPending(false)
+    }
+  }
+
+  return (
+    <Dialog onOpenChange={changeOpen} open={open}>
+      <DialogTrigger
+        render={
+          <Button
+            aria-label={`Edit ${saving.name}`}
+            size="icon"
+            variant="ghost"
+            className="shrink-0"
+          />
+        }
+      >
+        <HugeiconsIcon icon={Edit02Icon} />
+      </DialogTrigger>
+      <DialogContent>
+        {confirmingDelete ? (
+          <>
+            <DialogHeader>
+              <DialogTitle>Hapus target?</DialogTitle>
+              <DialogDescription>
+                Target {saving.name} akan dihapus. Dana yang sudah dipindahkan tetap tercatat
+                sebagai transaksi dompet.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button disabled={pending} onClick={() => setConfirmingDelete(false)} variant="ghost">
+                Kembali
+              </Button>
+              <Button disabled={pending} onClick={remove} variant="destructive">
+                <HugeiconsIcon icon={Delete02Icon} />
+                {pending ? "Menghapus…" : "Hapus target"}
+              </Button>
+            </DialogFooter>
+          </>
+        ) : (
+          <>
+            <DialogHeader>
+              <DialogTitle>Edit target</DialogTitle>
+              <DialogDescription>
+                Perbarui nama, target, dompet penyimpan, atau tanggal target.
+              </DialogDescription>
+            </DialogHeader>
+            <form className="grid gap-5" id={formId} onSubmit={submit}>
+              <FormField label="Nama target">
+                <Input defaultValue={saving.name} maxLength={80} name="name" required />
+              </FormField>
+              <FormField label="Target nominal">
+                <MoneyInput defaultValue={saving.target_amount} min="1" name="amount" required />
+              </FormField>
+              <FormField
+                hint={
+                  wallets.length === 0
+                    ? "Buat dompet bertipe tabungan dari dashboard terlebih dahulu."
+                    : undefined
+                }
+                label="Dompet tabungan"
+              >
+                <WalletSelect
+                  defaultValue={saving.wallet_id ?? ""}
+                  name="wallet"
+                  placeholder="Belum dihubungkan"
+                  wallets={wallets}
+                />
+              </FormField>
+              <FormField label="Tanggal target">
+                <Input defaultValue={saving.target_date ?? ""} name="date" type="date" />
+              </FormField>
+            </form>
+            <DialogFooter className="sm:justify-between">
+              <Button
+                className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                disabled={pending}
+                onClick={() => setConfirmingDelete(true)}
+                variant="ghost"
+              >
+                <HugeiconsIcon icon={Delete02Icon} />
+                Hapus target
+              </Button>
+              <div className="flex flex-col-reverse gap-2 sm:flex-row">
+                <DialogClose render={<Button variant="ghost" />}>Batal</DialogClose>
+                <Button disabled={pending} form={formId} type="submit">
+                  {pending ? "Menyimpan…" : "Simpan perubahan"}
+                </Button>
+              </div>
+            </DialogFooter>
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function SubscriptionEditDialog({
+  subscription,
+  wallets,
+  categories,
+}: {
+  subscription: Subscription
+  wallets: Wallet[]
+  categories: Category[]
+}) {
+  const router = useRouter()
+  const [open, setOpen] = useState(false)
+  const [pending, setPending] = useState(false)
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
+  const formId = `subscription-edit-${subscription.id}`
+
+  function changeOpen(next: boolean) {
+    setOpen(next)
+    if (!next) setConfirmingDelete(false)
+  }
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setPending(true)
+    const form = new FormData(event.currentTarget)
+    try {
+      await updateSubscription({
+        data: {
+          id: subscription.id,
+          name: String(form.get("name")),
+          amount: parseNumberInput(form.get("amount")),
+          walletId: String(form.get("wallet") ?? ""),
+          categoryId: String(form.get("category") ?? ""),
+          nextDueDate: String(form.get("date")),
+        },
+      })
+      changeOpen(false)
+      await router.invalidate()
+      toast.success("Langganan diperbarui")
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Langganan gagal disimpan")
+    } finally {
+      setPending(false)
+    }
+  }
+
+  async function remove() {
+    setPending(true)
+    try {
+      await deleteSubscription({ data: { id: subscription.id } })
+      changeOpen(false)
+      await router.invalidate()
+      toast.success("Langganan dihapus")
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Langganan gagal dihapus")
+    } finally {
+      setPending(false)
+    }
+  }
+
+  return (
+    <Dialog onOpenChange={changeOpen} open={open}>
+      <DialogTrigger
+        render={
+          <Button
+            aria-label={`Edit ${subscription.name}`}
+            className="shrink-0"
+            size="icon"
+            variant="ghost"
+          />
+        }
+      >
+        <HugeiconsIcon icon={Edit02Icon} />
+      </DialogTrigger>
+      <DialogContent>
+        {confirmingDelete ? (
+          <>
+            <DialogHeader>
+              <DialogTitle>Hapus langganan?</DialogTitle>
+              <DialogDescription>
+                Catatan {subscription.name} akan dihapus permanen. Transaksi yang sudah dicatat
+                tidak ikut terhapus.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button disabled={pending} onClick={() => setConfirmingDelete(false)} variant="ghost">
+                Kembali
+              </Button>
+              <Button disabled={pending} onClick={remove} variant="destructive">
+                <HugeiconsIcon icon={Delete02Icon} />
+                {pending ? "Menghapus…" : "Hapus langganan"}
+              </Button>
+            </DialogFooter>
+          </>
+        ) : (
+          <>
+            <DialogHeader>
+              <DialogTitle>Edit langganan</DialogTitle>
+              <DialogDescription>
+                Perbarui nominal, dompet, kategori, atau tanggal tagihan.
+              </DialogDescription>
+            </DialogHeader>
+            <form className="grid gap-5" id={formId} onSubmit={submit}>
+              <FormField label="Nama layanan">
+                <Input defaultValue={subscription.name} maxLength={80} name="name" required />
+              </FormField>
+              <FormField label="Nominal">
+                <MoneyInput defaultValue={subscription.amount} min="1" name="amount" required />
+              </FormField>
+              <div className="grid gap-5 sm:grid-cols-2">
+                <FormField label="Dompet">
+                  <WalletSelect
+                    defaultValue={subscription.wallet_id ?? ""}
+                    name="wallet"
+                    placeholder="Tanpa dompet"
+                    wallets={wallets}
+                  />
+                </FormField>
+                <FormField label="Kategori">
+                  <CategorySelect
+                    categories={categories}
+                    defaultValue={subscription.category_id ?? ""}
+                    name="category"
+                    placeholder="Tanpa kategori"
+                  />
+                </FormField>
+              </div>
+              <FormField label="Tagihan berikutnya">
+                <Input defaultValue={subscription.next_due_date} name="date" required type="date" />
+              </FormField>
+            </form>
+            <DialogFooter className="sm:justify-between">
+              <Button
+                className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                disabled={pending}
+                onClick={() => setConfirmingDelete(true)}
+                variant="ghost"
+              >
+                <HugeiconsIcon icon={Delete02Icon} />
+                Hapus langganan
+              </Button>
+              <div className="flex flex-col-reverse gap-2 sm:flex-row">
+                <DialogClose render={<Button variant="ghost" />}>Batal</DialogClose>
+                <Button disabled={pending} form={formId} type="submit">
+                  {pending ? "Menyimpan…" : "Simpan perubahan"}
+                </Button>
+              </div>
+            </DialogFooter>
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
   )
 }
 

@@ -10,6 +10,7 @@ import {
   WalletSelect,
 } from "@/components/finance-visuals"
 import { FormField } from "@/components/form-field"
+import { MoneyInput } from "@/components/money-input"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -64,7 +65,7 @@ export function WalletDialog({ wallet }: { wallet?: Wallet } = {}) {
             name,
             icon,
             type: form.get("type") === "saving" ? "saving" : "daily",
-            balance: Number(form.get("balance")),
+            balance: parseNumberInput(form.get("balance")),
           },
         })
       }
@@ -164,14 +165,7 @@ export function WalletDialog({ wallet }: { wallet?: Wallet } = {}) {
                     </Select>
                   </FormField>
                   <FormField hint="Tidak boleh negatif" label="Saldo awal">
-                    <Input
-                      defaultValue="0"
-                      inputMode="numeric"
-                      min="0"
-                      name="balance"
-                      required
-                      type="number"
-                    />
+                    <MoneyInput defaultValue={0} min="0" name="balance" required />
                   </FormField>
                 </>
               )}

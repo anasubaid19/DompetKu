@@ -25,7 +25,7 @@ export function SegmentedControl<T extends string>({
         <button
           aria-pressed={value === option.value}
           className={cn(
-            "h-9 rounded-lg px-3 text-xs font-medium text-muted-foreground aria-pressed:bg-card aria-pressed:text-foreground aria-pressed:shadow-sm",
+            "h-9 rounded-lg px-3 text-xs font-medium text-muted-foreground transition-[background-color,color,box-shadow] aria-pressed:bg-card aria-pressed:text-foreground aria-pressed:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
             itemClassName,
           )}
           key={option.value}

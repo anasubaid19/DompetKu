@@ -51,13 +51,19 @@ type CsvTransaction = {
   description: string
 }
 
+export const TRANSACTION_TYPE_LABELS: Record<"income" | "expense" | "transfer", string> = {
+  income: "Pemasukan",
+  expense: "Pengeluaran",
+  transfer: "Transfer",
+}
+
 export function transactionsToCsv(transactions: CsvTransaction[]) {
   const cell = (value: string | number | null) => {
     let text = String(value ?? "")
     if (/^[=+\-@]/.test(text)) text = `'${text}`
     return /[",\r\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text
   }
-  const labels = { income: "Pemasukan", expense: "Pengeluaran", transfer: "Transfer" }
+  const labels = TRANSACTION_TYPE_LABELS
   return [
     [
       "Tanggal",

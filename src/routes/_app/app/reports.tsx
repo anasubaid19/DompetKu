@@ -142,7 +142,7 @@ function ReportsPage() {
                   <BarChart
                     accessibilityLayer={false}
                     data={months}
-                    margin={{ left: -12, right: 0, top: 12, bottom: 0 }}
+                    margin={{ left: 0, right: 0, top: 12, bottom: 0 }}
                   >
                     <CartesianGrid stroke="var(--border)" strokeDasharray="3 6" vertical={false} />
                     <XAxis

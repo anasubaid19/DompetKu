@@ -29,7 +29,13 @@ import { Input } from "@/components/ui/input"
 import { SegmentedControl } from "@/components/ui/segmented-control"
 import { Select } from "@/components/ui/select"
 import { deleteTransaction, type FinanceTransaction, getFinanceData } from "@/lib/finance.functions"
-import { cn, cycleRange, formatMoney, formatTransactionAmount } from "@/lib/utils"
+import {
+  cn,
+  cycleRange,
+  formatMoney,
+  formatTransactionAmount,
+  TRANSACTION_TYPE_LABELS,
+} from "@/lib/utils"
 
 export const Route = createFileRoute("/_app/app/transactions")({
   loader: () => getFinanceData(),
@@ -159,7 +165,11 @@ function TransactionsPage() {
                         {item.description || item.category_name || "Transfer antar-dompet"}
                       </h2>
                       <Badge className="min-w-0 max-w-full gap-1.5">
-                        {category ? <CategoryLabel category={category} /> : item.type}
+                        {category ? (
+                          <CategoryLabel category={category} />
+                        ) : (
+                          TRANSACTION_TYPE_LABELS[item.type]
+                        )}
                       </Badge>
                     </div>
                     <div className="text-caption mt-1 flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1">
