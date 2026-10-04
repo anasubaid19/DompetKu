@@ -30,6 +30,7 @@ export type FinanceTransaction = {
   target_wallet_id: string | null
   category_id: string | null
   saving_id: string | null
+  debt_id: string | null
   description: string
   transaction_date: string
   category_name: string | null
@@ -205,7 +206,7 @@ export const getFinanceData = createServerFn({ method: "GET" }).handler(async ()
   const transactions = db
     .query(`
       SELECT t.id, t.type, t.amount, t.fee, t.wallet_id, t.target_wallet_id, t.saving_id,
-        t.category_id, t.description, t.transaction_date,
+        t.debt_id, t.category_id, t.description, t.transaction_date,
         c.name AS category_name, w.name AS wallet_name, tw.name AS target_wallet_name
       FROM transactions t
       JOIN wallets w ON w.id = t.wallet_id
@@ -428,12 +429,15 @@ export const updateTransaction = createServerFn({ method: "POST" })
       const previous = db
         .query(`
           SELECT type, amount, fee, wallet_id AS walletId, target_wallet_id AS targetWalletId,
-            saving_id AS savingId
+            saving_id AS savingId, debt_id AS debtId
           FROM transactions WHERE id = ? AND user_id = ?
         `)
-        .get(id, user.id) as (LedgerEntry & { savingId: string | null }) | null
+        .get(id, user.id) as
+        | (LedgerEntry & { savingId: string | null; debtId: string | null })
+        | null
       if (!previous) throw new Error("Transaksi tidak ditemukan")
       if (previous.savingId) throw new Error("Kelola transaksi ini dari target tabungan")
+      if (previous.debtId) throw new Error("Kelola transaksi ini dari catatan hutang")
 
       updateWalletBalances(user.id, previous, next)
       db.query(`
@@ -465,12 +469,15 @@ export const deleteTransaction = createServerFn({ method: "POST" })
       const previous = db
         .query(`
           SELECT type, amount, fee, wallet_id AS walletId, target_wallet_id AS targetWalletId,
-            saving_id AS savingId
+            saving_id AS savingId, debt_id AS debtId
           FROM transactions WHERE id = ? AND user_id = ?
         `)
-        .get(id, user.id) as (LedgerEntry & { savingId: string | null }) | null
+        .get(id, user.id) as
+        | (LedgerEntry & { savingId: string | null; debtId: string | null })
+        | null
       if (!previous) throw new Error("Transaksi tidak ditemukan")
       if (previous.savingId) throw new Error("Kelola transaksi ini dari target tabungan")
+      if (previous.debtId) throw new Error("Kelola transaksi ini dari catatan hutang")
 
       updateWalletBalances(user.id, previous, null)
       db.query("DELETE FROM transactions WHERE id = ? AND user_id = ?").run(id, user.id)
@@ -484,6 +491,95 @@ type DebtInput = {
   amount: number
   dueDate?: string
   note?: string
+  walletId?: string
+}
+
+type DebtPaymentKind = "pay" | "settle" | "add"
+
+export function debtPaymentDraft(
+  debtType: "hutang" | "piutang",
+  kind: DebtPaymentKind,
+  contact: string,
+): { txType: "income" | "expense"; description: string } {
+  if (kind === "add") {
+    return debtType === "hutang"
+      ? { txType: "income", description: `Tambahan hutang: ${contact}` }
+      : { txType: "expense", description: `Tambahan piutang: ${contact}` }
+  }
+  if (kind === "settle") {
+    return debtType === "hutang"
+      ? { txType: "expense", description: `Pelunasan hutang: ${contact}` }
+      : { txType: "income", description: `Pelunasan piutang: ${contact}` }
+  }
+  return debtType === "hutang"
+    ? { txType: "expense", description: `Cicil hutang: ${contact}` }
+    : { txType: "income", description: `Cicilan piutang: ${contact}` }
+}
+
+const DEBT_CATEGORIES = {
+  expense: { name: "Bayar Hutang", color: "red", icon: "invoice" },
+  income: { name: "Piutang Dibayar", color: "green", icon: "money" },
+} as const
+
+function ensureDebtCategoryId(userId: string, txType: "income" | "expense") {
+  const preset = DEBT_CATEGORIES[txType]
+  const existing = db
+    .query("SELECT id FROM categories WHERE user_id = ? AND name = ? AND type = ?")
+    .get(userId, preset.name, txType) as { id: string } | null
+  if (existing) return existing.id
+  const id = crypto.randomUUID()
+  db.query(
+    "INSERT INTO categories (id, user_id, name, type, color, icon) VALUES (?, ?, ?, ?, ?, ?)",
+  ).run(id, userId, preset.name, txType, preset.color, preset.icon)
+  return id
+}
+
+function applyDebtMoneyMovement(
+  userId: string,
+  debt: Pick<Debt, "id" | "type" | "contact">,
+  walletId: string,
+  amount: number,
+  kind: DebtPaymentKind,
+  link: boolean,
+) {
+  const draft = debtPaymentDraft(debt.type, kind, debt.contact)
+  const movement: LedgerEntry = {
+    type: draft.txType,
+    amount,
+    fee: 0,
+    walletId: ownedWallet(userId, walletId).id,
+    targetWalletId: null,
+  }
+  updateWalletBalances(userId, null, movement)
+  db.query(`
+    INSERT INTO transactions
+      (id, user_id, type, amount, fee, wallet_id, target_wallet_id, category_id, debt_id,
+        description, transaction_date)
+    VALUES (?, ?, ?, ?, 0, ?, NULL, ?, ?, ?, ?)
+  `).run(
+    crypto.randomUUID(),
+    userId,
+    draft.txType,
+    amount,
+    movement.walletId,
+    ensureDebtCategoryId(userId, draft.txType),
+    link ? debt.id : null,
+    draft.description,
+    today(),
+  )
+}
+
+type StoredDebt = Pick<Debt, "id" | "type" | "contact"> & DebtState
+
+function reverseLinkedDebtPayments(userId: string, debtId: string) {
+  const linked = db
+    .query(
+      "SELECT type, amount, fee, wallet_id AS walletId, target_wallet_id AS targetWalletId FROM transactions WHERE debt_id = ? AND user_id = ?",
+    )
+    .all(debtId, userId) as LedgerEntry[]
+  for (const entry of linked) updateWalletBalances(userId, entry, null)
+  db.query("DELETE FROM transactions WHERE debt_id = ? AND user_id = ?").run(debtId, userId)
+  return linked.length
 }
 
 export const createDebt = createServerFn({ method: "POST" })
@@ -491,42 +587,52 @@ export const createDebt = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const user = await requireUser()
     const type = data.type === "hutang" ? "hutang" : "piutang"
-    db.query(
-      "INSERT INTO debts (id, user_id, type, contact, amount, due_date, note) VALUES (?, ?, ?, ?, ?, ?, ?)",
-    ).run(
-      crypto.randomUUID(),
-      user.id,
-      type,
-      requiredText(data.contact, "Nama kontak", 80),
-      positiveMoney(data.amount),
-      data.dueDate ? requiredText(data.dueDate, "Jatuh tempo", 10) : null,
-      optionalText(data.note),
-    )
-  })
-
-export const toggleDebtPaid = createServerFn({ method: "POST" })
-  .validator((data: { id: string }) => data)
-  .handler(async ({ data }) => {
-    const user = await requireUser()
-    const result = db
-      .query(
-        "UPDATE debts SET status = CASE status WHEN 'active' THEN 'paid' ELSE 'active' END, paid_amount = CASE status WHEN 'active' THEN amount ELSE 0 END WHERE id = ? AND user_id = ?",
+    const contact = requiredText(data.contact, "Nama kontak", 80)
+    const amount = positiveMoney(data.amount)
+    const commit = db.transaction(() => {
+      const debtId = crypto.randomUUID()
+      db.query(
+        "INSERT INTO debts (id, user_id, type, contact, amount, due_date, note) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      ).run(
+        debtId,
+        user.id,
+        type,
+        contact,
+        amount,
+        data.dueDate ? requiredText(data.dueDate, "Jatuh tempo", 10) : null,
+        optionalText(data.note),
       )
-      .run(requiredText(data.id, "Hutang", 64), user.id)
-    if (result.changes !== 1) throw new Error("Hutang tidak ditemukan")
+      if (data.walletId) {
+        applyDebtMoneyMovement(
+          user.id,
+          { id: debtId, type, contact },
+          String(data.walletId),
+          amount,
+          "add",
+          false,
+        )
+      }
+    })
+    commit.immediate()
   })
 
 export const addDebtAmount = createServerFn({ method: "POST" })
-  .validator((data: { id: string; amount: number }) => data)
+  .validator((data: { id: string; amount: number; walletId?: string }) => data)
   .handler(async ({ data }) => {
     const user = await requireUser()
     const id = requiredText(data.id, "Hutang", 64)
     const commit = db.transaction(() => {
       const debt = db
-        .query("SELECT amount, paid_amount, status FROM debts WHERE id = ? AND user_id = ?")
-        .get(id, user.id) as DebtState | null
+        .query(
+          "SELECT id, type, contact, amount, paid_amount, status FROM debts WHERE id = ? AND user_id = ?",
+        )
+        .get(id, user.id) as StoredDebt | null
       if (!debt) throw new Error("Hutang tidak ditemukan")
-      const next = nextDebtState(debt, { type: "add", amount: positiveMoney(data.amount) })
+      const added = positiveMoney(data.amount)
+      const next = nextDebtState(debt, { type: "add", amount: added })
+      if (data.walletId) {
+        applyDebtMoneyMovement(user.id, debt, String(data.walletId), added, "add", false)
+      }
       db.query("UPDATE debts SET amount = ?, status = ? WHERE id = ? AND user_id = ?").run(
         next.amount,
         next.status,
@@ -537,17 +643,21 @@ export const addDebtAmount = createServerFn({ method: "POST" })
     commit.immediate()
   })
 
-export const payDebtInstallment = createServerFn({ method: "POST" })
-  .validator((data: { id: string; amount: number }) => data)
+export const recordDebtPayment = createServerFn({ method: "POST" })
+  .validator((data: { id: string; walletId: string; amount: number }) => data)
   .handler(async ({ data }) => {
     const user = await requireUser()
     const id = requiredText(data.id, "Hutang", 64)
     const commit = db.transaction(() => {
       const debt = db
-        .query("SELECT amount, paid_amount, status FROM debts WHERE id = ? AND user_id = ?")
-        .get(id, user.id) as DebtState | null
+        .query(
+          "SELECT id, type, contact, amount, paid_amount, status FROM debts WHERE id = ? AND user_id = ?",
+        )
+        .get(id, user.id) as StoredDebt | null
       if (!debt) throw new Error("Hutang tidak ditemukan")
-      const next = nextDebtState(debt, { type: "pay", amount: positiveMoney(data.amount) })
+      const paid = positiveMoney(data.amount, "Nominal cicilan")
+      const next = nextDebtState(debt, { type: "pay", amount: paid })
+      applyDebtMoneyMovement(user.id, debt, String(data.walletId), paid, "pay", true)
       db.query("UPDATE debts SET paid_amount = ?, status = ? WHERE id = ? AND user_id = ?").run(
         next.paid_amount,
         next.status,
@@ -558,13 +668,53 @@ export const payDebtInstallment = createServerFn({ method: "POST" })
     commit.immediate()
   })
 
+export const settleDebt = createServerFn({ method: "POST" })
+  .validator((data: { id: string; walletId: string }) => data)
+  .handler(async ({ data }) => {
+    const user = await requireUser()
+    const id = requiredText(data.id, "Hutang", 64)
+    const commit = db.transaction(() => {
+      const debt = db
+        .query(
+          "SELECT id, type, contact, amount, paid_amount, status FROM debts WHERE id = ? AND user_id = ?",
+        )
+        .get(id, user.id) as StoredDebt | null
+      if (!debt) throw new Error("Hutang tidak ditemukan")
+      const remaining = debt.amount - debt.paid_amount
+      if (remaining <= 0) throw new Error("Kewajiban ini sudah lunas")
+      applyDebtMoneyMovement(user.id, debt, String(data.walletId), remaining, "settle", true)
+      db.query(
+        "UPDATE debts SET paid_amount = ?, status = 'paid' WHERE id = ? AND user_id = ?",
+      ).run(debt.amount, id, user.id)
+    })
+    commit.immediate()
+  })
+
+export const reopenDebt = createServerFn({ method: "POST" })
+  .validator((data: { id: string }) => data)
+  .handler(async ({ data }) => {
+    const user = await requireUser()
+    const id = requiredText(data.id, "Hutang", 64)
+    const commit = db.transaction(() => {
+      const debt = db
+        .query("SELECT status FROM debts WHERE id = ? AND user_id = ?")
+        .get(id, user.id) as { status: string } | null
+      if (!debt) throw new Error("Hutang tidak ditemukan")
+      if (debt.status !== "paid") throw new Error("Hanya kewajiban lunas yang dapat diaktifkan")
+      reverseLinkedDebtPayments(user.id, id)
+      db.query(
+        "UPDATE debts SET paid_amount = 0, status = 'active' WHERE id = ? AND user_id = ?",
+      ).run(id, user.id)
+    })
+    commit.immediate()
+  })
+
 export const deleteDebt = createServerFn({ method: "POST" })
   .validator((data: { id: string }) => data)
   .handler(async ({ data }) => {
     const user = await requireUser()
-    const result = db
-      .query("DELETE FROM debts WHERE id = ? AND user_id = ?")
-      .run(requiredText(data.id, "Hutang", 64), user.id)
+    const id = requiredText(data.id, "Hutang", 64)
+    const result = db.query("DELETE FROM debts WHERE id = ? AND user_id = ?").run(id, user.id)
     if (result.changes !== 1) throw new Error("Hutang tidak ditemukan")
   })
 

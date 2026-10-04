@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import { calculateLedgerBalances, nextDebtState } from "@/lib/finance.functions"
+import { calculateLedgerBalances, debtPaymentDraft, nextDebtState } from "@/lib/finance.functions"
 import { isCategoryColor, isCategoryIcon, isFinancialInstitution } from "@/lib/finance-options"
 import {
   cashFlowMessage,
@@ -193,4 +193,31 @@ test("debt installments accumulate and additions reactivate a settled debt", () 
       { type: "add", amount: 50_000 },
     ),
   ).toEqual({ amount: 150_000, paid_amount: 100_000, status: "active" })
+})
+
+test("debt money movements map to the correct transaction type and description", () => {
+  expect(debtPaymentDraft("hutang", "pay", "Budi")).toEqual({
+    txType: "expense",
+    description: "Cicil hutang: Budi",
+  })
+  expect(debtPaymentDraft("hutang", "settle", "Budi")).toEqual({
+    txType: "expense",
+    description: "Pelunasan hutang: Budi",
+  })
+  expect(debtPaymentDraft("piutang", "pay", "Ani")).toEqual({
+    txType: "income",
+    description: "Cicilan piutang: Ani",
+  })
+  expect(debtPaymentDraft("piutang", "settle", "Ani")).toEqual({
+    txType: "income",
+    description: "Pelunasan piutang: Ani",
+  })
+  expect(debtPaymentDraft("hutang", "add", "Budi")).toEqual({
+    txType: "income",
+    description: "Tambahan hutang: Budi",
+  })
+  expect(debtPaymentDraft("piutang", "add", "Ani")).toEqual({
+    txType: "expense",
+    description: "Tambahan piutang: Ani",
+  })
 })

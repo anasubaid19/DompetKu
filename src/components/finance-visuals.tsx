@@ -15,7 +15,7 @@ import {
   Wallet01Icon,
 } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { useState } from "react"
+import { type ChangeEvent, useState } from "react"
 import { Select } from "@/components/ui/select"
 import type { Category, Wallet } from "@/lib/finance.functions"
 import { CATEGORY_COLORS, FINANCIAL_INSTITUTIONS } from "@/lib/finance-options"
@@ -177,15 +177,20 @@ export function WalletSelect({
   name,
   placeholder = "Pilih dompet",
   required,
+  value,
+  onChange,
 }: {
   wallets: Wallet[]
   defaultValue?: string | null
   name: string
   placeholder?: string
   required?: boolean
+  value?: string
+  onChange?: (event: ChangeEvent<HTMLSelectElement>) => void
 }) {
-  const [value, setValue] = useState(defaultValue ?? "")
-  const selected = wallets.find((wallet) => wallet.id === value)
+  const [innerValue, setInnerValue] = useState(defaultValue ?? "")
+  const current = value ?? innerValue
+  const selected = wallets.find((wallet) => wallet.id === current)
   return (
     <div className="relative">
       {selected && (
@@ -197,9 +202,12 @@ export function WalletSelect({
       <Select
         className={selected && "[&_select]:pl-12"}
         name={name}
-        onChange={(event) => setValue(event.target.value)}
+        onChange={(event) => {
+          setInnerValue(event.target.value)
+          onChange?.(event)
+        }}
         required={required}
-        value={value}
+        value={current}
       >
         <option value="">{placeholder}</option>
         {wallets.map((wallet) => (

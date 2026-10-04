@@ -119,6 +119,11 @@ if (!transactionColumns.some((column) => column.name === "saving_id")) {
     "ALTER TABLE transactions ADD COLUMN saving_id TEXT REFERENCES savings(id) ON DELETE SET NULL",
   )
 }
+if (!transactionColumns.some((column) => column.name === "debt_id")) {
+  db.exec(
+    "ALTER TABLE transactions ADD COLUMN debt_id TEXT REFERENCES debts(id) ON DELETE SET NULL",
+  )
+}
 
 export function ensureDefaults(userId: string) {
   db.query("INSERT OR IGNORE INTO user_settings (user_id) VALUES (?)").run(userId)
@@ -130,6 +135,8 @@ export function ensureDefaults(userId: string) {
     ["Tagihan", "expense", "red", "invoice"],
     ["Gaji", "income", "green", "money"],
     ["Bonus", "income", "cyan", "sparkles"],
+    ["Bayar Hutang", "expense", "red", "invoice"],
+    ["Piutang Dibayar", "income", "green", "money"],
   ] as const
 
   const insert = db.query(

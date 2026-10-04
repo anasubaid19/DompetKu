@@ -49,11 +49,13 @@ import {
   createSubscription,
   type Debt,
   deleteDebt,
+  type FinanceTransaction,
   getFinanceData,
   moveSavingFunds,
-  payDebtInstallment,
+  recordDebtPayment,
+  reopenDebt,
   type Saving,
-  toggleDebtPaid,
+  settleDebt,
   type Wallet,
 } from "@/lib/finance.functions"
 import { cn, cycleRange, formatMoney, today } from "@/lib/utils"
@@ -265,7 +267,7 @@ function PlanningPage() {
                 description="Catat kewajiban tanpa mengubah saldo dompet."
                 title="Hutang atau piutang"
               >
-                {(close) => <DebtForm close={close} />}
+                {(close) => <DebtForm close={close} wallets={data.wallets} />}
               </PlanningDialog>
             }
             description="Pantau siapa, berapa, dan kapan kewajiban harus diselesaikan."
@@ -273,7 +275,13 @@ function PlanningPage() {
           />
           <div className="grid gap-3">
             {data.debts.map((debt) => (
-              <DebtDialog debt={debt} key={debt.id} money={money} />
+              <DebtDialog
+                debt={debt}
+                key={debt.id}
+                money={money}
+                transactions={data.transactions}
+                wallets={data.wallets}
+              />
             ))}
           </div>
           {data.debts.length === 0 && (
@@ -527,7 +535,17 @@ function SavingFundsForm({
   )
 }
 
-function DebtForm({ close }: { close: () => void }) {
+function DebtForm({ close, wallets }: { close: () => void; wallets: Wallet[] }) {
+  const [debtType, setDebtType] = useState<"hutang" | "piutang">("piutang")
+  const [amount, setAmount] = useState("")
+  const [walletId, setWalletId] = useState("")
+  const wallet = wallets.find((item) => item.id === walletId)
+  const movement =
+    wallet && Number(amount) > 0
+      ? debtType === "hutang"
+        ? `Akan menambah ${wallet.name} sebagai pemasukan.`
+        : `Akan mengurangi ${wallet.name} sebagai pengeluaran.`
+      : null
   return (
     <MutationForm
       action={(form) =>
@@ -538,6 +556,7 @@ function DebtForm({ close }: { close: () => void }) {
             amount: Number(form.get("amount")),
             dueDate: String(form.get("date")),
             note: String(form.get("note")),
+            walletId: String(form.get("wallet") ?? ""),
           },
         })
       }
@@ -545,7 +564,11 @@ function DebtForm({ close }: { close: () => void }) {
       id="debt-form"
     >
       <FormField label="Jenis">
-        <Select name="type">
+        <Select
+          name="type"
+          onChange={(event) => setDebtType(event.target.value === "hutang" ? "hutang" : "piutang")}
+          value={debtType}
+        >
           <option value="piutang">Piutang — saya meminjamkan</option>
           <option value="hutang">Hutang — saya meminjam</option>
         </Select>
@@ -554,7 +577,31 @@ function DebtForm({ close }: { close: () => void }) {
         <Input name="contact" required />
       </FormField>
       <FormField label="Nominal">
-        <Input min="1" name="amount" required type="number" />
+        <Input
+          min="1"
+          name="amount"
+          onChange={(event) => setAmount(event.target.value)}
+          required
+          type="number"
+          value={amount}
+        />
+      </FormField>
+      <FormField
+        hint="Kosongkan jika nominal ini sudah tercatat di pemasukan/pengeluaran."
+        label={debtType === "piutang" ? "Keluarkan dari dompet" : "Terima ke dompet"}
+      >
+        <div className="grid gap-2">
+          <WalletSelect
+            name="wallet"
+            onChange={(event) => setWalletId(event.target.value)}
+            placeholder="Hanya catatan"
+            value={walletId}
+            wallets={wallets}
+          />
+          {movement && (
+            <p className="rounded-2xl bg-secondary/60 px-3 py-2 text-sm tabular-nums">{movement}</p>
+          )}
+        </div>
       </FormField>
       <div className="grid gap-5 sm:grid-cols-2">
         <FormField label="Jatuh tempo">
@@ -568,30 +615,41 @@ function DebtForm({ close }: { close: () => void }) {
   )
 }
 
-function DebtDialog({ debt, money }: { debt: Debt; money: (value: number) => string }) {
+function DebtDialog({
+  debt,
+  money,
+  wallets,
+  transactions,
+}: {
+  debt: Debt
+  money: (value: number) => string
+  wallets: Wallet[]
+  transactions: FinanceTransaction[]
+}) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
-  const [mode, setMode] = useState<"menu" | "add" | "pay" | "delete">("menu")
+  const [mode, setMode] = useState<"menu" | "add" | "pay" | "settle" | "reopen" | "delete">("menu")
   const [pending, setPending] = useState(false)
   const overdue = debt.status === "active" && debt.due_date && debt.due_date < today()
   const isPaid = debt.status === "paid"
   const remaining = Math.max(0, debt.amount - debt.paid_amount)
   const paidPercent = Math.round((debt.paid_amount / debt.amount) * 100)
+  const payments = transactions.filter((item) => item.debt_id === debt.id)
 
   function changeOpen(nextOpen: boolean) {
     setOpen(nextOpen)
     if (!nextOpen) setMode("menu")
   }
 
-  async function markPaid() {
+  async function reopen() {
     setPending(true)
     try {
-      await toggleDebtPaid({ data: { id: debt.id } })
+      await reopenDebt({ data: { id: debt.id } })
       changeOpen(false)
       await router.invalidate()
-      toast.success("Status kewajiban diperbarui")
+      toast.success("Kewajiban diaktifkan dan pembayaran dibalikkan")
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Status gagal diperbarui")
+      toast.error(error instanceof Error ? error.message : "Pengaktifan gagal")
     } finally {
       setPending(false)
     }
@@ -671,6 +729,9 @@ function DebtDialog({ debt, money }: { debt: Debt; money: (value: number) => str
               <DialogTitle>Hapus kewajiban?</DialogTitle>
               <DialogDescription>
                 Catatan {debt.contact} sebesar {money(debt.amount)} akan dihapus permanen.
+                {payments.length > 0
+                  ? " Riwayat pembayaran tetap tercatat sebagai transaksi biasa."
+                  : " Transaksi penambahan yang tercatat terpisah tidak ikut terhapus."}
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>
@@ -680,6 +741,25 @@ function DebtDialog({ debt, money }: { debt: Debt; money: (value: number) => str
               <Button disabled={pending} onClick={remove} variant="destructive">
                 <HugeiconsIcon icon={Delete02Icon} />
                 {pending ? "Menghapus…" : "Hapus kewajiban"}
+              </Button>
+            </DialogFooter>
+          </>
+        ) : mode === "reopen" ? (
+          <>
+            <DialogHeader>
+              <DialogTitle>Aktifkan kembali?</DialogTitle>
+              <DialogDescription>
+                {payments.length > 0
+                  ? `${payments.length} pembayaran tertaut akan dihapus dan saldo dompet dikembalikan.`
+                  : "Status kewajiban kembali aktif dan nominal yang sudah dibayar direset."}
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button disabled={pending} onClick={() => setMode("menu")} variant="ghost">
+                Kembali
+              </Button>
+              <Button disabled={pending} onClick={reopen}>
+                {pending ? "Memproses…" : "Aktifkan kewajiban"}
               </Button>
             </DialogFooter>
           </>
@@ -705,17 +785,21 @@ function DebtDialog({ debt, money }: { debt: Debt; money: (value: number) => str
 
             {mode === "menu" && (
               <div className="grid gap-2">
-                <Button disabled={pending} onClick={markPaid} variant="outline">
+                <Button
+                  disabled={pending}
+                  onClick={() => setMode(isPaid ? "reopen" : "settle")}
+                  variant="outline"
+                >
                   <HugeiconsIcon icon={BadgeCheckIcon} />
                   {isPaid ? "Aktifkan" : "Tandai lunas"}
                 </Button>
                 <Button onClick={() => setMode("add")} variant="outline">
                   <HugeiconsIcon icon={MoneyAdd01Icon} />
-                  Tambah hutang
+                  {debt.type === "piutang" ? "Tambah piutang" : "Tambah hutang"}
                 </Button>
                 <Button disabled={isPaid} onClick={() => setMode("pay")} variant="outline">
                   <HugeiconsIcon icon={WalletAdd01Icon} />
-                  Cicil hutang
+                  {debt.type === "piutang" ? "Terima cicilan" : "Cicil hutang"}
                 </Button>
                 <Button onClick={() => setMode("delete")} variant="destructive">
                   <HugeiconsIcon icon={Delete02Icon} />
@@ -724,10 +808,34 @@ function DebtDialog({ debt, money }: { debt: Debt; money: (value: number) => str
               </div>
             )}
 
+            {mode === "menu" && payments.length > 0 && (
+              <div className="grid gap-2">
+                <p className="text-label">Riwayat pembayaran</p>
+                {payments.map((item) => (
+                  <div
+                    className="flex items-center justify-between gap-3 rounded-2xl bg-secondary/55 px-3 py-2 text-sm"
+                    key={item.id}
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate font-medium">{item.description}</p>
+                      <p className="text-caption tabular-nums">{item.transaction_date}</p>
+                    </div>
+                    <p className="shrink-0 font-semibold tabular-nums">{money(item.amount)}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+
             {mode === "add" && (
               <MutationForm
                 action={(form) =>
-                  addDebtAmount({ data: { id: debt.id, amount: Number(form.get("amount")) } })
+                  addDebtAmount({
+                    data: {
+                      id: debt.id,
+                      amount: Number(form.get("amount")),
+                      walletId: String(form.get("wallet") ?? ""),
+                    },
+                  })
                 }
                 close={() => changeOpen(false)}
                 id={`debt-add-${debt.id}`}
@@ -741,17 +849,29 @@ function DebtDialog({ debt, money }: { debt: Debt; money: (value: number) => str
                 >
                   <Input autoFocus min="1" name="amount" placeholder="0" required type="number" />
                 </FormField>
+                <FormField
+                  hint="Kosongkan jika nominal ini sudah tercatat di pemasukan/pengeluaran."
+                  label={debt.type === "piutang" ? "Keluarkan dari dompet" : "Terima ke dompet"}
+                >
+                  <WalletSelect name="wallet" placeholder="Hanya catatan" wallets={wallets} />
+                </FormField>
               </MutationForm>
             )}
 
             {mode === "pay" && (
               <MutationForm
                 action={(form) =>
-                  payDebtInstallment({ data: { id: debt.id, amount: Number(form.get("amount")) } })
+                  recordDebtPayment({
+                    data: {
+                      id: debt.id,
+                      walletId: String(form.get("wallet")),
+                      amount: Number(form.get("amount")),
+                    },
+                  })
                 }
                 close={() => changeOpen(false)}
                 id={`debt-pay-${debt.id}`}
-                success="Cicilan dicatat"
+                success="Cicilan dicatat dan saldo dompet diperbarui"
               >
                 <FormField hint={`Sisa kewajiban ${money(remaining)}`} label="Nominal cicilan">
                   <Input
@@ -763,6 +883,47 @@ function DebtDialog({ debt, money }: { debt: Debt; money: (value: number) => str
                     required
                     type="number"
                   />
+                </FormField>
+                <FormField
+                  hint={
+                    wallets.length === 0
+                      ? "Buat dompet terlebih dahulu dari dashboard."
+                      : debt.type === "piutang"
+                        ? "Saldo dompet akan bertambah."
+                        : "Saldo dompet akan berkurang."
+                  }
+                  label={debt.type === "piutang" ? "Dompet penerima" : "Dompet pembayar"}
+                >
+                  <WalletSelect name="wallet" required wallets={wallets} />
+                </FormField>
+              </MutationForm>
+            )}
+
+            {mode === "settle" && (
+              <MutationForm
+                action={(form) =>
+                  settleDebt({ data: { id: debt.id, walletId: String(form.get("wallet")) } })
+                }
+                close={() => changeOpen(false)}
+                id={`debt-settle-${debt.id}`}
+                success="Kewajiban dilunasi dan saldo dompet diperbarui"
+              >
+                <div className="flex items-end justify-between gap-3 rounded-2xl bg-secondary/60 p-4">
+                  <div>
+                    <p className="text-caption">Dibayar lunas</p>
+                    <p className="mt-1 text-xl font-semibold tabular-nums">{money(remaining)}</p>
+                  </div>
+                  <p className="text-caption tabular-nums">
+                    {debt.type === "piutang" ? "Masuk ke dompet" : "Keluar dari dompet"}
+                  </p>
+                </div>
+                <FormField
+                  hint={
+                    wallets.length === 0 ? "Buat dompet terlebih dahulu dari dashboard." : undefined
+                  }
+                  label={debt.type === "piutang" ? "Dompet penerima" : "Dompet pembayar"}
+                >
+                  <WalletSelect name="wallet" required wallets={wallets} />
                 </FormField>
               </MutationForm>
             )}
