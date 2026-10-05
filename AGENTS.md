@@ -65,11 +65,21 @@ bun test
 bun run build
 ```
 
-Latest result: all commands passed; tests reported 5 passed, 0 failed, and 14 assertions.
+Latest result: all commands passed; tests reported 16 passed, 0 failed, and 59 assertions.
 
 For UI changes, also inspect desktop and mobile layouts in both themes, including dialogs and the fixed mobile navigation.
 
+## Editing Rules
+
+Exact-match edits (`oldString`) fail whenever the text is not copied verbatim from the file's current bytes. Root causes seen here: prior `bun run fix` reformatting, re-indentation by an earlier edit, memory-constructed text, and repeated lines that make a short `oldString` non-unique (`finance.functions.ts` has e.g. `.handler(async ({ data }) => {` 26 times).
+
+- `read` the exact region immediately before each `edit`, and copy `oldString` verbatim (strip the line-number prefix).
+- Treat every earlier read as stale after `bun run fix`, a formatter, or any edit touching nearby lines.
+- Keep `oldString` short but unique by including one distinctive adjacent line; never target a bare repeated line.
+- For whitespace-sensitive regions, run `scripts/peek.sh <file> <start> <end>` to print exact lines and flag trailing whitespace.
+- Run `bun run fix` once at the end of an edit batch, not between edits you still need to match.
+
 ## Repository Note
 
-- The repository currently has no commits and its project files are untracked. Do not assume `git diff` shows the working implementation; inspect files directly and avoid destructive git commands.
+- The repository has commits and a GitHub remote (`origin`). Inspect files directly for the working state; avoid destructive git commands.
 - Never commit credentials, local databases, exported session transcripts, or backup JSON files.
