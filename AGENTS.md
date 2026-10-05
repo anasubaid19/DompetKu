@@ -22,6 +22,10 @@
 
 ## Current State
 
+Completed on 2026-10-05:
+
+- Reports/insights batch: added a category donut to "Pengeluaran terbesar", a "Perbandingan siklus ini" card (income/expense delta vs the previous cycle and vs the 3-cycle average, plus the top expense increases), and an "Anggaran hampir penuh" card on Ringkasan (budgets at 80%+). All read-only, no schema change. Category chart colors come from `categoryChartColor()` in `finance-options.ts`.
+
 Completed on 2026-10-04:
 
 - Redesigned the mobile bottom navigation as an icon-only dock inspired by opensourceui's App Dock: a floating frosted tray with 44px tiles, active tile filled with `primary`, hover lift/scale only on `pointer-fine` devices, no text labels, and `aria-label` + `aria-current` for accessibility.

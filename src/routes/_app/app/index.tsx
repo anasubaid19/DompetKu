@@ -16,10 +16,12 @@ import { CategoryLabel, WalletLabel, WalletLogo } from "@/components/finance-vis
 import { PageHeader } from "@/components/page-header"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Progress } from "@/components/ui/progress"
 import { SegmentedControl } from "@/components/ui/segmented-control"
 import { getFinanceData } from "@/lib/finance.functions"
 import {
   cashFlowMessage,
+  cn,
   cycleRange,
   formatMoney,
   formatTransactionAmount,
@@ -78,6 +80,27 @@ function DashboardPage() {
   const overdueDebts = data.debts.filter(
     (debt) => debt.status === "active" && debt.due_date && debt.due_date < today(),
   )
+  const expenseByCategory = new Map<string, number>()
+  for (const item of data.transactions) {
+    if (
+      item.type === "expense" &&
+      item.category_id &&
+      item.transaction_date >= cycle.start &&
+      item.transaction_date <= cycle.end
+    ) {
+      expenseByCategory.set(
+        item.category_id,
+        (expenseByCategory.get(item.category_id) ?? 0) + item.amount,
+      )
+    }
+  }
+  const budgetAlerts = data.budgets
+    .map((budget) => {
+      const spent = expenseByCategory.get(budget.category_id) ?? 0
+      return { ...budget, spent, percent: Math.round((spent / budget.amount) * 100) }
+    })
+    .filter((budget) => budget.percent >= 80)
+    .sort((a, b) => b.percent - a.percent)
 
   const chartRanges = chartRange === "weekly" ? recentDays(7) : recentCycles(data.settings, 6)
   const chart = chartRanges.map(({ start, end, shortLabel }) => {
@@ -176,6 +199,48 @@ function DashboardPage() {
             <Button render={<Link to="/app/planning" />} size="sm" variant="outline">
               Lihat di Rencana
             </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {budgetAlerts.length > 0 && (
+        <Card>
+          <CardHeader>
+            <div>
+              <CardTitle>Anggaran hampir penuh</CardTitle>
+              <CardDescription>
+                Realisasi siklus ini terhadap batas yang kamu tetapkan.
+              </CardDescription>
+            </div>
+            <Button render={<Link to="/app/planning" />} size="sm" variant="ghost">
+              Atur
+            </Button>
+          </CardHeader>
+          <CardContent className="grid grid-cols-1 gap-4">
+            {budgetAlerts.slice(0, 3).map((budget) => (
+              <div className="grid gap-2" key={budget.id}>
+                <div className="flex items-center justify-between gap-3 text-sm">
+                  <span className="min-w-0 truncate font-medium">{budget.category_name}</span>
+                  <span
+                    className={cn(
+                      "shrink-0 tabular-nums font-semibold",
+                      budget.percent > 100 ? "text-destructive" : "text-warning",
+                    )}
+                  >
+                    {budget.percent}%
+                  </span>
+                </div>
+                <Progress
+                  aria-label={`${budget.category_name}, ${budget.percent}% dari batas siklus`}
+                  value={Math.min(budget.percent, 100)}
+                />
+                <p className="text-caption tabular-nums">
+                  {budget.percent > 100
+                    ? `Lebih ${money(budget.spent - budget.amount)}`
+                    : `Tersisa ${money(budget.amount - budget.spent)}`}
+                </p>
+              </div>
+            ))}
           </CardContent>
         </Card>
       )}

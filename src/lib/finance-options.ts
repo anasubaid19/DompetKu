@@ -1,13 +1,30 @@
 export const CATEGORY_COLORS = [
-  { value: "orange", label: "Jingga", className: "bg-orange-500" },
-  { value: "blue", label: "Biru", className: "bg-blue-500" },
-  { value: "violet", label: "Ungu", className: "bg-violet-500" },
-  { value: "red", label: "Merah", className: "bg-red-500" },
-  { value: "green", label: "Hijau", className: "bg-emerald-500" },
-  { value: "cyan", label: "Sian", className: "bg-cyan-500" },
-  { value: "pink", label: "Merah muda", className: "bg-pink-500" },
-  { value: "yellow", label: "Kuning", className: "bg-amber-400" },
+  {
+    value: "orange",
+    label: "Jingga",
+    className: "bg-orange-500",
+    chart: "var(--color-orange-500)",
+  },
+  { value: "blue", label: "Biru", className: "bg-blue-500", chart: "var(--color-blue-500)" },
+  { value: "violet", label: "Ungu", className: "bg-violet-500", chart: "var(--color-violet-500)" },
+  { value: "red", label: "Merah", className: "bg-red-500", chart: "var(--color-red-500)" },
+  {
+    value: "green",
+    label: "Hijau",
+    className: "bg-emerald-500",
+    chart: "var(--color-emerald-500)",
+  },
+  { value: "cyan", label: "Sian", className: "bg-cyan-500", chart: "var(--color-cyan-500)" },
+  { value: "pink", label: "Merah muda", className: "bg-pink-500", chart: "var(--color-pink-500)" },
+  { value: "yellow", label: "Kuning", className: "bg-amber-400", chart: "var(--color-amber-400)" },
 ] as const
+
+export function categoryChartColor(value: string | undefined) {
+  if (!value) return "var(--muted-foreground)"
+  return (
+    CATEGORY_COLORS.find((option) => option.value === value)?.chart ?? "var(--muted-foreground)"
+  )
+}
 
 export const CATEGORY_ICONS = [
   { value: "receipt", label: "Struk" },
