@@ -24,6 +24,9 @@
 
 Completed on 2026-10-05:
 
+- E2E smoke test run in a real browser (scratch DB): wallet, quick-add, budget, debt installment, subscription payment, reports (donut/trend/calendar), and settings all work with zero console errors; the earlier hydration bug is confirmed fixed.
+- Added per-wallet budgets (new additive `wallet_budgets` table + `createWalletBudget`/`deleteWalletBudget`) shown under Rencana > Anggaran, and a spending calendar (daily expense heat grid) on Laporan.
+- Added `.github/workflows/ci.yml` running check/typecheck/test/build, and removed the unused legacy root `index.html`.
 - Mobile quick-add and recurring income (batch 2): a floating "+" action on Ringkasan opens the transaction dialog (`TransactionDialog` gained a `fab` prop); Ringkasan shows an active-debt summary; and Rutin supports recurring **income** via a new additive `subscriptions.direction` column (`'expense'` default), with `paySubscription` direction-aware. Migration verified on a copy of the real database (identical row counts).
 - Reports/insights batch: added a category donut to "Pengeluaran terbesar", a "Perbandingan siklus ini" card (income/expense delta vs the previous cycle and vs the 3-cycle average, plus the top expense increases), and an "Anggaran hampir penuh" card on Ringkasan (budgets at 80%+). All read-only, no schema change. Category chart colors come from `categoryChartColor()` in `finance-options.ts`.
 

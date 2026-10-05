@@ -50,11 +50,13 @@ import {
   createDebt,
   createSaving,
   createSubscription,
+  createWalletBudget,
   type Debt,
   deleteBudget,
   deleteDebt,
   deleteSaving,
   deleteSubscription,
+  deleteWalletBudget,
   type FinanceTransaction,
   getFinanceData,
   moveSavingFunds,
@@ -107,6 +109,17 @@ function PlanningPage() {
         item.category_id,
         (expenseByCategory.get(item.category_id) ?? 0) + item.amount,
       )
+    }
+  }
+
+  const expenseByWallet = new Map<string, number>()
+  for (const item of data.transactions) {
+    if (
+      item.type === "expense" &&
+      item.transaction_date >= cycle.start &&
+      item.transaction_date <= cycle.end
+    ) {
+      expenseByWallet.set(item.wallet_id, (expenseByWallet.get(item.wallet_id) ?? 0) + item.amount)
     }
   }
 
@@ -225,6 +238,82 @@ function PlanningPage() {
           {budgets.length === 0 && (
             <Empty icon={Target01Icon} text="Belum ada anggaran kategori." />
           )}
+
+          <div className="grid grid-cols-1 gap-4 pt-2">
+            <SectionHeading
+              action={
+                <PlanningDialog
+                  button="Atur batas dompet"
+                  description="Batasi pengeluaran dari dompet tertentu per siklus."
+                  title="Anggaran per dompet"
+                >
+                  {(close) => <WalletBudgetForm close={close} wallets={data.wallets} />}
+                </PlanningDialog>
+              }
+              description="Batas pengeluaran dari tiap dompet, dihitung dari transaksi pengeluaran."
+              title="Anggaran per dompet"
+            />
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {data.walletBudgets.map((walletBudget) => {
+                const spent = expenseByWallet.get(walletBudget.wallet_id) ?? 0
+                const percent = Math.round((spent / walletBudget.amount) * 100)
+                return (
+                  <Card key={walletBudget.id}>
+                    <CardHeader>
+                      <div className="min-w-0">
+                        <h3 className="text-base font-semibold">{walletBudget.wallet_name}</h3>
+                        <CardDescription className="tabular-nums">
+                          {money(spent)} dari {money(walletBudget.amount)}
+                        </CardDescription>
+                      </div>
+                      <Badge
+                        className={cn(
+                          "tabular-nums",
+                          percent > 100
+                            ? "bg-destructive/10 text-destructive"
+                            : "bg-primary/10 text-primary",
+                        )}
+                      >
+                        {percent}%
+                      </Badge>
+                    </CardHeader>
+                    <CardContent>
+                      <Progress
+                        aria-label={`${walletBudget.wallet_name}, ${percent}% dari batas siklus`}
+                        value={Math.min(percent, 100)}
+                      />
+                      <div className="mt-3 flex items-center justify-between gap-3">
+                        <p className="text-caption tabular-nums">
+                          {percent > 100
+                            ? `Melebihi ${money(spent - walletBudget.amount)}`
+                            : `Tersisa ${money(walletBudget.amount - spent)}`}
+                        </p>
+                        <ConfirmDeleteDialog
+                          action={() => deleteWalletBudget({ data: { id: walletBudget.id } })}
+                          ariaLabel={`Hapus anggaran ${walletBudget.wallet_name}`}
+                          confirmLabel="Hapus anggaran"
+                          description={`Batas pengeluaran untuk ${walletBudget.wallet_name} akan dihapus.`}
+                          success="Anggaran dompet dihapus"
+                          title="Hapus anggaran dompet?"
+                          undo={() =>
+                            createWalletBudget({
+                              data: {
+                                walletId: walletBudget.wallet_id,
+                                amount: walletBudget.amount,
+                              },
+                            })
+                          }
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
+                )
+              })}
+            </div>
+            {data.walletBudgets.length === 0 && (
+              <Empty icon={WalletAdd01Icon} text="Belum ada anggaran per dompet." />
+            )}
+          </div>
         </section>
       )}
 
@@ -534,6 +623,30 @@ function BudgetForm({ categories, close }: { categories: Category[]; close: () =
     >
       <FormField label="Kategori">
         <CategorySelect categories={categories} name="category" required />
+      </FormField>
+      <FormField label="Batas per siklus">
+        <MoneyInput min="1" name="amount" required />
+      </FormField>
+    </MutationForm>
+  )
+}
+
+function WalletBudgetForm({ wallets, close }: { wallets: Wallet[]; close: () => void }) {
+  return (
+    <MutationForm
+      action={(form) =>
+        createWalletBudget({
+          data: {
+            walletId: String(form.get("wallet")),
+            amount: parseNumberInput(form.get("amount")),
+          },
+        })
+      }
+      close={close}
+      id="wallet-budget-form"
+    >
+      <FormField label="Dompet">
+        <WalletSelect name="wallet" required wallets={wallets} />
       </FormField>
       <FormField label="Batas per siklus">
         <MoneyInput min="1" name="amount" required />

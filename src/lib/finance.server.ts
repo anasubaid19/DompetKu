@@ -69,6 +69,7 @@ export function restoreFinanceData(userId: string, parsed: Partial<FinanceData>)
       "subscriptions",
       "savings",
       "budgets",
+      "wallet_budgets",
       "debts",
       "transactions",
       "categories",

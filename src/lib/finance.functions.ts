@@ -80,6 +80,13 @@ export type Budget = {
   category_color: string
 }
 
+export type WalletBudget = {
+  id: string
+  wallet_id: string
+  amount: number
+  wallet_name: string
+}
+
 export type Saving = {
   id: string
   name: string
@@ -119,6 +126,7 @@ export type FinanceData = {
   transactions: FinanceTransaction[]
   debts: Debt[]
   budgets: Budget[]
+  walletBudgets: WalletBudget[]
   savings: Saving[]
   subscriptions: Subscription[]
   settings: Settings
@@ -230,6 +238,13 @@ export const getFinanceData = createServerFn({ method: "GET" }).handler(async ()
       WHERE b.user_id = ? ORDER BY c.name
     `)
     .all(user.id) as Budget[]
+  const walletBudgets = db
+    .query(`
+      SELECT wb.id, wb.wallet_id, wb.amount, w.name AS wallet_name
+      FROM wallet_budgets wb JOIN wallets w ON w.id = wb.wallet_id
+      WHERE wb.user_id = ? ORDER BY w.name
+    `)
+    .all(user.id) as WalletBudget[]
   const savings = db
     .query(`
       SELECT s.id, s.name, s.target_amount, s.saved_amount, s.wallet_id, s.color, s.target_date,
@@ -254,7 +269,17 @@ export const getFinanceData = createServerFn({ method: "GET" }).handler(async ()
     )
     .get(user.id) as Settings
 
-  return { wallets, categories, transactions, debts, budgets, savings, subscriptions, settings }
+  return {
+    wallets,
+    categories,
+    transactions,
+    debts,
+    budgets,
+    walletBudgets,
+    savings,
+    subscriptions,
+    settings,
+  }
 })
 
 type WalletInput = {
@@ -761,6 +786,27 @@ export const deleteBudget = createServerFn({ method: "POST" })
     if (result.changes !== 1) throw new Error("Budget tidak ditemukan")
   })
 
+export const createWalletBudget = createServerFn({ method: "POST" })
+  .validator((data: { walletId: string; amount: number }) => data)
+  .handler(async ({ data }) => {
+    const user = await requireUser()
+    const wallet = ownedWallet(user.id, data.walletId)
+    db.query(`
+      INSERT INTO wallet_budgets (id, user_id, wallet_id, amount) VALUES (?, ?, ?, ?)
+      ON CONFLICT(user_id, wallet_id) DO UPDATE SET amount = excluded.amount
+    `).run(crypto.randomUUID(), user.id, wallet.id, positiveMoney(data.amount))
+  })
+
+export const deleteWalletBudget = createServerFn({ method: "POST" })
+  .validator((data: { id: string }) => data)
+  .handler(async ({ data }) => {
+    const user = await requireUser()
+    const result = db
+      .query("DELETE FROM wallet_budgets WHERE id = ? AND user_id = ?")
+      .run(requiredText(data.id, "Anggaran dompet", 64), user.id)
+    if (result.changes !== 1) throw new Error("Anggaran dompet tidak ditemukan")
+  })
+
 type SavingInput = { name: string; targetAmount: number; walletId?: string; targetDate?: string }
 
 export const createSaving = createServerFn({ method: "POST" })
@@ -1094,6 +1140,7 @@ export const resetFinanceData = createServerFn({ method: "POST" }).handler(async
       "subscriptions",
       "savings",
       "budgets",
+      "wallet_budgets",
       "debts",
       "transactions",
       "categories",

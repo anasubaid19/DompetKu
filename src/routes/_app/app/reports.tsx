@@ -17,6 +17,7 @@ import {
 } from "recharts"
 import { CategoryLabel } from "@/components/finance-visuals"
 import { PageHeader } from "@/components/page-header"
+import { SpendingCalendar } from "@/components/spending-calendar"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
@@ -421,6 +422,22 @@ function ReportsPage() {
               Belum ada data kekayaan bersih.
             </p>
           )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <div>
+            <CardTitle>Kalender pengeluaran</CardTitle>
+            <CardDescription>Lihat tanggal dengan pengeluaran terbesar.</CardDescription>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <SpendingCalendar
+            currency={data.settings.currency}
+            hidden={Boolean(data.settings.hide_balance)}
+            transactions={data.transactions}
+          />
         </CardContent>
       </Card>
     </div>

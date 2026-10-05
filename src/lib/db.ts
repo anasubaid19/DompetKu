@@ -105,6 +105,17 @@ db.exec(`
 
   CREATE INDEX IF NOT EXISTS subscriptions_user_idx ON subscriptions(user_id);
 
+  CREATE TABLE IF NOT EXISTS wallet_budgets (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL REFERENCES user(id) ON DELETE CASCADE,
+    wallet_id TEXT NOT NULL REFERENCES wallets(id) ON DELETE CASCADE,
+    amount INTEGER NOT NULL CHECK (amount > 0),
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, wallet_id)
+  );
+
+  CREATE INDEX IF NOT EXISTS wallet_budgets_user_idx ON wallet_budgets(user_id);
+
   CREATE TABLE IF NOT EXISTS user_settings (
     user_id TEXT PRIMARY KEY REFERENCES user(id) ON DELETE CASCADE,
     currency TEXT NOT NULL DEFAULT 'IDR',
