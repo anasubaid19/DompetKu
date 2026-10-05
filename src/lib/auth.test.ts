@@ -6,7 +6,7 @@ test("initializes Better Auth tables for a new database", async () => {
       "bun",
       "-e",
       `
-        await import("./src/lib/auth.ts")
+        await import("./src/lib/auth.server.ts")
         const { db } = await import("./src/lib/db.ts")
         const tables = db
           .query("SELECT name FROM sqlite_master WHERE type = ? AND name IN (?, ?, ?, ?) ORDER BY name")

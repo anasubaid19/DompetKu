@@ -79,6 +79,13 @@ Exact-match edits (`oldString`) fail whenever the text is not copied verbatim fr
 - For whitespace-sensitive regions, run `scripts/peek.sh <file> <start> <end>` to print exact lines and flag trailing whitespace.
 - Run `bun run fix` once at the end of an edit batch, not between edits you still need to match.
 
+## Server-only Code
+
+Files ending in `.server.ts` are import-protected by TanStack Start, so the client gets a stub instead of the module. Keep anything that touches `bun:sqlite` there.
+
+- Do not add a plain (non-`createServerFn`) export that uses `db` to a module that client routes import (e.g. `finance.functions.ts`). Vite dev does not tree-shake, so `bun:sqlite` leaks into the client, hydration breaks, and every client interaction (dialogs, forms, pull-to-refresh) silently stops working. Put such helpers in a `.server.ts` module and load them with `await import()` inside the server-function handler.
+- The Better Auth instance lives in `auth.server.ts` for this reason; route `src/routes/api/auth/$.ts` imports it from there.
+
 ## Repository Note
 
 - The repository has commits and a GitHub remote (`origin`). Inspect files directly for the working state; avoid destructive git commands.
