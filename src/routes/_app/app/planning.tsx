@@ -140,7 +140,7 @@ function PlanningPage() {
           { label: "Anggaran", value: "budget" },
           { label: "Tabungan", value: "saving" },
           { label: "Hutang & piutang", value: "debt" },
-          { label: "Langganan", value: "subscription" },
+          { label: "Rutin", value: "subscription" },
         ]}
         value={tab}
       />
@@ -351,21 +351,21 @@ function PlanningPage() {
           <SectionHeading
             action={
               <PlanningDialog
-                button="Tambah langganan"
-                description="Dompet tidak otomatis dipotong; catatan ini berfungsi sebagai reminder."
-                title="Langganan rutin"
+                button="Tambah rutin"
+                description="Catatan pengeluaran atau pemasukan yang berulang."
+                title="Rutin"
               >
                 {(close) => (
                   <SubscriptionForm
-                    categories={data.categories.filter((category) => category.type === "expense")}
+                    categories={data.categories}
                     close={close}
                     wallets={data.wallets}
                   />
                 )}
               </PlanningDialog>
             }
-            description="Lihat tagihan rutin sebelum tanggal jatuh temponya."
-            title="Langganan"
+            description="Pantau tagihan dan pemasukan rutin sebelum jatuh temponya."
+            title="Langganan & pemasukan rutin"
           />
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {subscriptions.map((subscription) => {
@@ -379,14 +379,32 @@ function PlanningPage() {
                 <Card key={subscription.id}>
                   <CardHeader>
                     <div className="min-w-0">
-                      <h3 className="text-base font-semibold">{subscription.name}</h3>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="text-base font-semibold">{subscription.name}</h3>
+                        <Badge
+                          className={cn(
+                            subscription.direction === "income"
+                              ? "bg-success/10 text-success"
+                              : "bg-destructive/10 text-destructive",
+                          )}
+                        >
+                          {subscription.direction === "income" ? "Pemasukan" : "Pengeluaran"}
+                        </Badge>
+                      </div>
                       <CardDescription className="flex flex-wrap items-center gap-1.5">
                         {wallet ? <WalletLabel wallet={wallet} /> : "Tanpa dompet"}
                         <span aria-hidden>·</span>
                         {category ? <CategoryLabel category={category} /> : "Tanpa kategori"}
                       </CardDescription>
                     </div>
-                    <span className="grid size-10 place-items-center rounded-2xl bg-warning/12 text-warning">
+                    <span
+                      className={cn(
+                        "grid size-10 place-items-center rounded-2xl",
+                        subscription.direction === "income"
+                          ? "bg-success/10 text-success"
+                          : "bg-warning/12 text-warning",
+                      )}
+                    >
                       <HugeiconsIcon icon={Invoice01Icon} />
                     </span>
                   </CardHeader>
@@ -404,9 +422,7 @@ function PlanningPage() {
                         </p>
                       </div>
                       <SubscriptionEditDialog
-                        categories={data.categories.filter(
-                          (category) => category.type === "expense",
-                        )}
+                        categories={data.categories}
                         subscription={subscription}
                         wallets={data.wallets}
                       />
@@ -422,7 +438,7 @@ function PlanningPage() {
             })}
           </div>
           {subscriptions.length === 0 && (
-            <Empty icon={Invoice01Icon} text="Belum ada langganan rutin." />
+            <Empty icon={Invoice01Icon} text="Belum ada langganan atau pemasukan rutin." />
           )}
         </section>
       )}
@@ -1074,6 +1090,8 @@ function SubscriptionForm({
   categories: Category[]
   close: () => void
 }) {
+  const [direction, setDirection] = useState<"expense" | "income">("expense")
+  const validCategories = categories.filter((category) => category.type === direction)
   return (
     <MutationForm
       action={(form) =>
@@ -1085,14 +1103,29 @@ function SubscriptionForm({
             categoryId: String(form.get("category")),
             nextDueDate: String(form.get("date")),
             intervalMonths: Number(form.get("interval")),
+            direction: form.get("direction") === "income" ? "income" : "expense",
           },
         })
       }
       close={close}
       id="subscription-form"
     >
-      <FormField label="Nama layanan">
-        <Input name="name" placeholder="Contoh: Spotify" required />
+      <FormField label="Jenis">
+        <Select
+          name="direction"
+          onChange={(event) => setDirection(event.target.value === "income" ? "income" : "expense")}
+          value={direction}
+        >
+          <option value="expense">Pengeluaran rutin</option>
+          <option value="income">Pemasukan rutin</option>
+        </Select>
+      </FormField>
+      <FormField label={direction === "income" ? "Nama pemasukan" : "Nama layanan"}>
+        <Input
+          name="name"
+          placeholder={direction === "income" ? "Contoh: Gaji bulanan" : "Contoh: Spotify"}
+          required
+        />
       </FormField>
       <FormField label="Nominal">
         <MoneyInput min="1" name="amount" required />
@@ -1102,7 +1135,12 @@ function SubscriptionForm({
           <WalletSelect name="wallet" placeholder="Tanpa dompet" wallets={wallets} />
         </FormField>
         <FormField label="Kategori">
-          <CategorySelect categories={categories} name="category" placeholder="Tanpa kategori" />
+          <CategorySelect
+            categories={validCategories}
+            key={direction}
+            name="category"
+            placeholder="Tanpa kategori"
+          />
         </FormField>
       </div>
       <div className="grid gap-5 sm:grid-cols-2">
@@ -1114,7 +1152,7 @@ function SubscriptionForm({
             <option value="12">12 bulan</option>
           </Select>
         </FormField>
-        <FormField label="Tagihan berikutnya">
+        <FormField label={direction === "income" ? "Diterima berikutnya" : "Tagihan berikutnya"}>
           <Input defaultValue={today()} name="date" required type="date" />
         </FormField>
       </div>
@@ -1366,6 +1404,7 @@ function SubscriptionEditDialog({
   const [open, setOpen] = useState(false)
   const [pending, setPending] = useState(false)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
+  const [direction, setDirection] = useState<"expense" | "income">(subscription.direction)
   const formId = `subscription-edit-${subscription.id}`
 
   function changeOpen(next: boolean) {
@@ -1387,6 +1426,7 @@ function SubscriptionEditDialog({
           categoryId: String(form.get("category") ?? ""),
           nextDueDate: String(form.get("date")),
           intervalMonths: Number(form.get("interval")),
+          direction: form.get("direction") === "income" ? "income" : "expense",
         },
       })
       changeOpen(false)
@@ -1417,6 +1457,7 @@ function SubscriptionEditDialog({
                 categoryId: subscription.category_id ?? "",
                 nextDueDate: subscription.next_due_date,
                 intervalMonths: subscription.interval_months,
+                direction: subscription.direction,
               },
             }).then(() => router.invalidate())
           },
@@ -1472,7 +1513,19 @@ function SubscriptionEditDialog({
               </DialogDescription>
             </DialogHeader>
             <form className="grid gap-5" id={formId} onSubmit={submit}>
-              <FormField label="Nama layanan">
+              <FormField label="Jenis">
+                <Select
+                  name="direction"
+                  onChange={(event) =>
+                    setDirection(event.target.value === "income" ? "income" : "expense")
+                  }
+                  value={direction}
+                >
+                  <option value="expense">Pengeluaran rutin</option>
+                  <option value="income">Pemasukan rutin</option>
+                </Select>
+              </FormField>
+              <FormField label={direction === "income" ? "Nama pemasukan" : "Nama layanan"}>
                 <Input defaultValue={subscription.name} maxLength={80} name="name" required />
               </FormField>
               <FormField label="Nominal">
@@ -1489,8 +1542,9 @@ function SubscriptionEditDialog({
                 </FormField>
                 <FormField label="Kategori">
                   <CategorySelect
-                    categories={categories}
+                    categories={categories.filter((category) => category.type === direction)}
                     defaultValue={subscription.category_id ?? ""}
+                    key={direction}
                     name="category"
                     placeholder="Tanpa kategori"
                   />
@@ -1505,7 +1559,9 @@ function SubscriptionEditDialog({
                     <option value="12">12 bulan</option>
                   </Select>
                 </FormField>
-                <FormField label="Tagihan berikutnya">
+                <FormField
+                  label={direction === "income" ? "Diterima berikutnya" : "Tagihan berikutnya"}
+                >
                   <Input
                     defaultValue={subscription.next_due_date}
                     name="date"
@@ -1567,7 +1623,11 @@ function PaySubscriptionDialog({
       })
       setOpen(false)
       await router.invalidate()
-      toast.success("Langganan dibayar dan saldo dompet diperbarui")
+      toast.success(
+        subscription.direction === "income"
+          ? "Pemasukan rutin diterima dan saldo dompet diperbarui"
+          : "Langganan dibayar dan saldo dompet diperbarui",
+      )
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Pembayaran gagal")
     } finally {
@@ -1575,24 +1635,27 @@ function PaySubscriptionDialog({
     }
   }
 
+  const income = subscription.direction === "income"
   return (
     <Dialog onOpenChange={setOpen} open={open}>
       <DialogTrigger render={<Button className="w-full" variant="outline" />}>
         <HugeiconsIcon icon={BadgeCheckIcon} />
-        Tandai dibayar
+        {income ? "Tandai diterima" : "Tandai dibayar"}
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Bayar {subscription.name}?</DialogTitle>
+          <DialogTitle>
+            {income ? "Terima" : "Bayar"} {subscription.name}?
+          </DialogTitle>
           <DialogDescription>
-            Saldo dompet berkurang {money(subscription.amount)} dan tagihan maju{" "}
-            {subscription.interval_months} bulan.
+            Saldo dompet {income ? "bertambah" : "berkurang"} {money(subscription.amount)} dan
+            jadwal maju {subscription.interval_months} bulan.
           </DialogDescription>
         </DialogHeader>
         <form className="grid gap-5" id={formId} onSubmit={submit}>
           <div className="flex items-end justify-between gap-3 rounded-2xl bg-secondary/60 p-4">
             <div>
-              <p className="text-caption">Nominal dibayar</p>
+              <p className="text-caption">{income ? "Nominal diterima" : "Nominal dibayar"}</p>
               <p className="mt-1 text-xl font-semibold tabular-nums">
                 {money(subscription.amount)}
               </p>
@@ -1600,7 +1663,7 @@ function PaySubscriptionDialog({
           </div>
           <FormField
             hint={wallets.length === 0 ? "Buat dompet terlebih dahulu dari dashboard." : undefined}
-            label="Dompet pembayar"
+            label={income ? "Dompet penerima" : "Dompet pembayar"}
           >
             <WalletSelect
               defaultValue={subscription.wallet_id ?? ""}
@@ -1609,14 +1672,14 @@ function PaySubscriptionDialog({
               wallets={wallets}
             />
           </FormField>
-          <FormField label="Tanggal bayar">
+          <FormField label={income ? "Tanggal diterima" : "Tanggal bayar"}>
             <Input defaultValue={today()} name="date" required type="date" />
           </FormField>
         </form>
         <DialogFooter>
           <DialogClose render={<Button variant="ghost" />}>Batal</DialogClose>
           <Button disabled={pending} form={formId} type="submit">
-            {pending ? "Menyimpan…" : "Bayar langganan"}
+            {pending ? "Menyimpan…" : income ? "Terima pemasukan" : "Bayar langganan"}
           </Button>
         </DialogFooter>
       </DialogContent>

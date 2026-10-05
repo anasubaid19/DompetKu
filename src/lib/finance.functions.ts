@@ -99,6 +99,7 @@ export type Subscription = {
   category_id: string | null
   next_due_date: string
   interval_months: number
+  direction: "expense" | "income"
   active: number
   wallet_name: string | null
   category_name: string | null
@@ -240,7 +241,7 @@ export const getFinanceData = createServerFn({ method: "GET" }).handler(async ()
   const subscriptions = db
     .query(`
       SELECT s.id, s.name, s.amount, s.wallet_id, s.category_id, s.next_due_date,
-        s.interval_months, s.active, w.name AS wallet_name, c.name AS category_name
+        s.interval_months, s.direction, s.active, w.name AS wallet_name, c.name AS category_name
       FROM subscriptions s
       LEFT JOIN wallets w ON w.id = s.wallet_id
       LEFT JOIN categories c ON c.id = s.category_id
@@ -874,11 +875,16 @@ type SubscriptionInput = {
   categoryId?: string
   nextDueDate: string
   intervalMonths?: number
+  direction?: "expense" | "income"
 }
 
 function positiveMonths(value: unknown) {
   const months = Number(value)
   return Number.isInteger(months) && months >= 1 && months <= 60 ? months : 1
+}
+
+function subscriptionDirection(value: unknown): "expense" | "income" {
+  return value === "income" ? "income" : "expense"
 }
 
 export const createSubscription = createServerFn({ method: "POST" })
@@ -895,7 +901,7 @@ export const createSubscription = createServerFn({ method: "POST" })
       if (!category) throw new Error("Kategori tidak ditemukan")
     }
     db.query(
-      "INSERT INTO subscriptions (id, user_id, name, amount, wallet_id, category_id, next_due_date, interval_months) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+      "INSERT INTO subscriptions (id, user_id, name, amount, wallet_id, category_id, next_due_date, interval_months, direction) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
     ).run(
       crypto.randomUUID(),
       user.id,
@@ -905,6 +911,7 @@ export const createSubscription = createServerFn({ method: "POST" })
       categoryId,
       requiredText(data.nextDueDate, "Tanggal tagihan", 10),
       positiveMonths(data.intervalMonths),
+      subscriptionDirection(data.direction),
     )
   })
 
@@ -923,7 +930,7 @@ export const updateSubscription = createServerFn({ method: "POST" })
     }
     const result = db
       .query(
-        "UPDATE subscriptions SET name = ?, amount = ?, wallet_id = ?, category_id = ?, next_due_date = ?, interval_months = ? WHERE id = ? AND user_id = ?",
+        "UPDATE subscriptions SET name = ?, amount = ?, wallet_id = ?, category_id = ?, next_due_date = ?, interval_months = ?, direction = ? WHERE id = ? AND user_id = ?",
       )
       .run(
         requiredText(data.name, "Nama langganan", 80),
@@ -932,24 +939,30 @@ export const updateSubscription = createServerFn({ method: "POST" })
         categoryId,
         requiredText(data.nextDueDate, "Tanggal tagihan", 10),
         positiveMonths(data.intervalMonths),
+        subscriptionDirection(data.direction),
         requiredText(data.id, "Langganan", 64),
         user.id,
       )
     if (result.changes !== 1) throw new Error("Langganan tidak ditemukan")
   })
 
-function ensureSubscriptionCategoryId(userId: string, current: string | null) {
+function ensureSubscriptionCategoryId(
+  userId: string,
+  current: string | null,
+  direction: "expense" | "income",
+) {
   if (current) return current
+  const name = direction === "income" ? "Pemasukan Rutin" : "Langganan"
+  const type = direction
+  const icon = direction === "income" ? "money" : "invoice"
   const existing = db
-    .query(
-      "SELECT id FROM categories WHERE user_id = ? AND name = 'Langganan' AND type = 'expense'",
-    )
-    .get(userId) as { id: string } | null
+    .query("SELECT id FROM categories WHERE user_id = ? AND name = ? AND type = ?")
+    .get(userId, name, type) as { id: string } | null
   if (existing) return existing.id
   const id = crypto.randomUUID()
   db.query(
-    "INSERT INTO categories (id, user_id, name, type, color, icon) VALUES (?, ?, 'Langganan', 'expense', 'violet', 'invoice')",
-  ).run(id, userId)
+    "INSERT INTO categories (id, user_id, name, type, color, icon) VALUES (?, ?, ?, ?, ?, ?)",
+  ).run(id, userId, name, type, direction === "income" ? "green" : "violet", icon)
   return id
 }
 
@@ -961,11 +974,18 @@ export const paySubscription = createServerFn({ method: "POST" })
     const commit = db.transaction(() => {
       const subscription = db
         .query(
-          "SELECT id, name, amount, wallet_id, category_id, next_due_date, interval_months FROM subscriptions WHERE id = ? AND user_id = ?",
+          "SELECT id, name, amount, wallet_id, category_id, next_due_date, interval_months, direction FROM subscriptions WHERE id = ? AND user_id = ?",
         )
         .get(id, user.id) as Pick<
         Subscription,
-        "id" | "name" | "amount" | "wallet_id" | "category_id" | "next_due_date" | "interval_months"
+        | "id"
+        | "name"
+        | "amount"
+        | "wallet_id"
+        | "category_id"
+        | "next_due_date"
+        | "interval_months"
+        | "direction"
       > | null
       if (!subscription) throw new Error("Langganan tidak ditemukan")
 
@@ -973,12 +993,16 @@ export const paySubscription = createServerFn({ method: "POST" })
         ? ownedWallet(user.id, data.walletId).id
         : subscription.wallet_id
       if (!walletId) throw new Error("Pilih dompet untuk membayar langganan ini")
-      const categoryId = ensureSubscriptionCategoryId(user.id, subscription.category_id)
+      const categoryId = ensureSubscriptionCategoryId(
+        user.id,
+        subscription.category_id,
+        subscription.direction,
+      )
       const date = data.date ? requiredText(data.date, "Tanggal", 10) : today()
       if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error("Tanggal tidak valid")
 
       const movement: LedgerEntry = {
-        type: "expense",
+        type: subscription.direction,
         amount: subscription.amount,
         fee: 0,
         walletId,
@@ -988,14 +1012,15 @@ export const paySubscription = createServerFn({ method: "POST" })
       db.query(`
         INSERT INTO transactions
           (id, user_id, type, amount, fee, wallet_id, target_wallet_id, category_id, description, transaction_date)
-        VALUES (?, ?, 'expense', ?, 0, ?, NULL, ?, ?, ?)
+        VALUES (?, ?, ?, ?, 0, ?, NULL, ?, ?, ?)
       `).run(
         crypto.randomUUID(),
         user.id,
+        subscription.direction,
         subscription.amount,
         walletId,
         categoryId,
-        `Langganan: ${subscription.name}`,
+        `${subscription.direction === "income" ? "Pemasukan rutin" : "Langganan"}: ${subscription.name}`,
         date,
       )
       db.query(
@@ -1273,7 +1298,7 @@ export function restoreFinanceData(userId: string, parsed: Partial<FinanceData>)
     }
     for (const item of parsed.subscriptions ?? []) {
       db.query(
-        "INSERT INTO subscriptions (id, user_id, name, amount, wallet_id, category_id, next_due_date, active, interval_months) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO subscriptions (id, user_id, name, amount, wallet_id, category_id, next_due_date, active, interval_months, direction) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
       ).run(
         crypto.randomUUID(),
         userId,
@@ -1284,6 +1309,7 @@ export function restoreFinanceData(userId: string, parsed: Partial<FinanceData>)
         requiredText(item.next_due_date, "Tanggal", 10),
         item.active ? 1 : 0,
         [1, 3, 6, 12].includes(Number(item.interval_months)) ? Number(item.interval_months) : 1,
+        item.direction === "income" ? "income" : "expense",
       )
       summary.imported.subscriptions += 1
     }

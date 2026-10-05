@@ -349,11 +349,13 @@ export function TransactionDialog({
   categories,
   recentTransactions = [],
   transaction,
+  fab = false,
 }: {
   wallets: Wallet[]
   categories: Category[]
   recentTransactions?: FinanceTransaction[]
   transaction?: FinanceTransaction
+  fab?: boolean
 }) {
   const router = useRouter()
   const formId = useId()
@@ -423,15 +425,23 @@ export function TransactionDialog({
       <DialogTrigger
         render={
           <Button
-            aria-label={transaction ? "Edit transaksi" : undefined}
+            aria-label={transaction ? "Edit transaksi" : "Catat transaksi"}
+            className={
+              fab && !transaction
+                ? "size-14 rounded-full shadow-xl shadow-primary/25 transition-transform active:scale-95"
+                : undefined
+            }
             disabled={wallets.length === 0}
-            size={transaction ? "icon" : "default"}
+            size={transaction ? "icon" : fab ? "icon" : "default"}
             variant={transaction ? "ghost" : "default"}
           />
         }
       >
-        <HugeiconsIcon icon={transaction ? Edit02Icon : Add01Icon} />
-        {!transaction && "Catat transaksi"}
+        <HugeiconsIcon
+          className={fab && !transaction ? "size-6" : undefined}
+          icon={transaction ? Edit02Icon : Add01Icon}
+        />
+        {!transaction && !fab && "Catat transaksi"}
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>

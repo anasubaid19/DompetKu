@@ -101,6 +101,11 @@ function DashboardPage() {
     })
     .filter((budget) => budget.percent >= 80)
     .sort((a, b) => b.percent - a.percent)
+  const activeDebts = data.debts.filter((debt) => debt.status === "active")
+  const outstanding = (type: "hutang" | "piutang") =>
+    activeDebts
+      .filter((debt) => debt.type === type)
+      .reduce((sum, debt) => sum + Math.max(0, debt.amount - debt.paid_amount), 0)
 
   const chartRanges = chartRange === "weekly" ? recentDays(7) : recentCycles(data.settings, 6)
   const chart = chartRanges.map(({ start, end, shortLabel }) => {
@@ -243,6 +248,36 @@ function DashboardPage() {
             ))}
           </CardContent>
         </Card>
+      )}
+
+      {activeDebts.length > 0 && (
+        <Card>
+          <CardContent className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
+            <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-secondary text-muted-foreground">
+              <HugeiconsIcon icon={UserIcon} />
+            </span>
+            <div className="min-w-0 flex-1">
+              <h2 className="font-semibold">Kewajiban aktif</h2>
+              <p className="text-caption mt-1 tabular-nums">
+                Hutang {money(outstanding("hutang"))} · Piutang {money(outstanding("piutang"))}
+              </p>
+            </div>
+            <Button render={<Link to="/app/planning" />} size="sm" variant="outline">
+              Lihat di Rencana
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {data.wallets.length > 0 && (
+        <div className="fixed right-4 bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] z-40 lg:hidden">
+          <TransactionDialog
+            categories={data.categories}
+            fab
+            recentTransactions={data.transactions}
+            wallets={data.wallets}
+          />
+        </div>
       )}
 
       <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1.55fr)_minmax(320px,0.75fr)]">

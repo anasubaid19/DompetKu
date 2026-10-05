@@ -24,6 +24,7 @@
 
 Completed on 2026-10-05:
 
+- Mobile quick-add and recurring income (batch 2): a floating "+" action on Ringkasan opens the transaction dialog (`TransactionDialog` gained a `fab` prop); Ringkasan shows an active-debt summary; and Rutin supports recurring **income** via a new additive `subscriptions.direction` column (`'expense'` default), with `paySubscription` direction-aware. Migration verified on a copy of the real database (identical row counts).
 - Reports/insights batch: added a category donut to "Pengeluaran terbesar", a "Perbandingan siklus ini" card (income/expense delta vs the previous cycle and vs the 3-cycle average, plus the top expense increases), and an "Anggaran hampir penuh" card on Ringkasan (budgets at 80%+). All read-only, no schema change. Category chart colors come from `categoryChartColor()` in `finance-options.ts`.
 
 Completed on 2026-10-04:

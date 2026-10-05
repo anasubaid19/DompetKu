@@ -98,6 +98,7 @@ db.exec(`
     category_id TEXT REFERENCES categories(id) ON DELETE SET NULL,
     next_due_date TEXT NOT NULL,
     interval_months INTEGER NOT NULL DEFAULT 1,
+    direction TEXT NOT NULL DEFAULT 'expense' CHECK (direction IN ('expense', 'income')),
     active INTEGER NOT NULL DEFAULT 1,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
   );
@@ -129,6 +130,9 @@ if (!transactionColumns.some((column) => column.name === "debt_id")) {
 const subscriptionColumns = db.query("PRAGMA table_info(subscriptions)").all() as { name: string }[]
 if (!subscriptionColumns.some((column) => column.name === "interval_months")) {
   db.exec("ALTER TABLE subscriptions ADD COLUMN interval_months INTEGER NOT NULL DEFAULT 1")
+}
+if (!subscriptionColumns.some((column) => column.name === "direction")) {
+  db.exec("ALTER TABLE subscriptions ADD COLUMN direction TEXT NOT NULL DEFAULT 'expense'")
 }
 
 export function ensureDefaults(userId: string) {
