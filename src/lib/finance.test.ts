@@ -1,5 +1,10 @@
 import { describe, expect, test } from "bun:test"
-import { calculateLedgerBalances, debtPaymentDraft, nextDebtState } from "@/lib/finance.functions"
+import {
+  calculateLedgerBalances,
+  debtPaymentDraft,
+  nextDebtState,
+  parseBackupJson,
+} from "@/lib/finance.functions"
 import { isCategoryColor, isCategoryIcon, isFinancialInstitution } from "@/lib/finance-options"
 import {
   addMonths,
@@ -237,4 +242,18 @@ test("days until a due date counts calendar days", () => {
   expect(daysUntil("2026-10-04", now)).toBe(0)
   expect(daysUntil("2026-10-06", now)).toBe(2)
   expect(daysUntil("2026-10-01", now)).toBe(-3)
+})
+
+test("backup parsing accepts valid files and rejects malformed ones", () => {
+  const valid = parseBackupJson(JSON.stringify({ wallets: [], settings: { currency: "IDR" } }))
+  expect(valid.wallets).toEqual([])
+  expect(() => parseBackupJson("bukan json")).toThrow("File JSON tidak valid")
+  expect(() => parseBackupJson("x".repeat(5_000_001))).toThrow("File terlalu besar")
+  expect(() => parseBackupJson(JSON.stringify({ wallets: { id: "a" } }))).toThrow(
+    "Struktur backup tidak valid",
+  )
+  expect(() => parseBackupJson(JSON.stringify({ wallets: new Array(5001).fill({}) }))).toThrow(
+    "Struktur backup tidak valid",
+  )
+  expect(parseBackupJson(JSON.stringify({ transactions: [] })).transactions).toEqual([])
 })

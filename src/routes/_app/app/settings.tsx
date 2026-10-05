@@ -32,6 +32,7 @@ import { Select } from "@/components/ui/select"
 import {
   getFinanceData,
   importFinanceData,
+  type RestoreSummary,
   resetFinanceData,
   updateSettings,
 } from "@/lib/finance.functions"
@@ -46,6 +47,7 @@ function SettingsPage() {
   const data = Route.useLoaderData()
   const router = useRouter()
   const [pending, setPending] = useState(false)
+  const [lastRestore, setLastRestore] = useState<RestoreSummary | null>(null)
 
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -98,8 +100,9 @@ function SettingsPage() {
     event.target.value = ""
     if (!file) return
     try {
-      await importFinanceData({ data: { json: await file.text() } })
+      const summary = await importFinanceData({ data: { json: await file.text() } })
       await router.invalidate()
+      setLastRestore(summary)
       toast.success("Backup berhasil dipulihkan")
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Backup gagal dipulihkan")
@@ -260,6 +263,7 @@ function SettingsPage() {
               JSON untuk backup lengkap. CSV untuk membaca transaksi di aplikasi spreadsheet. Import
               JSON mengganti seluruh data finansial setelah file berhasil divalidasi.
             </p>
+            {lastRestore && <RestoreSummaryView summary={lastRestore} />}
           </CardContent>
         </Card>
 
@@ -278,6 +282,37 @@ function SettingsPage() {
           </CardContent>
         </Card>
       </div>
+    </div>
+  )
+}
+
+function RestoreSummaryView({ summary }: { summary: RestoreSummary }) {
+  const labels: Record<string, string> = {
+    wallets: "Dompet",
+    categories: "Kategori",
+    transactions: "Transaksi",
+    debts: "Hutang & piutang",
+    budgets: "Anggaran",
+    savings: "Tabungan",
+    subscriptions: "Langganan",
+  }
+  const skipped = summary.skipped.transactions
+  return (
+    <div className="grid gap-2 rounded-2xl bg-secondary/55 p-4 sm:col-span-2">
+      <p className="text-label">Hasil pemulihan terakhir</p>
+      <ul className="grid gap-1 text-sm tabular-nums">
+        {Object.entries(labels).map(([key, label]) => (
+          <li className="flex items-center justify-between gap-3" key={key}>
+            <span className="text-muted-foreground">{label}</span>
+            <span className="font-medium">{summary.imported[key] ?? 0} dipulihkan</span>
+          </li>
+        ))}
+      </ul>
+      <p className="text-caption">
+        {skipped > 0
+          ? `${skipped} transaksi dilewati karena dompet tidak dikenal atau jenis tidak valid.`
+          : "Tidak ada baris yang dilewati."}
+      </p>
     </div>
   )
 }

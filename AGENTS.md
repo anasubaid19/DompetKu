@@ -28,6 +28,7 @@ Completed on 2026-10-05:
 
 Completed on 2026-10-04:
 
+- Backup restore now reports results: `importFinanceData` refactored into `parseBackupJson` + `restoreFinanceData` (both unit-testable) and returns imported/skipped counts per table; the Pengaturan card shows a "Hasil pemulihan terakhir" summary. Subscription `interval_months` now survives import. Round-trip verified against a copy of the real database (all row counts and balances identical).
 - Redesigned the mobile bottom navigation as an icon-only dock inspired by opensourceui's App Dock: a floating frosted tray with 44px tiles, active tile filled with `primary`, hover lift/scale only on `pointer-fine` devices, no text labels, and `aria-label` + `aria-current` for accessibility.
 - Rewrote user-facing copy in plain Indonesian (better-writing) on the landing page, app headers, auth, help, and meta; aligned the term "Budget" → "Anggaran", and used an en dash for cycle ranges (better-typography).
 - Added a custom pull-to-refresh for the app pages (`src/components/pull-to-refresh.tsx`, mounted in `AppShell`): pulling down at the top of a page shows a progress spinner with a "release to reload" cue and re-runs the route loader via `router.invalidate()`. Skips gestures inside dialogs and scrollable widgets, honours reduced motion, and sets `overscroll-behavior-y: contain` while mounted. Built for the standalone PWA where the native gesture is unreliable.
