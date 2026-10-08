@@ -464,6 +464,11 @@ function PlanningPage() {
               const category = subscription.category_id
                 ? categoriesById.get(subscription.category_id)
                 : undefined
+              const dueIn = subscription.next_due_date
+                ? daysUntil(subscription.next_due_date)
+                : null
+              const overdue = dueIn !== null && dueIn < 0
+              const dueSoon = dueIn !== null && dueIn >= 0 && dueIn <= 7
               return (
                 <Card key={subscription.id}>
                   <CardHeader>
@@ -479,6 +484,14 @@ function PlanningPage() {
                         >
                           {subscription.direction === "income" ? "Pemasukan" : "Pengeluaran"}
                         </Badge>
+                        {overdue && (
+                          <Badge className="bg-destructive/10 text-destructive">Terlambat</Badge>
+                        )}
+                        {dueSoon && (
+                          <Badge className="bg-warning/12 text-warning">
+                            {dueIn === 0 ? "Jatuh tempo hari ini" : `${dueIn} hari lagi`}
+                          </Badge>
+                        )}
                       </div>
                       <CardDescription className="flex flex-wrap items-center gap-1.5">
                         {wallet ? <WalletLabel wallet={wallet} /> : "Tanpa dompet"}

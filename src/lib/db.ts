@@ -1,4 +1,5 @@
 import { Database } from "bun:sqlite"
+import { SEED_CATEGORIES } from "@/lib/finance-options"
 
 export const db = new Database(process.env.DATABASE_PATH ?? "dompetku.sqlite", {
   create: true,
@@ -149,16 +150,7 @@ if (!subscriptionColumns.some((column) => column.name === "direction")) {
 export function ensureDefaults(userId: string) {
   db.query("INSERT OR IGNORE INTO user_settings (user_id) VALUES (?)").run(userId)
 
-  const defaults = [
-    ["Makanan", "expense", "orange", "receipt"],
-    ["Transportasi", "expense", "blue", "car"],
-    ["Belanja", "expense", "violet", "bag"],
-    ["Tagihan", "expense", "red", "invoice"],
-    ["Gaji", "income", "green", "money"],
-    ["Bonus", "income", "cyan", "sparkles"],
-    ["Bayar Hutang", "expense", "red", "invoice"],
-    ["Piutang Dibayar", "income", "green", "money"],
-  ] as const
+  const defaults = SEED_CATEGORIES
 
   const insert = db.query(
     "INSERT OR IGNORE INTO categories (id, user_id, name, type, color, icon) VALUES (?, ?, ?, ?, ?, ?)",

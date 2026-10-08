@@ -65,7 +65,7 @@ function TransactionsPage() {
       period === "all" ||
       (item.transaction_date >= cycle.start && item.transaction_date <= cycle.end)
     const haystack =
-      `${item.description} ${item.category_name} ${item.wallet_name} ${item.target_wallet_name}`.toLowerCase()
+      `${item.description} ${item.category_name} ${item.wallet_name} ${item.target_wallet_name} ${item.amount} ${item.fee}`.toLowerCase()
     return matchesType && matchesPeriod && haystack.includes(deferredQuery)
   })
 

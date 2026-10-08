@@ -3,6 +3,7 @@ import {
   ArrowUp01Icon,
   CalendarDaysIcon,
   CalendarRangeIcon,
+  Invoice01Icon,
   TransactionHistoryIcon,
   UserIcon,
   Wallet01Icon,
@@ -23,6 +24,7 @@ import {
   cashFlowMessage,
   cn,
   cycleRange,
+  daysUntil,
   formatMoney,
   formatTransactionAmount,
   recentCycles,
@@ -79,6 +81,9 @@ function DashboardPage() {
   const walletsById = new Map(data.wallets.map((wallet) => [wallet.id, wallet]))
   const overdueDebts = data.debts.filter(
     (debt) => debt.status === "active" && debt.due_date && debt.due_date < today(),
+  )
+  const dueSubscriptions = data.subscriptions.filter(
+    (subscription) => subscription.next_due_date && daysUntil(subscription.next_due_date) <= 7,
   )
   const expenseByCategory = new Map<string, number>()
   for (const item of data.transactions) {
@@ -208,6 +213,27 @@ function DashboardPage() {
         </Card>
       )}
 
+      {dueSubscriptions.length > 0 && (
+        <Card className="border border-warning/25 bg-warning/[0.05]">
+          <CardContent className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
+            <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-warning/12 text-warning">
+              <HugeiconsIcon icon={Invoice01Icon} />
+            </span>
+            <div className="min-w-0 flex-1">
+              <h2 className="font-semibold">
+                {dueSubscriptions.length} pembayaran rutin mendekati jatuh tempo
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Termasuk yang sudah lewat — bayar dari Rencana sebelum menumpuk.
+              </p>
+            </div>
+            <Button render={<Link to="/app/planning" />} size="sm" variant="outline">
+              Lihat di Rencana
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
       {budgetAlerts.length > 0 && (
         <Card>
           <CardHeader>
@@ -246,6 +272,16 @@ function DashboardPage() {
                 </p>
               </div>
             ))}
+            {budgetAlerts.length > 3 && (
+              <Button
+                className="justify-self-start"
+                render={<Link to="/app/planning" />}
+                size="sm"
+                variant="ghost"
+              >
+                Lihat {budgetAlerts.length - 3} lainnya di Rencana
+              </Button>
+            )}
           </CardContent>
         </Card>
       )}

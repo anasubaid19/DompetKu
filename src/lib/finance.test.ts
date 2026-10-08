@@ -5,7 +5,12 @@ import {
   nextDebtState,
   parseBackupJson,
 } from "@/lib/finance.functions"
-import { isCategoryColor, isCategoryIcon, isFinancialInstitution } from "@/lib/finance-options"
+import {
+  isCategoryColor,
+  isCategoryIcon,
+  isFinancialInstitution,
+  isSeedCategory,
+} from "@/lib/finance-options"
 import {
   addMonths,
   cashFlowMessage,
@@ -242,6 +247,15 @@ test("days until a due date counts calendar days", () => {
   expect(daysUntil("2026-10-04", now)).toBe(0)
   expect(daysUntil("2026-10-06", now)).toBe(2)
   expect(daysUntil("2026-10-01", now)).toBe(-3)
+})
+
+test("seed categories are recognized by name and type", () => {
+  expect(isSeedCategory("Makanan", "expense")).toBe(true)
+  expect(isSeedCategory("Gaji", "income")).toBe(true)
+  expect(isSeedCategory("Bayar Hutang", "expense")).toBe(true)
+  expect(isSeedCategory("Makanan", "income")).toBe(false)
+  expect(isSeedCategory("Jajan", "expense")).toBe(false)
+  expect(isSeedCategory("makanan", "expense")).toBe(false)
 })
 
 test("backup parsing accepts valid files and rejects malformed ones", () => {

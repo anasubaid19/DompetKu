@@ -30,8 +30,10 @@ import {
   createCategory,
   createTransaction,
   createWallet,
+  deleteCategory,
   deleteWallet,
   type FinanceTransaction,
+  updateCategory,
   updateTransaction,
   updateWallet,
   type Wallet,
@@ -211,13 +213,30 @@ export function WalletDialog({ wallet }: { wallet?: Wallet } = {}) {
   )
 }
 
-export function CategoryDialog({ type }: { type?: "expense" | "income" } = {}) {
+export function CategoryDialog({
+  type,
+  category,
+}: {
+  type?: "expense" | "income"
+  category?: Category
+} = {}) {
   const router = useRouter()
   const formId = useId()
   const [open, setOpen] = useState(false)
   const [pending, setPending] = useState(false)
-  const [color, setColor] = useState("violet")
-  const [icon, setIcon] = useState("receipt")
+  const [color, setColor] = useState(category?.color ?? "violet")
+  const [icon, setIcon] = useState(category?.icon ?? "receipt")
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
+
+  function changeOpen(nextOpen: boolean) {
+    setOpen(nextOpen)
+    if (nextOpen) {
+      setColor(category?.color ?? "violet")
+      setIcon(category?.icon ?? "receipt")
+    } else {
+      setConfirmingDelete(false)
+    }
+  }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -225,120 +244,205 @@ export function CategoryDialog({ type }: { type?: "expense" | "income" } = {}) {
     setPending(true)
     const form = new FormData(event.currentTarget)
     try {
-      await createCategory({
-        data: {
-          name: String(form.get("name")),
-          type: type ?? (form.get("type") === "income" ? "income" : "expense"),
-          color,
-          icon,
-        },
-      })
+      if (category) {
+        await updateCategory({
+          data: { id: category.id, name: String(form.get("name")), color, icon },
+        })
+      } else {
+        await createCategory({
+          data: {
+            name: String(form.get("name")),
+            type: type ?? (form.get("type") === "income" ? "income" : "expense"),
+            color,
+            icon,
+          },
+        })
+      }
       setOpen(false)
       await router.invalidate()
-      toast.success("Kategori ditambahkan")
+      toast.success(category ? "Kategori diperbarui" : "Kategori ditambahkan")
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Kategori gagal ditambahkan")
+      toast.error(error instanceof Error ? error.message : "Kategori gagal disimpan")
+    } finally {
+      setPending(false)
+    }
+  }
+
+  async function remove() {
+    if (!category) return
+    setPending(true)
+    try {
+      await deleteCategory({ data: { id: category.id } })
+      changeOpen(false)
+      await router.invalidate()
+      toast.success("Kategori dihapus", {
+        action: {
+          label: "Urungkan",
+          onClick: () => {
+            void createCategory({
+              data: {
+                name: category.name,
+                type: category.type,
+                color: category.color,
+                icon: category.icon,
+              },
+            }).then(() => router.invalidate())
+          },
+        },
+      })
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Kategori gagal dihapus")
     } finally {
       setPending(false)
     }
   }
 
   return (
-    <Dialog
-      onOpenChange={(value) => {
-        setOpen(value)
-        if (value) {
-          setColor("violet")
-          setIcon("receipt")
-        }
-      }}
-      open={open}
-    >
+    <Dialog onOpenChange={changeOpen} open={open}>
       <DialogTrigger
         render={
           <Button
             aria-label={
-              type
-                ? `Tambah kategori ${type === "income" ? "pemasukan" : "pengeluaran"}`
-                : "Tambah kategori"
+              category
+                ? `Edit ${category.name}`
+                : type
+                  ? `Tambah kategori ${type === "income" ? "pemasukan" : "pengeluaran"}`
+                  : "Tambah kategori"
             }
             size="icon"
-            variant="outline"
+            variant={category ? "ghost" : "outline"}
           />
         }
       >
-        <HugeiconsIcon icon={Add01Icon} />
+        <HugeiconsIcon icon={category ? Edit02Icon : Add01Icon} />
       </DialogTrigger>
       <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Kategori baru</DialogTitle>
-          <DialogDescription>
-            Gunakan nama singkat yang mudah ditemukan saat mencatat transaksi.
-          </DialogDescription>
-        </DialogHeader>
-        <form className="grid gap-5" id={formId} onSubmit={submit}>
-          <FormField label="Nama kategori">
-            <Input autoFocus maxLength={50} name="name" required />
-          </FormField>
-          {!type && (
-            <FormField label="Jenis">
-              <Select name="type">
-                <option value="expense">Pengeluaran</option>
-                <option value="income">Pemasukan</option>
-              </Select>
-            </FormField>
-          )}
-          <fieldset className="grid gap-2">
-            <legend className="text-label">Warna aksen</legend>
-            <div className="flex flex-wrap gap-2">
-              {CATEGORY_COLORS.map((option) => (
-                <button
-                  aria-label={option.label}
-                  aria-pressed={color === option.value}
-                  className={cn(
-                    "grid size-11 place-items-center rounded-xl border transition-[border-color,box-shadow] focus-visible:ring-3 focus-visible:ring-ring/20",
-                    color === option.value ? "border-ring ring-2 ring-ring/20" : "border-border",
-                  )}
-                  key={option.value}
-                  onClick={() => setColor(option.value)}
-                  title={option.label}
-                  type="button"
+        {confirmingDelete && category ? (
+          <>
+            <DialogHeader>
+              <DialogTitle>Hapus kategori?</DialogTitle>
+              <DialogDescription>
+                Kategori {category.name} akan dihapus permanen. Kategori yang masih dipakai
+                transaksi, anggaran, atau langganan tidak dapat dihapus.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button
+                autoFocus
+                disabled={pending}
+                onClick={() => setConfirmingDelete(false)}
+                variant="ghost"
+              >
+                Kembali
+              </Button>
+              <Button disabled={pending} onClick={remove} variant="destructive">
+                <HugeiconsIcon icon={Delete02Icon} />
+                {pending ? "Menghapus…" : "Hapus kategori"}
+              </Button>
+            </DialogFooter>
+          </>
+        ) : (
+          <>
+            <DialogHeader>
+              <DialogTitle>{category ? "Edit kategori" : "Kategori baru"}</DialogTitle>
+              <DialogDescription>
+                {category
+                  ? "Perbarui nama, warna, dan ikon tanpa mengubah jenis kategori."
+                  : "Gunakan nama singkat yang mudah ditemukan saat mencatat transaksi."}
+              </DialogDescription>
+            </DialogHeader>
+            <form className="grid gap-5" id={formId} onSubmit={submit}>
+              <FormField label="Nama kategori">
+                <Input
+                  autoFocus
+                  defaultValue={category?.name}
+                  maxLength={50}
+                  name="name"
+                  required
+                />
+              </FormField>
+              {!type && !category && (
+                <FormField label="Jenis">
+                  <Select name="type">
+                    <option value="expense">Pengeluaran</option>
+                    <option value="income">Pemasukan</option>
+                  </Select>
+                </FormField>
+              )}
+              <fieldset className="grid gap-2">
+                <legend className="text-label">Warna aksen</legend>
+                <div className="flex flex-wrap gap-2">
+                  {CATEGORY_COLORS.map((option) => (
+                    <button
+                      aria-label={option.label}
+                      aria-pressed={color === option.value}
+                      className={cn(
+                        "grid size-11 place-items-center rounded-xl border transition-[border-color,box-shadow] focus-visible:ring-3 focus-visible:ring-ring/20",
+                        color === option.value
+                          ? "border-ring ring-2 ring-ring/20"
+                          : "border-border",
+                      )}
+                      key={option.value}
+                      onClick={() => setColor(option.value)}
+                      title={option.label}
+                      type="button"
+                    >
+                      <span className={cn("size-3 rounded-full", option.className)} />
+                    </button>
+                  ))}
+                </div>
+              </fieldset>
+              <fieldset className="grid gap-2">
+                <legend className="text-label">Icon</legend>
+                <div className="grid grid-cols-6 gap-2">
+                  {CATEGORY_ICONS.map((option) => (
+                    <button
+                      aria-label={option.label}
+                      aria-pressed={icon === option.value}
+                      className={cn(
+                        "grid size-11 place-items-center rounded-xl border text-muted-foreground transition-[border-color,color,box-shadow] focus-visible:ring-3 focus-visible:ring-ring/20",
+                        icon === option.value
+                          ? "border-ring bg-primary/10 text-primary ring-2 ring-ring/20"
+                          : "border-border hover:bg-secondary",
+                      )}
+                      key={option.value}
+                      onClick={() => setIcon(option.value)}
+                      title={option.label}
+                      type="button"
+                    >
+                      <HugeiconsIcon className="size-5" icon={categoryIcons[option.value]} />
+                    </button>
+                  ))}
+                </div>
+              </fieldset>
+            </form>
+            <DialogFooter className={category ? "sm:justify-between" : undefined}>
+              {category && (
+                <Button
+                  className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                  disabled={pending}
+                  onClick={() => setConfirmingDelete(true)}
+                  variant="ghost"
                 >
-                  <span className={cn("size-3 rounded-full", option.className)} />
-                </button>
-              ))}
-            </div>
-          </fieldset>
-          <fieldset className="grid gap-2">
-            <legend className="text-label">Icon</legend>
-            <div className="grid grid-cols-6 gap-2">
-              {CATEGORY_ICONS.map((option) => (
-                <button
-                  aria-label={option.label}
-                  aria-pressed={icon === option.value}
-                  className={cn(
-                    "grid size-11 place-items-center rounded-xl border text-muted-foreground transition-[border-color,color,box-shadow] focus-visible:ring-3 focus-visible:ring-ring/20",
-                    icon === option.value
-                      ? "border-ring bg-primary/10 text-primary ring-2 ring-ring/20"
-                      : "border-border hover:bg-secondary",
-                  )}
-                  key={option.value}
-                  onClick={() => setIcon(option.value)}
-                  title={option.label}
-                  type="button"
-                >
-                  <HugeiconsIcon className="size-5" icon={categoryIcons[option.value]} />
-                </button>
-              ))}
-            </div>
-          </fieldset>
-        </form>
-        <DialogFooter>
-          <DialogClose render={<Button variant="ghost" />}>Batal</DialogClose>
-          <Button disabled={pending} form={formId} type="submit">
-            {pending ? "Menambahkan…" : "Tambah"}
-          </Button>
-        </DialogFooter>
+                  <HugeiconsIcon icon={Delete02Icon} />
+                  Hapus kategori
+                </Button>
+              )}
+              <div className="flex flex-col-reverse gap-2 sm:flex-row">
+                <DialogClose render={<Button variant="ghost" />}>Batal</DialogClose>
+                <Button disabled={pending} form={formId} type="submit">
+                  {pending
+                    ? category
+                      ? "Menyimpan…"
+                      : "Menambahkan…"
+                    : category
+                      ? "Simpan perubahan"
+                      : "Tambah"}
+                </Button>
+              </div>
+            </DialogFooter>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   )

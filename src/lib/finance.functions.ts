@@ -1,7 +1,12 @@
 import { createServerFn } from "@tanstack/react-start"
 import { requireUser } from "@/lib/auth.server"
 import { db, ensureDefaults } from "@/lib/db"
-import { isCategoryColor, isCategoryIcon, isFinancialInstitution } from "@/lib/finance-options"
+import {
+  isCategoryColor,
+  isCategoryIcon,
+  isFinancialInstitution,
+  isSeedCategory,
+} from "@/lib/finance-options"
 import { addMonths, today } from "@/lib/utils"
 
 export type Wallet = {
@@ -197,6 +202,15 @@ function ownedWallet(userId: string, walletId: unknown) {
     .get(id, userId) as Wallet | null
   if (!wallet) throw new Error("Dompet tidak ditemukan")
   return wallet
+}
+
+function ownedCategory(userId: string, categoryId: unknown) {
+  const id = requiredText(categoryId, "Kategori", 64)
+  const category = db
+    .query("SELECT * FROM categories WHERE id = ? AND user_id = ?")
+    .get(id, userId) as Category | null
+  if (!category) throw new Error("Kategori tidak ditemukan")
+  return category
 }
 
 export const getFinanceData = createServerFn({ method: "GET" }).handler(async () => {
@@ -1131,6 +1145,47 @@ export const createCategory = createServerFn({ method: "POST" })
       color,
       icon,
     )
+  })
+
+export const updateCategory = createServerFn({ method: "POST" })
+  .validator((data: { id: string; name: string; color: string; icon: string }) => data)
+  .handler(async ({ data }) => {
+    const user = await requireUser()
+    const category = ownedCategory(user.id, data.id)
+    if (isSeedCategory(category.name, category.type)) {
+      throw new Error("Kategori bawaan tidak dapat diubah")
+    }
+    const color = optionalText(data.color, 24)
+    const icon = optionalText(data.icon, 40)
+    if (!isCategoryColor(color) || !isCategoryIcon(icon)) {
+      throw new Error("Tampilan kategori tidak valid")
+    }
+    const result = db
+      .query("UPDATE categories SET name = ?, color = ?, icon = ? WHERE id = ? AND user_id = ?")
+      .run(requiredText(data.name, "Nama kategori", 50), color, icon, category.id, user.id)
+    if (result.changes !== 1) throw new Error("Kategori tidak ditemukan")
+  })
+
+export const deleteCategory = createServerFn({ method: "POST" })
+  .validator((data: { id: string }) => data)
+  .handler(async ({ data }) => {
+    const user = await requireUser()
+    const category = ownedCategory(user.id, data.id)
+    if (isSeedCategory(category.name, category.type)) {
+      throw new Error("Kategori bawaan tidak dapat dihapus")
+    }
+    const used = db
+      .query(
+        `SELECT 1 FROM transactions WHERE user_id = ? AND category_id = ? LIMIT 1
+         UNION ALL
+         SELECT 1 FROM budgets WHERE user_id = ? AND category_id = ? LIMIT 1
+         UNION ALL
+         SELECT 1 FROM subscriptions WHERE user_id = ? AND category_id = ? LIMIT 1`,
+      )
+      .get(user.id, category.id, user.id, category.id, user.id, category.id)
+    if (used) throw new Error("Kategori masih dipakai — pindahkan atau hapus datanya dulu")
+
+    db.query("DELETE FROM categories WHERE id = ? AND user_id = ?").run(category.id, user.id)
   })
 
 export const resetFinanceData = createServerFn({ method: "POST" }).handler(async () => {

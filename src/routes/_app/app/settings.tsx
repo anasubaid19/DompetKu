@@ -30,12 +30,14 @@ import {
 import { Input } from "@/components/ui/input"
 import { Select } from "@/components/ui/select"
 import {
+  type Category,
   getFinanceData,
   importFinanceData,
   type RestoreSummary,
   resetFinanceData,
   updateSettings,
 } from "@/lib/finance.functions"
+import { isSeedCategory } from "@/lib/finance-options"
 import { cn, today, transactionsToCsv } from "@/lib/utils"
 
 export const Route = createFileRoute("/_app/app/settings")({
@@ -204,29 +206,11 @@ function SettingsPage() {
           <CardContent className="grid grid-cols-1 gap-4">
             <div className="min-w-0">
               <p className="text-caption mb-2 uppercase tracking-wider">Pengeluaran</p>
-              <div className="flex flex-wrap gap-2">
-                {data.categories
-                  .filter((item) => item.type === "expense")
-                  .map((item) => (
-                    <Badge className="min-w-0 max-w-full gap-1.5" key={item.id}>
-                      <CategoryIndicator category={item} />
-                      <span className="min-w-0 truncate">{item.name}</span>
-                    </Badge>
-                  ))}
-              </div>
+              <CategoryBadges items={data.categories.filter((item) => item.type === "expense")} />
             </div>
             <div className="min-w-0">
               <p className="text-caption mb-2 uppercase tracking-wider">Pemasukan</p>
-              <div className="flex flex-wrap gap-2">
-                {data.categories
-                  .filter((item) => item.type === "income")
-                  .map((item) => (
-                    <Badge className="min-w-0 max-w-full gap-1.5" key={item.id}>
-                      <CategoryIndicator category={item} />
-                      <span className="min-w-0 truncate">{item.name}</span>
-                    </Badge>
-                  ))}
-              </div>
+              <CategoryBadges items={data.categories.filter((item) => item.type === "income")} />
             </div>
           </CardContent>
         </Card>
@@ -282,6 +266,22 @@ function SettingsPage() {
           </CardContent>
         </Card>
       </div>
+    </div>
+  )
+}
+
+function CategoryBadges({ items }: { items: Category[] }) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      {items.map((item) => (
+        <span className="inline-flex min-w-0 max-w-full items-center gap-1" key={item.id}>
+          <Badge className="min-w-0 max-w-full gap-1.5">
+            <CategoryIndicator category={item} />
+            <span className="min-w-0 truncate">{item.name}</span>
+          </Badge>
+          {!isSeedCategory(item.name, item.type) && <CategoryDialog category={item} />}
+        </span>
+      ))}
     </div>
   )
 }

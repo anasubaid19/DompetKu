@@ -22,6 +22,13 @@
 
 ## Current State
 
+Completed on 2026-10-08:
+
+- Subscription due reminders (read-only, no schema change): Rutin cards show "Terlambat / N hari lagi / Jatuh tempo hari ini" badges mirroring the debt badges, and Ringkasan shows a "pembayaran rutin mendekati jatuh tempo" card for subscriptions due within 7 days (including overdue). Pay behavior unchanged.
+- Custom categories are now editable and deletable: new `updateCategory`/`deleteCategory` server functions plus an `ownedCategory` helper; seed categories are locked by (name, type) match against `SEED_CATEGORIES` (now shared from `finance-options.ts`, also used by `db.ts` seeding — no migration needed). Delete is refused when the category is still referenced by transactions, budgets, or subscriptions. `CategoryDialog` handles create/edit/delete (mirroring `WalletDialog`), with per-category edit buttons on Pengaturan; delete offers "Urungkan".
+- Small read-only UX fixes: transaction search also matches nominal; the Laporan donut notes "+n kategori lainnya" beyond the top 6; the Ringkasan budget card links to Rencana when more than 3 budgets are near-full.
+- Verification: `check` ✓, `typecheck` ✓, `bun test` 17 passed (new `isSeedCategory` test) ✓, `build` ✓.
+
 Completed on 2026-10-05:
 
 - E2E smoke test run in a real browser (scratch DB): wallet, quick-add, budget, debt installment, subscription payment, reports (donut/trend/calendar), and settings all work with zero console errors; the earlier hydration bug is confirmed fixed.

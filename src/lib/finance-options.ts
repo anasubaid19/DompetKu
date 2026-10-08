@@ -26,6 +26,21 @@ export function categoryChartColor(value: string | undefined) {
   )
 }
 
+export const SEED_CATEGORIES = [
+  ["Makanan", "expense", "orange", "receipt"],
+  ["Transportasi", "expense", "blue", "car"],
+  ["Belanja", "expense", "violet", "bag"],
+  ["Tagihan", "expense", "red", "invoice"],
+  ["Gaji", "income", "green", "money"],
+  ["Bonus", "income", "cyan", "sparkles"],
+  ["Bayar Hutang", "expense", "red", "invoice"],
+  ["Piutang Dibayar", "income", "green", "money"],
+] as const
+
+export function isSeedCategory(name: string, type: string) {
+  return SEED_CATEGORIES.some(([seedName, seedType]) => seedName === name && seedType === type)
+}
+
 export const CATEGORY_ICONS = [
   { value: "receipt", label: "Struk" },
   { value: "car", label: "Transportasi" },

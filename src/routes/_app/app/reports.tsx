@@ -336,6 +336,11 @@ function ReportsPage() {
                 </div>
               </div>
             )}
+            {categories.length > 6 && (
+              <p className="-mt-2 text-center text-xs text-muted-foreground tabular-nums">
+                Donat menampilkan 6 terbesar · +{categories.length - 6} kategori lainnya
+              </p>
+            )}
             {categories.slice(0, 6).map((category) => (
               <div className="grid min-w-0 gap-2" key={category.category?.id ?? category.name}>
                 <div className="flex min-w-0 items-center justify-between gap-3 text-sm">
