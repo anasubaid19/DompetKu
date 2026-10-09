@@ -12,6 +12,7 @@ import { HugeiconsIcon } from "@hugeicons/react"
 import { createFileRoute, Link } from "@tanstack/react-router"
 import { useState } from "react"
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis } from "recharts"
+import { average, CycleCompare, percentChange } from "@/components/cycle-compare"
 import { TransactionDialog, WalletDialog } from "@/components/finance-dialogs"
 import { CategoryLabel, WalletLabel, WalletLogo } from "@/components/finance-visuals"
 import { PageHeader } from "@/components/page-header"
@@ -74,6 +75,9 @@ function DashboardPage() {
       sum + (item.type === "expense" ? item.amount : item.type === "transfer" ? item.fee : 0),
     0,
   )
+  const elapsedDays = Math.max(1, 1 - daysUntil(cycle.start))
+  const remainingDays = Math.max(0, daysUntil(cycle.end))
+  const projectedExpense = Math.round((expense / elapsedDays) * (elapsedDays + remainingDays))
   const balance = data.wallets.reduce((sum, wallet) => sum + wallet.balance, 0)
   const hide = Boolean(data.settings.hide_balance)
   const money = (value: number) => (hide ? "••••••" : formatMoney(value, currency))
@@ -130,6 +134,28 @@ function DashboardPage() {
     }
   })
   const hasCashFlow = chart.some((item) => item.masuk > 0 || item.keluar > 0)
+  const compareRanges = recentCycles(data.settings, 4).map(({ start, end }) => {
+    const transactions = data.transactions.filter(
+      (item) => item.transaction_date >= start && item.transaction_date <= end,
+    )
+    return {
+      masuk: transactions
+        .filter((item) => item.type === "income")
+        .reduce((sum, item) => sum + item.amount, 0),
+      keluar: transactions.reduce(
+        (sum, item) =>
+          sum + (item.type === "expense" ? item.amount : item.type === "transfer" ? item.fee : 0),
+        0,
+      ),
+    }
+  })
+  const currentCycle = compareRanges[compareRanges.length - 1]
+  const previousCycle = compareRanges[compareRanges.length - 2]
+  const priorThreeCycles = compareRanges.slice(
+    Math.max(0, compareRanges.length - 4),
+    compareRanges.length - 1,
+  )
+  const hasCompare = compareRanges.some((item) => item.masuk > 0 || item.keluar > 0)
 
   return (
     <div className="grid grid-cols-1 gap-6">
@@ -191,6 +217,16 @@ function DashboardPage() {
         <span className="size-2 shrink-0 rounded-full bg-primary" />
         <p>{cashFlowMessage(income, expense)}</p>
       </div>
+
+      {expense > 0 && remainingDays > 0 && (
+        <div className="flex items-center gap-3 rounded-2xl border px-4 py-3 text-sm">
+          <span className="size-2 shrink-0 rounded-full bg-[var(--chart-1)]" />
+          <p className="tabular-nums">
+            Dengan laju {money(expense / elapsedDays)} per hari, pengeluaran siklus ini diperkirakan{" "}
+            {money(projectedExpense)}.
+          </p>
+        </div>
+      )}
 
       {overdueDebts.length > 0 && (
         <Card className="border border-destructive/20 bg-destructive/[0.04]">
@@ -468,6 +504,35 @@ function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      {hasCompare && (
+        <Card>
+          <CardHeader>
+            <div>
+              <CardTitle>Dibanding siklus lalu</CardTitle>
+              <CardDescription>Pemasukan dan pengeluaran vs siklus sebelumnya.</CardDescription>
+            </div>
+            <Button render={<Link to="/app/reports" />} size="sm" variant="ghost">
+              Laporan
+            </Button>
+          </CardHeader>
+          <CardContent className="grid gap-4 sm:grid-cols-2">
+            <CycleCompare
+              average={money(average(priorThreeCycles.map((item) => item.masuk)))}
+              delta={percentChange(currentCycle.masuk, previousCycle.masuk)}
+              goodWhenUp
+              label="Pemasukan"
+              value={money(currentCycle.masuk)}
+            />
+            <CycleCompare
+              average={money(average(priorThreeCycles.map((item) => item.keluar)))}
+              delta={percentChange(currentCycle.keluar, previousCycle.keluar)}
+              label="Pengeluaran"
+              value={money(currentCycle.keluar)}
+            />
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>

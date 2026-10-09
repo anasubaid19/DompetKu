@@ -66,6 +66,7 @@ import {
   type Saving,
   type Subscription,
   settleDebt,
+  skipSubscription,
   updateDebt,
   updateSaving,
   updateSubscription,
@@ -534,6 +535,7 @@ function PlanningPage() {
                       subscription={subscription}
                       wallets={data.wallets}
                     />
+                    <SkipSubscriptionButton subscription={subscription} />
                   </CardContent>
                 </Card>
               )
@@ -1718,6 +1720,30 @@ function SubscriptionEditDialog({
         )}
       </DialogContent>
     </Dialog>
+  )
+}
+
+function SkipSubscriptionButton({ subscription }: { subscription: Subscription }) {
+  const router = useRouter()
+  const [pending, setPending] = useState(false)
+
+  async function skip() {
+    setPending(true)
+    try {
+      await skipSubscription({ data: { id: subscription.id } })
+      await router.invalidate()
+      toast.success("Jadwal dimajukan tanpa mencatat transaksi")
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Jadwal gagal dilewati")
+    } finally {
+      setPending(false)
+    }
+  }
+
+  return (
+    <Button className="w-full" disabled={pending} onClick={skip} size="sm" variant="ghost">
+      {pending ? "Melewati…" : "Lewati periode ini"}
+    </Button>
   )
 }
 

@@ -22,6 +22,13 @@
 
 ## Current State
 
+Completed on 2026-10-09 (batch 2):
+
+- Skip-a-period for subscriptions: new `skipSubscription` server function advances `next_due_date` by `interval_months` without posting a ledger entry, plus a "Lewati periode ini" ghost button under the pay action on Rutin cards. Reversible via the existing edit dialog (no confirm needed).
+- Cycle-end expense projection on Ringkasan (read-only, no schema change): a strip under the cash-flow message shows daily pace and projected cycle total, hidden when there is no expense or no days left. Honors `hide_balance` via the shared `money()` helper.
+- Cycle comparison on Ringkasan (read-only): `CycleCompare` plus the `percentChange`/`average` helpers moved from `reports.tsx` into shared `src/components/cycle-compare.tsx`; Ringkasan shows a "Dibanding siklus lalu" card (income/expense vs previous cycle, 4-cycle basis independent of the chart range toggle) linking to Laporan.
+- Verification: `check` ✓, `typecheck` ✓, `bun test` 17 passed ✓, `build` ✓.
+
 Completed on 2026-10-09:
 
 - Security audit follow-up (quick-profile audit run-1: 0 confirmed, 1 needs_validation lead, artifacts in `~/security-audit-skill/mywallet/run-1/`): `currentSession()` in `auth.server.ts` now throws when `NODE_ENV=production` and `BETTER_AUTH_URL` is unset, so the dev-host fallback can no longer silently serve production traffic (per-request check, not module-level, so `vite build`/CI stays green). `.env.example` documents the production checklist (https origin, 32+ char secret, TLS-only). `.gitignore` now also excludes `.env.*` (with `!.env.example`), `*.pem`, `*.key`, and `credentials.json`. Frame headers deliberately left to the operator's reverse proxy: no in-repo response-header layer exists (no server entry/middleware wiring), and the audit classified it as hardening.

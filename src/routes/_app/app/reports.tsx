@@ -15,6 +15,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts"
+import { average, CycleCompare, percentChange } from "@/components/cycle-compare"
 import { CategoryLabel } from "@/components/finance-visuals"
 import { PageHeader } from "@/components/page-header"
 import { SpendingCalendar } from "@/components/spending-calendar"
@@ -23,7 +24,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Progress } from "@/components/ui/progress"
 import { getFinanceData } from "@/lib/finance.functions"
 import { categoryChartColor } from "@/lib/finance-options"
-import { cn, formatCompactNumber, formatMoney, recentCycles } from "@/lib/utils"
+import { formatCompactNumber, formatMoney, recentCycles } from "@/lib/utils"
 
 export const Route = createFileRoute("/_app/app/reports")({
   loader: () => getFinanceData(),
@@ -101,13 +102,6 @@ function ReportsPage() {
   const currentMonth = months[months.length - 1]
   const previousMonth = months[months.length - 2]
   const priorThree = months.slice(Math.max(0, months.length - 4), months.length - 1)
-
-  const percentChange = (value: number, base: number) =>
-    base > 0 ? Math.round(((value - base) / base) * 100) : null
-  const average = (values: number[]) =>
-    values.length > 0
-      ? Math.round(values.reduce((sum, value) => sum + value, 0) / values.length)
-      : 0
 
   const incomeDelta = percentChange(currentMonth.pemasukan, previousMonth?.pemasukan ?? 0)
   const expenseDelta = percentChange(currentMonth.pengeluaran, previousMonth?.pengeluaran ?? 0)
@@ -445,43 +439,6 @@ function ReportsPage() {
           />
         </CardContent>
       </Card>
-    </div>
-  )
-}
-
-function CycleCompare({
-  label,
-  value,
-  delta,
-  average,
-  goodWhenUp = false,
-}: {
-  label: string
-  value: string
-  delta: number | null
-  average: string
-  goodWhenUp?: boolean
-}) {
-  const improving = delta !== null && delta !== 0 && delta > 0 === goodWhenUp
-  const tone =
-    delta === null || delta === 0
-      ? "text-muted-foreground"
-      : improving
-        ? "text-success"
-        : "text-destructive"
-  const direction = delta === null || delta === 0 ? "" : delta > 0 ? "Naik" : "Turun"
-  return (
-    <div className="rounded-2xl bg-secondary/55 p-4">
-      <p className="text-caption">{label} siklus ini</p>
-      <p className="mt-1 text-xl font-semibold tabular-nums break-words">{value}</p>
-      <p className={cn("text-caption mt-1 tabular-nums", tone)}>
-        {delta === null
-          ? "Belum ada pembanding"
-          : delta === 0
-            ? "Sama dengan siklus lalu"
-            : `${direction} ${Math.abs(delta)}% vs siklus lalu`}
-      </p>
-      <p className="text-caption mt-0.5 tabular-nums">Rata-rata 3 siklus: {average}</p>
     </div>
   )
 }

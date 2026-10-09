@@ -1105,6 +1105,24 @@ export const deleteSubscription = createServerFn({ method: "POST" })
     if (result.changes !== 1) throw new Error("Langganan tidak ditemukan")
   })
 
+export const skipSubscription = createServerFn({ method: "POST" })
+  .validator((data: { id: string }) => data)
+  .handler(async ({ data }) => {
+    const user = await requireUser()
+    const id = requiredText(data.id, "Langganan", 64)
+    const subscription = db
+      .query(
+        "SELECT next_due_date, interval_months FROM subscriptions WHERE id = ? AND user_id = ?",
+      )
+      .get(id, user.id) as Pick<Subscription, "next_due_date" | "interval_months"> | null
+    if (!subscription) throw new Error("Langganan tidak ditemukan")
+    db.query("UPDATE subscriptions SET next_due_date = ? WHERE id = ? AND user_id = ?").run(
+      addMonths(subscription.next_due_date, subscription.interval_months),
+      id,
+      user.id,
+    )
+  })
+
 export const updateSettings = createServerFn({ method: "POST" })
   .validator((data: Partial<Settings>) => data)
   .handler(async ({ data }) => {
