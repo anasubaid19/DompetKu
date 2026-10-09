@@ -8,6 +8,11 @@ dist/
 *.sqlite-wal
 .env
 .env.local
+.env.*
+!.env.example
+*.pem
+*.key
+credentials.json
 .DS_Store
 idn-finlogos-svg-v2.5.0/
 idn-finlogos-svg-v2.5.0.zip

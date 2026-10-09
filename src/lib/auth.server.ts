@@ -38,6 +38,9 @@ export const auth = betterAuth({
 await (await auth.$context).runMigrations()
 
 export function currentSession() {
+  if (process.env.NODE_ENV === "production" && !process.env.BETTER_AUTH_URL) {
+    throw new Error("BETTER_AUTH_URL belum diatur di server produksi")
+  }
   return auth.api.getSession({ headers: getRequestHeaders() })
 }
 

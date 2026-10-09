@@ -22,6 +22,11 @@
 
 ## Current State
 
+Completed on 2026-10-09:
+
+- Security audit follow-up (quick-profile audit run-1: 0 confirmed, 1 needs_validation lead, artifacts in `~/security-audit-skill/mywallet/run-1/`): `currentSession()` in `auth.server.ts` now throws when `NODE_ENV=production` and `BETTER_AUTH_URL` is unset, so the dev-host fallback can no longer silently serve production traffic (per-request check, not module-level, so `vite build`/CI stays green). `.env.example` documents the production checklist (https origin, 32+ char secret, TLS-only). `.gitignore` now also excludes `.env.*` (with `!.env.example`), `*.pem`, `*.key`, and `credentials.json`. Frame headers deliberately left to the operator's reverse proxy: no in-repo response-header layer exists (no server entry/middleware wiring), and the audit classified it as hardening.
+- Verification: `check` ✓, `typecheck` ✓, `bun test` 17 passed ✓, `build` ✓.
+
 Completed on 2026-10-08:
 
 - Subscription due reminders (read-only, no schema change): Rutin cards show "Terlambat / N hari lagi / Jatuh tempo hari ini" badges mirroring the debt badges, and Ringkasan shows a "pembayaran rutin mendekati jatuh tempo" card for subscriptions due within 7 days (including overdue). Pay behavior unchanged.
