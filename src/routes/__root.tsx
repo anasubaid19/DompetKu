@@ -1,7 +1,8 @@
-import { createRootRoute, HeadContent, Scripts } from "@tanstack/react-router"
+import { createRootRoute, HeadContent, Link, Scripts } from "@tanstack/react-router"
 import { ThemeProvider } from "next-themes"
 import { Toaster } from "sonner"
 import { PwaRegister } from "@/components/pwa-register"
+import { Button } from "@/components/ui/button"
 import appCss from "../styles.css?url"
 
 export const Route = createRootRoute({
@@ -9,7 +10,7 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
-      { title: "DompetKu — Catatan keuangan pribadi" },
+      { title: "DompetKu: Catatan keuangan pribadi" },
       {
         name: "description",
         content: "Kelola dompet, transaksi, anggaran, tabungan, dan hutang dalam satu aplikasi.",
@@ -34,8 +35,41 @@ export const Route = createRootRoute({
       </div>
     </main>
   ),
+  pendingMs: 200,
+  pendingComponent: RoutePending,
+  errorComponent: RouteError,
   shellComponent: RootDocument,
 })
+
+function RoutePending() {
+  return (
+    <main className="grid min-h-svh place-items-center p-6">
+      <p className="text-sm text-muted-foreground" role="status">
+        Memuat…
+      </p>
+    </main>
+  )
+}
+
+function RouteError({ error, reset }: { error: unknown; reset: () => void }) {
+  return (
+    <main className="grid min-h-svh place-items-center p-6 text-center">
+      <div className="grid max-w-sm justify-items-center gap-3">
+        <h1 className="text-subtitle">Halaman gagal dimuat</h1>
+        <p className="text-sm text-muted-foreground">
+          {error instanceof Error ? error.message : "Terjadi kesalahan."} Coba muat ulang halaman
+          ini.
+        </p>
+        <div className="flex flex-wrap justify-center gap-2">
+          <Button onClick={() => reset()}>Coba lagi</Button>
+          <Button render={<Link search={{ redirect: "/app" }} to="/login" />} variant="outline">
+            Masuk ulang
+          </Button>
+        </div>
+      </div>
+    </main>
+  )
+}
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (

@@ -277,7 +277,9 @@ function CategoryBadges({ items }: { items: Category[] }) {
         <span className="inline-flex min-w-0 max-w-full items-center gap-1" key={item.id}>
           <Badge className="min-w-0 max-w-full gap-1.5">
             <CategoryIndicator category={item} />
-            <span className="min-w-0 truncate">{item.name}</span>
+            <span className="min-w-0 truncate" title={item.name}>
+              {item.name}
+            </span>
           </Badge>
           {!isSeedCategory(item.name, item.type) && <CategoryDialog category={item} />}
         </span>

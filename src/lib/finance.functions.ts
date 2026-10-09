@@ -1201,7 +1201,7 @@ export const deleteCategory = createServerFn({ method: "POST" })
          SELECT 1 FROM subscriptions WHERE user_id = ? AND category_id = ? LIMIT 1`,
       )
       .get(user.id, category.id, user.id, category.id, user.id, category.id)
-    if (used) throw new Error("Kategori masih dipakai — pindahkan atau hapus datanya dulu")
+    if (used) throw new Error("Kategori masih dipakai, pindahkan atau hapus datanya dulu")
 
     db.query("DELETE FROM categories WHERE id = ? AND user_id = ?").run(category.id, user.id)
   })

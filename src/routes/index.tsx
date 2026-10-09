@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button"
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "DompetKu — Catatan keuangan pribadi" },
+      { title: "DompetKu: Catatan keuangan pribadi" },
       {
         name: "description",
         content:
@@ -66,7 +66,6 @@ function LandingPage() {
 
       <main id="main-content">
         <section className="relative border-b">
-          <div aria-hidden className="surface-grid absolute inset-0 opacity-70" />
           <div
             aria-hidden
             className="absolute left-[8%] top-20 size-64 rounded-full bg-primary/12 blur-3xl"
@@ -148,7 +147,6 @@ function LandingPage() {
         <section className="border-y bg-card" id="cara-kerja">
           <div className="mx-auto grid max-w-[1200px] gap-12 px-4 py-20 sm:px-6 sm:py-28 lg:grid-cols-2 lg:items-center lg:px-9">
             <div className="relative min-h-[420px] overflow-hidden rounded-4xl bg-foreground p-6 text-background shadow-2xl sm:p-8">
-              <div aria-hidden className="absolute inset-0 opacity-15 surface-grid" />
               <div className="relative flex h-full flex-col justify-between gap-16">
                 <div className="flex items-center justify-between text-xs opacity-60">
                   <span className="uppercase">Siklus aktif</span>

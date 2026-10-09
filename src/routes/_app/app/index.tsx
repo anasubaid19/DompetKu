@@ -158,7 +158,7 @@ function DashboardPage() {
   const hasCompare = compareRanges.some((item) => item.masuk > 0 || item.keluar > 0)
 
   return (
-    <div className="grid grid-cols-1 gap-6">
+    <div className="grid grid-cols-1 gap-5">
       <PageHeader
         action={
           <>
@@ -213,20 +213,15 @@ function DashboardPage() {
         />
       </div>
 
-      <div className="flex items-center gap-3 rounded-2xl border border-primary/15 bg-primary/[0.04] px-4 py-3 text-sm">
-        <span className="size-2 shrink-0 rounded-full bg-primary" />
+      <div className="grid gap-1 rounded-2xl border border-primary/15 bg-primary/[0.04] px-4 py-3 text-sm">
         <p>{cashFlowMessage(income, expense)}</p>
-      </div>
-
-      {expense > 0 && remainingDays > 0 && (
-        <div className="flex items-center gap-3 rounded-2xl border px-4 py-3 text-sm">
-          <span className="size-2 shrink-0 rounded-full bg-[var(--chart-1)]" />
-          <p className="tabular-nums">
+        {expense > 0 && remainingDays > 0 && (
+          <p className="tabular-nums text-muted-foreground">
             Dengan laju {money(expense / elapsedDays)} per hari, pengeluaran siklus ini diperkirakan{" "}
             {money(projectedExpense)}.
           </p>
-        </div>
-      )}
+        )}
+      </div>
 
       {overdueDebts.length > 0 && (
         <Card className="border border-destructive/20 bg-destructive/[0.04]">
@@ -260,7 +255,7 @@ function DashboardPage() {
                 {dueSubscriptions.length} pembayaran rutin mendekati jatuh tempo
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Termasuk yang sudah lewat — bayar dari Rencana sebelum menumpuk.
+                Termasuk yang sudah lewat. Bayar dari Rencana sebelum menumpuk.
               </p>
             </div>
             <Button render={<Link to="/app/planning" />} size="sm" variant="outline">
@@ -287,7 +282,9 @@ function DashboardPage() {
             {budgetAlerts.slice(0, 3).map((budget) => (
               <div className="grid gap-2" key={budget.id}>
                 <div className="flex items-center justify-between gap-3 text-sm">
-                  <span className="min-w-0 truncate font-medium">{budget.category_name}</span>
+                  <span className="min-w-0 truncate font-medium" title={budget.category_name}>
+                    {budget.category_name}
+                  </span>
                   <span
                     className={cn(
                       "shrink-0 tabular-nums font-semibold",
@@ -352,7 +349,7 @@ function DashboardPage() {
         </div>
       )}
 
-      <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1.55fr)_minmax(320px,0.75fr)]">
+      <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1.55fr)_minmax(320px,0.75fr)]">
         <Card>
           <CardHeader className="flex-col sm:flex-row">
             <div>
@@ -490,7 +487,9 @@ function DashboardPage() {
                   <WalletLogo wallet={wallet} />
                 </span>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">{wallet.name}</p>
+                  <p className="truncate text-sm font-medium" title={wallet.name}>
+                    {wallet.name}
+                  </p>
                   <p className="text-caption">{wallet.type === "saving" ? "Tabungan" : "Harian"}</p>
                 </div>
                 <div className="flex min-w-0 items-center gap-1">
@@ -570,7 +569,10 @@ function DashboardPage() {
                   />
                 </span>
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-medium">
+                  <p
+                    className="truncate text-sm font-medium"
+                    title={item.description || item.category_name || "Transfer dompet"}
+                  >
                     {item.description || item.category_name || "Transfer dompet"}
                   </p>
                   <div className="text-caption mt-1 flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1">

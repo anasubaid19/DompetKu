@@ -40,7 +40,6 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
 
   return (
     <div className="relative grid min-h-svh place-items-center overflow-hidden px-4 py-10">
-      <div aria-hidden className="surface-grid absolute inset-0 opacity-55" />
       <div
         aria-hidden
         className="absolute left-1/2 top-[-18rem] size-[34rem] -translate-x-1/2 rounded-full bg-primary/12 blur-3xl"

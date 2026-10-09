@@ -22,6 +22,16 @@
 
 ## Current State
 
+Completed on 2026-10-09 (antislop audit-001, all 7 fixed):
+
+- Mode-2 audit (`anti-slop/audit-001-2026-10-09.md`, antislop-ui + ui-ux-pro-max) found 7 issues, all fixed: 8 em dashes replaced (R-02); light `--warning` darkened to `oklch(0.53 0.15 80)` for 5.34:1/4.82:1 contrast (R-25); root `pendingComponent` + `errorComponent` with retry/re-login added (R-27); `surface-grid` texture removed from 4 spots plus its CSS (R-07); decorative strip dots removed (R-31); cash + projection strips merged (C-3); `title` on all 8 truncated names (C-4). Hero blur orbs spotted but left untouched (outside approved numbers).
+- Verification: `check` ✓, `typecheck` ✓, `bun test` 17 passed ✓, `build` ✓, em-dash grep 0.
+
+Completed on 2026-10-09 (density pass, better-layout):
+
+- Tightened one spacing step per level after /app gap feedback: page-section gap 24→20 (`gap-6`→`gap-5` on the Ringkasan root and chart grid) and card padding 20→16 (`p-5`→`p-4` in shared `CardHeader`/`CardContent`, so all pages densify uniformly). Within-card gaps untouched.
+- Verification: `check` ✓, `typecheck` ✓, `bun test` 17 passed ✓, `build` ✓.
+
 Completed on 2026-10-09 (batch 2):
 
 - Skip-a-period for subscriptions: new `skipSubscription` server function advances `next_due_date` by `interval_months` without posting a ledger entry, plus a "Lewati periode ini" ghost button under the pay action on Rutin cards. Reversible via the existing edit dialog (no confirm needed).

@@ -16,7 +16,7 @@ function Card({ className, ...props }: React.ComponentProps<"section">) {
 
 function CardHeader({ className, ...props }: React.ComponentProps<"div">) {
   return (
-    <div className={cn("flex items-start justify-between gap-4 p-5 pb-0", className)} {...props} />
+    <div className={cn("flex items-start justify-between gap-4 p-4 pb-0", className)} {...props} />
   )
 }
 
@@ -31,7 +31,7 @@ function CardDescription({ className, ...props }: React.ComponentProps<"p">) {
 }
 
 function CardContent({ className, ...props }: React.ComponentProps<"div">) {
-  return <div className={cn("p-5", className)} {...props} />
+  return <div className={cn("p-4", className)} {...props} />
 }
 
 export { Card, CardContent, CardDescription, CardHeader, CardTitle }

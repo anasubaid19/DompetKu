@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/button"
 export const Route = createFileRoute("/help")({
   head: () => ({
     meta: [
-      { title: "Tutorial & FAQ — DompetKu" },
+      { title: "Tutorial & FAQ: DompetKu" },
       {
         name: "description",
         content: "Panduan interaktif instalasi, backup, kategori, dan transaksi DompetKu.",
@@ -111,7 +111,6 @@ function HelpPage() {
       <PublicHeader />
       <main>
         <section className="relative border-b">
-          <div aria-hidden className="surface-grid absolute inset-0 opacity-60" />
           <div className="relative mx-auto max-w-[1200px] px-4 py-16 sm:px-6 sm:py-24 lg:px-9">
             <span className="grid size-12 place-items-center rounded-2xl bg-primary/10 text-primary">
               <HugeiconsIcon icon={BookOpen01Icon} />

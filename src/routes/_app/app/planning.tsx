@@ -790,8 +790,8 @@ function DebtForm({ close, wallets }: { close: () => void; wallets: Wallet[] }) 
           onChange={(event) => setDebtType(event.target.value === "hutang" ? "hutang" : "piutang")}
           value={debtType}
         >
-          <option value="piutang">Piutang — saya meminjamkan</option>
-          <option value="hutang">Hutang — saya meminjam</option>
+          <option value="piutang">Piutang: saya meminjamkan</option>
+          <option value="hutang">Hutang: saya meminjam</option>
         </Select>
       </FormField>
       <FormField label="Nama kontak">
@@ -1011,7 +1011,7 @@ function DebtDialog({
             <DialogHeader>
               <DialogTitle>{debt.contact}</DialogTitle>
               <DialogDescription>
-                {debt.type === "piutang" ? "Piutang — saya meminjamkan" : "Hutang — saya meminjam"}
+                {debt.type === "piutang" ? "Piutang: saya meminjamkan" : "Hutang: saya meminjam"}
                 {debt.due_date ? ` · Jatuh tempo ${debt.due_date}` : ""}
               </DialogDescription>
             </DialogHeader>
@@ -1064,7 +1064,9 @@ function DebtDialog({
                     key={item.id}
                   >
                     <div className="min-w-0">
-                      <p className="truncate font-medium">{item.description}</p>
+                      <p className="truncate font-medium" title={item.description}>
+                        {item.description}
+                      </p>
                       <p className="text-caption tabular-nums">{item.transaction_date}</p>
                     </div>
                     <p className="shrink-0 font-semibold tabular-nums">{money(item.amount)}</p>
