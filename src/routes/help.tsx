@@ -12,6 +12,7 @@ import { createFileRoute, Link } from "@tanstack/react-router"
 import { useState } from "react"
 import { PublicFooter, PublicHeader } from "@/components/public-shell"
 import { Button } from "@/components/ui/button"
+import { authClient } from "@/lib/auth-client"
 
 export const Route = createFileRoute("/help")({
   head: () => ({
@@ -96,6 +97,7 @@ const guides = [
 ] as const
 
 function HelpPage() {
+  const { data: session } = authClient.useSession()
   const [guideIndex, setGuideIndex] = useState(0)
   const [stepIndex, setStepIndex] = useState(0)
   const guide = guides[guideIndex]
@@ -206,6 +208,10 @@ function HelpPage() {
                     ) : "action" in guide ? (
                       <Button render={<Link to={guide.action.to} />}>
                         {guide.action.label} <HugeiconsIcon icon={ArrowRight01Icon} />
+                      </Button>
+                    ) : session?.user ? (
+                      <Button render={<Link to="/app" />}>
+                        Buka aplikasi <HugeiconsIcon icon={ArrowRight01Icon} />
                       </Button>
                     ) : (
                       <Button render={<Link to="/register" />}>

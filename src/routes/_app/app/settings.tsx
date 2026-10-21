@@ -13,7 +13,7 @@ import { CategoryDialog } from "@/components/finance-dialogs"
 import { CategoryIndicator } from "@/components/finance-visuals"
 import { FormField } from "@/components/form-field"
 import { PageHeader } from "@/components/page-header"
-import { ThemeToggle } from "@/components/theme-toggle"
+import { ThemeSwitch } from "@/components/theme-toggle"
 import { Badge } from "@/components/ui/badge"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Select } from "@/components/ui/select"
+import { Switch } from "@/components/ui/switch"
 import {
   type Category,
   getFinanceData,
@@ -137,29 +138,24 @@ function SettingsPage() {
           </CardHeader>
           <CardContent className="pt-4 sm:pt-5">
             <form className="grid gap-3 sm:gap-5" onSubmit={save}>
-              <div className="flex items-center justify-between rounded-2xl bg-secondary/55 px-3 py-2 sm:p-3">
+              <div className="flex items-center justify-between gap-4 rounded-2xl bg-secondary/55 px-3 py-2 sm:p-3">
                 <div>
                   <p className="text-sm font-medium">Tema aplikasi</p>
                   <p className="text-caption mt-0.5">Tema terang atau gelap di perangkat ini</p>
                 </div>
-                <ThemeToggle />
+                <ThemeSwitch />
               </div>
-              <label className="flex items-center justify-between gap-4 rounded-2xl bg-secondary/55 px-3 py-2 sm:p-3">
-                <span>
-                  <span className="block text-sm font-medium">Sembunyikan saldo</span>
-                  <span className="text-caption mt-0.5 block">
-                    Sembunyikan nominal di seluruh aplikasi.
-                  </span>
-                </span>
-                <span className="grid size-9 shrink-0 place-items-center pointer-coarse:size-11">
-                  <input
-                    className="size-5 accent-primary"
-                    defaultChecked={Boolean(data.settings.hide_balance)}
-                    name="hideBalance"
-                    type="checkbox"
-                  />
-                </span>
-              </label>
+              <div className="flex items-center justify-between gap-4 rounded-2xl bg-secondary/55 px-3 py-2 sm:p-3">
+                <div>
+                  <p className="text-sm font-medium">Sembunyikan saldo</p>
+                  <p className="text-caption mt-0.5">Sembunyikan nominal di seluruh aplikasi.</p>
+                </div>
+                <Switch
+                  aria-label="Sembunyikan saldo"
+                  defaultChecked={Boolean(data.settings.hide_balance)}
+                  name="hideBalance"
+                />
+              </div>
               <FormField label="Mata uang">
                 <Select defaultValue={data.settings.currency} name="currency">
                   <option value="IDR">Rupiah (IDR)</option>

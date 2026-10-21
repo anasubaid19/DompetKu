@@ -14,12 +14,13 @@ import { useState } from "react"
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis } from "recharts"
 import { average, CycleCompare, percentChange } from "@/components/cycle-compare"
 import { TransactionDialog, WalletDialog } from "@/components/finance-dialogs"
-import { CategoryLabel, WalletLabel, WalletLogo } from "@/components/finance-visuals"
+import { CategoryLabel, WalletLabel } from "@/components/finance-visuals"
 import { PageHeader } from "@/components/page-header"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { SegmentedControl } from "@/components/ui/segmented-control"
+import { WalletDeck } from "@/components/wallet-deck"
 import { getFinanceData } from "@/lib/finance.functions"
 import {
   cashFlowMessage,
@@ -158,16 +159,18 @@ function DashboardPage() {
   const hasCompare = compareRanges.some((item) => item.masuk > 0 || item.keluar > 0)
 
   return (
-    <div className="grid grid-cols-1 gap-5">
+    <div className="grid grid-cols-1 gap-5 pb-14 lg:pb-0">
       <PageHeader
         action={
           <>
             <WalletDialog />
-            <TransactionDialog
-              categories={data.categories}
-              recentTransactions={data.transactions}
-              wallets={data.wallets}
-            />
+            <div className="hidden lg:block">
+              <TransactionDialog
+                categories={data.categories}
+                recentTransactions={data.transactions}
+                wallets={data.wallets}
+              />
+            </div>
           </>
         }
         description={`${cycle.label}. Saldo, pemasukan, dan pengeluaran siklus ini.`}
@@ -339,7 +342,7 @@ function DashboardPage() {
       )}
 
       {data.wallets.length > 0 && (
-        <div className="fixed right-4 bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] z-40 lg:hidden">
+        <div className="fixed right-4 bottom-[calc(env(safe-area-inset-bottom)+6.5rem)] z-40 lg:hidden">
           <TransactionDialog
             categories={data.categories}
             fab
@@ -349,7 +352,7 @@ function DashboardPage() {
         </div>
       )}
 
-      <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1.55fr)_minmax(320px,0.75fr)]">
+      <div className="grid min-w-0 items-start gap-5 xl:grid-cols-[minmax(0,1.55fr)_minmax(320px,0.75fr)]">
         <Card>
           <CardHeader className="flex-col sm:flex-row">
             <div>
@@ -396,10 +399,10 @@ function DashboardPage() {
                   className="mb-2 flex items-center justify-end gap-4 text-xs text-muted-foreground"
                 >
                   <span className="inline-flex items-center gap-1.5">
-                    <span className="size-2 rounded-full bg-[var(--chart-3)]" /> Pemasukan
+                    <span className="size-2 rounded-full bg-[var(--success)]" /> Pemasukan
                   </span>
                   <span className="inline-flex items-center gap-1.5">
-                    <span className="size-2 rounded-full bg-[var(--chart-1)]" /> Pengeluaran
+                    <span className="size-2 rounded-full bg-[var(--destructive)]" /> Pengeluaran
                   </span>
                 </div>
                 <div className="min-h-0 min-w-0 flex-1">
@@ -411,12 +414,12 @@ function DashboardPage() {
                     >
                       <defs>
                         <linearGradient id="income" x1="0" x2="0" y1="0" y2="1">
-                          <stop offset="0%" stopColor="var(--chart-3)" stopOpacity={0.28} />
-                          <stop offset="100%" stopColor="var(--chart-3)" stopOpacity={0} />
+                          <stop offset="0%" stopColor="var(--success)" stopOpacity={0.28} />
+                          <stop offset="100%" stopColor="var(--success)" stopOpacity={0} />
                         </linearGradient>
                         <linearGradient id="expense" x1="0" x2="0" y1="0" y2="1">
-                          <stop offset="0%" stopColor="var(--chart-1)" stopOpacity={0.22} />
-                          <stop offset="100%" stopColor="var(--chart-1)" stopOpacity={0} />
+                          <stop offset="0%" stopColor="var(--destructive)" stopOpacity={0.22} />
+                          <stop offset="100%" stopColor="var(--destructive)" stopOpacity={0} />
                         </linearGradient>
                       </defs>
                       <CartesianGrid
@@ -430,6 +433,7 @@ function DashboardPage() {
                         fontSize={11}
                         interval={chartRange === "weekly" ? "preserveStartEnd" : 0}
                         minTickGap={24}
+                        padding={{ left: 12, right: 12 }}
                         tick={{ fill: "var(--muted-foreground)" }}
                         tickLine={false}
                       />
@@ -439,7 +443,7 @@ function DashboardPage() {
                         fill="url(#income)"
                         isAnimationActive={false}
                         name="Pemasukan"
-                        stroke="var(--chart-3)"
+                        stroke="var(--success)"
                         strokeWidth={2}
                         type="monotone"
                       />
@@ -448,7 +452,7 @@ function DashboardPage() {
                         fill="url(#expense)"
                         isAnimationActive={false}
                         name="Pengeluaran"
-                        stroke="var(--chart-1)"
+                        stroke="var(--destructive)"
                         strokeWidth={2}
                         type="monotone"
                       />
@@ -470,38 +474,7 @@ function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="order-first xl:order-last">
-          <CardHeader>
-            <div>
-              <CardTitle>Dompet</CardTitle>
-              <CardDescription>{data.wallets.length} sumber dana aktif</CardDescription>
-            </div>
-          </CardHeader>
-          <CardContent className="grid grid-cols-1 gap-2">
-            {data.wallets.slice(0, 5).map((wallet) => (
-              <div
-                className="flex min-w-0 items-center gap-3 rounded-2xl bg-secondary/55 p-3"
-                key={wallet.id}
-              >
-                <span className="grid size-10 place-items-center rounded-xl bg-card text-primary shadow-sm">
-                  <WalletLogo wallet={wallet} />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium" title={wallet.name}>
-                    {wallet.name}
-                  </p>
-                  <p className="text-caption">{wallet.type === "saving" ? "Tabungan" : "Harian"}</p>
-                </div>
-                <div className="flex min-w-0 items-center gap-1">
-                  <p className="min-w-0 text-sm font-semibold tabular-nums break-words text-right">
-                    {money(wallet.balance)}
-                  </p>
-                  <WalletDialog wallet={wallet} />
-                </div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
+        <WalletDeck balance={balance} currency={currency} hidden={hide} wallets={data.wallets} />
       </div>
 
       {hasCompare && (

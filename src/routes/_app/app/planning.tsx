@@ -1864,11 +1864,11 @@ function SectionHeading({
 function Empty({ icon, text }: { icon: typeof Target01Icon; text: string }) {
   return (
     <Card>
-      <CardContent className="grid place-items-center py-16 text-center">
-        <span className="grid size-12 place-items-center rounded-2xl bg-secondary text-muted-foreground">
+      <CardContent className="flex items-center gap-3 py-4">
+        <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-secondary text-muted-foreground">
           <HugeiconsIcon icon={icon} />
         </span>
-        <p className="mt-4 text-sm font-medium">{text}</p>
+        <p className="min-w-0 text-sm font-medium">{text}</p>
       </CardContent>
     </Card>
   )

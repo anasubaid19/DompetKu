@@ -18,9 +18,37 @@
 - Use `Select` from `src/components/ui/select.tsx`; it owns the custom chevron and normalized native appearance.
 - Use `SegmentedControl` from `src/components/ui/segmented-control.tsx`; its pill-tray appearance is intentional.
 - Use `FormField` for labels and hints. Keep form controls full-width unless a compact grid is explicitly required.
+- Use `Switch` from `src/components/ui/switch.tsx` for on/off preferences, paired with a visible label. Settings toggles share this control so they do not mix a checkbox and an icon button.
+- Money meaning is fixed: income uses `var(--success)` and expenses use `var(--destructive)` in charts, legends, and KPI icons. `categoryChartColor()` stays reserved for categorical marks (donut slices, per-category progress bars).
 - Preserve keyboard focus styles, semantic labels, 44px coarse-pointer targets, and mobile bottom-navigation clearance.
 
 ## Current State
+
+Completed on 2026-10-21 (QA polish + consistency pass):
+
+- Browser QA with the taste inspector (1440/768/390) found one real bug: deleting a custom category always failed because `deleteCategory` put `LIMIT` inside a `UNION ALL` branch, which SQLite rejects. It now runs three `EXISTS` checks before deleting; verified through the UI.
+- Empty and misleading states: the Ringkasan cash-flow card no longer stretches to the wallet deck's height (`items-start`) and its X axis is padded so edge labels are not clipped; Laporan renders compact empty messages instead of empty axes, hides "Kenaikan terbesar" when the previous cycle has no expenses, pads the net-worth Y domain, and the 6-cycle comparison no longer draws an empty plot. Rencana empty sections use a compact icon+label row instead of a 200px card.
+- Mobile Ringkasan: the header "Catat transaksi" CTA is hidden below `lg` because the FAB already offers it (the empty-state CTA stays), and the FAB now clears the dock by 32px with extra page bottom padding so scrolled content can pass it.
+- Pengaturan: both preferences use the new `Switch` (44px track, expanded coarse-pointer hit area, `data-checked`/`data-unchecked` from Base UI). The hidden input still submits `hideBalance=on`, so the server contract is unchanged.
+- Dark mode destructive buttons failed WCAG AA (white on `oklch(0.7 0.18 24)` was 2.9:1). New `--destructive-foreground` token is near-black in dark mode and near-white in light mode; the button now measures 6.72:1 dark and 5.40:1 light.
+- Public pages (landing, `/help`) read the session: signed-in visitors see "Buka aplikasi" instead of "Masuk"/"Mulai gratis", and the help guide's final step returns to the app. `/login` and `/register` gained a show-password toggle.
+- Chart meaning is consistent with the KPI icons: cash-flow areas, the 6-cycle bars, and their legends use `--success`/`--destructive` instead of the categorical purple/green pair, and category rows on Laporan use their category color instead of `primary`.
+- Not done: "Lupa password" needs an email provider (`sendResetPassword`) before it can be offered honestly; only the show-password toggle shipped.
+- Verification: `check` ✓, `typecheck` ✓, `bun test` 18 passed ✓, `build` ✓; visual QA at 1440×1000 and 390×844 in light/dark on a scratch copy of the database (charts with income/expense data), plus the login, help, and settings screens.
+
+Completed on 2026-10-20 (Kinetik UI adoptions):
+
+- Expense Card (Laporan > "Pengeluaran terbesar"): added a period selector (Siklus ini / 3 siklus / 6 siklus) backed by `recentCycles`; the donut, total, and category rows now honor the selected range instead of summing every transaction. Default is the current cycle. Read-only, no schema change.
+- Skeleton Sweep: new `src/components/app-skeleton.tsx` mirrors the app frame (sidebar, header, stat cards, chart, list) with `animate-pulse` and `role="status"`/sr-only "Memuat halaman…", disabled by reduced motion. Wired as `defaultPendingComponent` with `defaultPendingMs: 200` in `src/router.tsx` and as `pendingComponent` on the `_app` layout, so app navigations swap in the skeleton instead of leaving stale page content.
+- Count Badge: new `getDueCount` server function counts active debts + subscriptions due within 7 days (including overdue, matching the Ringkasan reminder), loaded once in `_app` `beforeLoad`. AppShell shows it on Rencana in the desktop sidebar (with sr-only "jatuh tempo") and as a dot on the mobile dock tile, whose `aria-label` appends the count. Capped at "9+".
+- Verification: `check` ✓, `typecheck` ✓, `bun test` 18 passed ✓, `build` ✓; visual QA at 1440×1000 and 390×844 in light/dark with 3 due items, plus a temporary skeleton preview route (since deleted) checked at both sizes.
+
+Completed on 2026-10-19 (wallet deck):
+
+- Replaced the Ringkasan wallet list with a web-native wallet deck inspired by Kinetik UI's Wallet Stack. The faithful React Native port was spiked and rejected: the production build rendered, but Vite dev could not resolve RN CJS/Flow internals without permanent adapter shims, so all RN dependencies and vendored files were removed. Geometry and motion constants are preserved (`CARD_H 150`, `PEEK 30`, `SPREAD 64`, `POCKET_H 190`, `LIFT 34`), with CSS cubic-bezier transitions, `prefers-reduced-motion` support, a 190px pocket button with `aria-expanded`, and cards as non-interactive decoration.
+- Card faces follow bank brand colors through `walletCardFace(icon, color)` in `finance-options.ts` (institution map, wallet-color fallback, luminance-based ink); the bank logo sits on each face. Money uses the app's Rupiah formatting (no cents) and honors `hide_balance`.
+- Every wallet stays in an editable list below the deck, so wallets beyond the four-card stack remain reachable and `WalletDialog` still works. No schema, API, or dependency changes.
+- Verification: `check` ✓, `typecheck` ✓, `bun test` 18 passed (new `walletCardFace` test) ✓, `build` ✓; visual QA at 1259×983 and 390×844 in light/dark, open/closed, zero horizontal overflow, with 5 wallets across 5 institutions.
 
 Completed on 2026-10-09 (antislop audit-001, all 7 fixed):
 

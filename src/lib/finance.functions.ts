@@ -7,7 +7,7 @@ import {
   isFinancialInstitution,
   isSeedCategory,
 } from "@/lib/finance-options"
-import { addMonths, today } from "@/lib/utils"
+import { addMonths, daysUntil, today } from "@/lib/utils"
 
 export type Wallet = {
   id: string
@@ -303,6 +303,19 @@ type WalletInput = {
   color?: string
   icon?: string
 }
+
+export const getDueCount = createServerFn({ method: "GET" }).handler(async () => {
+  const user = await requireUser()
+  const dueDates = db
+    .query(`
+      SELECT due_date AS date FROM debts
+      WHERE user_id = ? AND status = 'active' AND due_date IS NOT NULL
+      UNION ALL
+      SELECT next_due_date AS date FROM subscriptions WHERE user_id = ? AND active = 1
+    `)
+    .all(user.id, user.id) as { date: string }[]
+  return dueDates.filter((item) => daysUntil(item.date) <= 7).length
+})
 
 export const createWallet = createServerFn({ method: "POST" })
   .validator((data: WalletInput) => data)
@@ -1194,11 +1207,13 @@ export const deleteCategory = createServerFn({ method: "POST" })
     }
     const used = db
       .query(
-        `SELECT 1 FROM transactions WHERE user_id = ? AND category_id = ? LIMIT 1
-         UNION ALL
-         SELECT 1 FROM budgets WHERE user_id = ? AND category_id = ? LIMIT 1
-         UNION ALL
-         SELECT 1 FROM subscriptions WHERE user_id = ? AND category_id = ? LIMIT 1`,
+        `SELECT 1 WHERE EXISTS (
+           SELECT 1 FROM transactions WHERE user_id = ? AND category_id = ?
+         ) OR EXISTS (
+           SELECT 1 FROM budgets WHERE user_id = ? AND category_id = ?
+         ) OR EXISTS (
+           SELECT 1 FROM subscriptions WHERE user_id = ? AND category_id = ?
+         )`,
       )
       .get(user.id, category.id, user.id, category.id, user.id, category.id)
     if (used) throw new Error("Kategori masih dipakai, pindahkan atau hapus datanya dulu")

@@ -10,6 +10,7 @@ import {
   isCategoryIcon,
   isFinancialInstitution,
   isSeedCategory,
+  walletCardFace,
 } from "@/lib/finance-options"
 import {
   addMonths,
@@ -240,6 +241,13 @@ test("billing dates roll forward by whole months and clamp to month end", () => 
   expect(addMonths("2026-01-31", 1)).toBe("2026-02-28")
   expect(addMonths("2026-01-31", 3)).toBe("2026-04-30")
   expect(addMonths("2026-03-31", 1)).toBe("2026-04-30")
+})
+
+test("wallet card faces use institution colors with readable ink", () => {
+  expect(walletCardFace("bca", "blue").from).toBe("#0060AF")
+  expect(walletCardFace("bca", "blue").ink).toBe("#FFFFFF")
+  expect(walletCardFace("kb-bukopin", "yellow").ink).toBe("#111111")
+  expect(walletCardFace("wallet", "violet").from).toBe("#7C3AED")
 })
 
 test("days until a due date counts calendar days", () => {

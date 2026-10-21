@@ -1,4 +1,4 @@
-import { Wallet01Icon } from "@hugeicons/core-free-icons"
+import { ViewIcon, ViewOffIcon, Wallet01Icon } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { Link, useRouter } from "@tanstack/react-router"
 import { type FormEvent, useState } from "react"
@@ -11,6 +11,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
   const router = useRouter()
   const [error, setError] = useState("")
   const [pending, setPending] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -76,13 +77,25 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
             />
           </FormField>
           <FormField hint={mode === "register" ? "Minimal 8 karakter" : undefined} label="Password">
-            <Input
-              autoComplete={mode === "register" ? "new-password" : "current-password"}
-              minLength={8}
-              name="password"
-              required
-              type="password"
-            />
+            <div className="relative">
+              <Input
+                autoComplete={mode === "register" ? "new-password" : "current-password"}
+                className="pr-12"
+                minLength={8}
+                name="password"
+                required
+                type={showPassword ? "text" : "password"}
+              />
+              <button
+                aria-label={showPassword ? "Sembunyikan password" : "Tampilkan password"}
+                aria-pressed={showPassword}
+                className="absolute inset-y-0 right-0 grid w-11 place-items-center rounded-r-xl text-muted-foreground outline-none transition-colors duration-fast hover:text-foreground focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+                onClick={() => setShowPassword((value) => !value)}
+                type="button"
+              >
+                <HugeiconsIcon icon={showPassword ? ViewOffIcon : ViewIcon} />
+              </button>
+            </div>
           </FormField>
           {error && (
             <p

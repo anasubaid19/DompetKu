@@ -1,6 +1,7 @@
 import { Chart03Icon, Money01Icon, Wallet01Icon } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { createFileRoute } from "@tanstack/react-router"
+import { useState } from "react"
 import {
   Area,
   AreaChart,
@@ -22,6 +23,7 @@ import { SpendingCalendar } from "@/components/spending-calendar"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
+import { Select } from "@/components/ui/select"
 import { getFinanceData } from "@/lib/finance.functions"
 import { categoryChartColor } from "@/lib/finance-options"
 import { formatCompactNumber, formatMoney, recentCycles } from "@/lib/utils"
@@ -33,6 +35,7 @@ export const Route = createFileRoute("/_app/app/reports")({
 
 function ReportsPage() {
   const data = Route.useLoaderData()
+  const [expensePeriod, setExpensePeriod] = useState<"cycle" | "3" | "6">("cycle")
   const money = (value: number) =>
     data.settings.hide_balance ? "••••••" : formatMoney(value, data.settings.currency)
   const income = data.transactions
@@ -62,6 +65,8 @@ function ReportsPage() {
     }
   })
 
+  const hasCashFlow = months.some((item) => item.pemasukan > 0 || item.pengeluaran > 0)
+
   const netWorthTrend: { month: string; kekayaan: number }[] = []
   let runningNetWorth = netWorth
   for (let index = months.length - 1; index >= 0; index -= 1) {
@@ -69,6 +74,18 @@ function ReportsPage() {
     runningNetWorth -= months[index].pemasukan - months[index].pengeluaran
   }
   const hasNetWorth = netWorthTrend.some((item) => item.kekayaan !== 0)
+  const netWorthValues = netWorthTrend.map((item) => item.kekayaan)
+  const netWorthMin = Math.min(...netWorthValues)
+  const netWorthMax = Math.max(...netWorthValues)
+  // Keep a flat balance off the chart edges.
+  const netWorthPad = Math.max(1, (netWorthMax - netWorthMin) * 0.15, Math.abs(netWorthMax) * 0.05)
+
+  const expenseCycles = recentCycles(
+    data.settings,
+    expensePeriod === "cycle" ? 1 : expensePeriod === "3" ? 3 : 6,
+  )
+  const expenseStart = expenseCycles[0].start
+  const expenseEnd = expenseCycles[expenseCycles.length - 1].end
 
   const categoriesById = new Map(data.categories.map((category) => [category.id, category]))
   const categoryTotals = new Map<
@@ -76,6 +93,7 @@ function ReportsPage() {
     { name: string; value: number; category?: (typeof data.categories)[number] }
   >()
   for (const item of data.transactions) {
+    if (item.transaction_date < expenseStart || item.transaction_date > expenseEnd) continue
     if (item.type === "expense") {
       const key = item.category_id ?? "uncategorized"
       const category = item.category_id ? categoriesById.get(item.category_id) : undefined
@@ -193,7 +211,7 @@ function ReportsPage() {
               value={money(currentMonth.pengeluaran)}
             />
           </div>
-          {increases.length > 0 && (
+          {previousCats.size > 0 && increases.length > 0 && (
             <div className="grid gap-2">
               <p className="text-label">Kenaikan terbesar vs siklus lalu</p>
               <div className="flex flex-wrap gap-2">
@@ -212,7 +230,7 @@ function ReportsPage() {
         </CardContent>
       </Card>
 
-      <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.8fr)]">
+      <div className="grid min-w-0 items-start gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.8fr)]">
         <Card>
           <CardHeader>
             <div>
@@ -222,72 +240,82 @@ function ReportsPage() {
             <Badge>Arus kas</Badge>
           </CardHeader>
           <CardContent>
-            <div
-              aria-describedby="monthly-report-summary"
-              aria-label={`Grafik pemasukan dan pengeluaran enam siklus, ${data.settings.cycle_length} bulan per siklus`}
-              className="flex h-72 w-full min-w-0 flex-col"
-              role="img"
-            >
-              <p className="sr-only" id="monthly-report-summary">
-                {months
-                  .map(
-                    (item) =>
-                      `${item.month}: pemasukan ${money(item.pemasukan)}, pengeluaran ${money(item.pengeluaran)}`,
-                  )
-                  .join(". ")}
-              </p>
+            {hasCashFlow ? (
               <div
-                aria-hidden
-                className="mb-2 flex items-center justify-end gap-4 text-xs text-muted-foreground"
+                aria-describedby="monthly-report-summary"
+                aria-label={`Grafik pemasukan dan pengeluaran enam siklus, ${data.settings.cycle_length} bulan per siklus`}
+                className="flex h-72 w-full min-w-0 flex-col"
+                role="img"
               >
-                <span className="inline-flex items-center gap-1.5">
-                  <span className="size-2 rounded-sm bg-[var(--chart-3)]" /> Pemasukan
-                </span>
-                <span className="inline-flex items-center gap-1.5">
-                  <span className="size-2 rounded-sm bg-[var(--chart-1)]" /> Pengeluaran
-                </span>
+                <p className="sr-only" id="monthly-report-summary">
+                  {months
+                    .map(
+                      (item) =>
+                        `${item.month}: pemasukan ${money(item.pemasukan)}, pengeluaran ${money(item.pengeluaran)}`,
+                    )
+                    .join(". ")}
+                </p>
+                <div
+                  aria-hidden
+                  className="mb-2 flex items-center justify-end gap-4 text-xs text-muted-foreground"
+                >
+                  <span className="inline-flex items-center gap-1.5">
+                    <span className="size-2 rounded-sm bg-[var(--success)]" /> Pemasukan
+                  </span>
+                  <span className="inline-flex items-center gap-1.5">
+                    <span className="size-2 rounded-sm bg-[var(--destructive)]" /> Pengeluaran
+                  </span>
+                </div>
+                <div className="min-h-0 min-w-0 flex-1">
+                  <ResponsiveContainer height="100%" width="100%">
+                    <BarChart
+                      accessibilityLayer={false}
+                      data={months}
+                      margin={{ left: 0, right: 0, top: 12, bottom: 0 }}
+                    >
+                      <CartesianGrid
+                        stroke="var(--border)"
+                        strokeDasharray="3 6"
+                        vertical={false}
+                      />
+                      <XAxis
+                        axisLine={false}
+                        dataKey="month"
+                        fontSize={11}
+                        tick={{ fill: "var(--muted-foreground)" }}
+                        tickLine={false}
+                      />
+                      <YAxis
+                        axisLine={false}
+                        fontSize={10}
+                        tick={{ fill: "var(--muted-foreground)" }}
+                        tickFormatter={(value) => formatCompactNumber(Number(value))}
+                        tickLine={false}
+                      />
+                      <Tooltip formatter={(value) => money(Number(value))} />
+                      <Bar
+                        dataKey="pemasukan"
+                        fill="var(--success)"
+                        isAnimationActive={false}
+                        name="Pemasukan"
+                        radius={[6, 6, 0, 0]}
+                      />
+                      <Bar
+                        dataKey="pengeluaran"
+                        fill="var(--destructive)"
+                        isAnimationActive={false}
+                        name="Pengeluaran"
+                        radius={[6, 6, 0, 0]}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
               </div>
-              <div className="min-h-0 min-w-0 flex-1">
-                <ResponsiveContainer height="100%" width="100%">
-                  <BarChart
-                    accessibilityLayer={false}
-                    data={months}
-                    margin={{ left: 0, right: 0, top: 12, bottom: 0 }}
-                  >
-                    <CartesianGrid stroke="var(--border)" strokeDasharray="3 6" vertical={false} />
-                    <XAxis
-                      axisLine={false}
-                      dataKey="month"
-                      fontSize={11}
-                      tick={{ fill: "var(--muted-foreground)" }}
-                      tickLine={false}
-                    />
-                    <YAxis
-                      axisLine={false}
-                      fontSize={10}
-                      tick={{ fill: "var(--muted-foreground)" }}
-                      tickFormatter={(value) => formatCompactNumber(Number(value))}
-                      tickLine={false}
-                    />
-                    <Tooltip formatter={(value) => money(Number(value))} />
-                    <Bar
-                      dataKey="pemasukan"
-                      fill="var(--chart-3)"
-                      isAnimationActive={false}
-                      name="Pemasukan"
-                      radius={[6, 6, 0, 0]}
-                    />
-                    <Bar
-                      dataKey="pengeluaran"
-                      fill="var(--chart-1)"
-                      isAnimationActive={false}
-                      name="Pengeluaran"
-                      radius={[6, 6, 0, 0]}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
+            ) : (
+              <p className="py-8 text-center text-sm text-muted-foreground">
+                Belum ada arus kas untuk ditampilkan.
+              </p>
+            )}
           </CardContent>
         </Card>
 
@@ -295,8 +323,22 @@ function ReportsPage() {
           <CardHeader>
             <div>
               <CardTitle>Pengeluaran terbesar</CardTitle>
-              <CardDescription>Akumulasi menurut kategori.</CardDescription>
+              <CardDescription>Akumulasi menurut kategori pada periode terpilih.</CardDescription>
             </div>
+            <Select
+              aria-label="Periode pengeluaran"
+              className="w-auto min-w-32 max-w-full"
+              onChange={(event) =>
+                setExpensePeriod(
+                  event.target.value === "3" ? "3" : event.target.value === "6" ? "6" : "cycle",
+                )
+              }
+              value={expensePeriod}
+            >
+              <option value="cycle">Siklus ini</option>
+              <option value="3">3 siklus</option>
+              <option value="6">6 siklus</option>
+            </Select>
           </CardHeader>
           <CardContent className="grid grid-cols-1 gap-5">
             {categories.length > 0 && (
@@ -349,12 +391,13 @@ function ReportsPage() {
                 </div>
                 <Progress
                   aria-label={`${category.name}, ${money(category.value)}`}
+                  indicatorStyle={{ backgroundColor: categoryChartColor(category.category?.color) }}
                   value={(category.value / largestCategory) * 100}
                 />
               </div>
             ))}
             {categories.length === 0 && (
-              <p className="py-10 text-center text-sm text-muted-foreground">
+              <p className="py-8 text-center text-sm text-muted-foreground">
                 Belum ada pengeluaran untuk dianalisis.
               </p>
             )}
@@ -399,9 +442,11 @@ function ReportsPage() {
                       axisLine={false}
                       dataKey="month"
                       fontSize={11}
+                      padding={{ left: 12, right: 12 }}
                       tick={{ fill: "var(--muted-foreground)" }}
                       tickLine={false}
                     />
+                    <YAxis domain={[netWorthMin - netWorthPad, netWorthMax + netWorthPad]} hide />
                     <Tooltip formatter={(value) => money(Number(value))} />
                     <Area
                       dataKey="kekayaan"
@@ -417,7 +462,7 @@ function ReportsPage() {
               </div>
             </div>
           ) : (
-            <p className="py-10 text-center text-sm text-muted-foreground">
+            <p className="py-8 text-center text-sm text-muted-foreground">
               Belum ada data kekayaan bersih.
             </p>
           )}

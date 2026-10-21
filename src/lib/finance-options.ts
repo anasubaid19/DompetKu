@@ -26,6 +26,69 @@ export function categoryChartColor(value: string | undefined) {
   )
 }
 
+const WALLET_FALLBACK_COLORS: Record<string, string> = {
+  violet: "#7C3AED",
+  blue: "#2563EB",
+  green: "#059669",
+  orange: "#EA580C",
+  red: "#DC2626",
+  cyan: "#0891B2",
+  pink: "#DB2777",
+  yellow: "#D97706",
+}
+
+const INSTITUTION_COLORS: Record<string, string> = {
+  bca: "#0060AF",
+  mandiri: "#003D79",
+  bri: "#00529C",
+  bni: "#F15A22",
+  danamon: "#E4002B",
+  "cimb-niaga": "#7A1B2E",
+  "ocbc-nisp": "#D0021B",
+  bsi: "#00A39D",
+  permata: "#00A19A",
+  "kb-bukopin": "#FFC20E",
+  btn: "#005BAA",
+  jago: "#F58220",
+  seabank: "#F47B20",
+  neobank: "#00AEEF",
+  mega: "#E4002B",
+  "bank-raya": "#00A651",
+  "bank-mayapada": "#6A2C91",
+  gopay: "#00AED6",
+  ovo: "#4C3494",
+  dana: "#118EEA",
+  shopeepay: "#EE4D2D",
+  linkaja: "#E82529",
+}
+
+function shadeHex(hex: string, factor: number) {
+  const value = Number.parseInt(hex.slice(1), 16)
+  const channels = [(value >> 16) & 255, (value >> 8) & 255, value & 255]
+  return `#${channels
+    .map((channel) => Math.max(0, Math.min(255, Math.round(channel * factor))))
+    .map((channel) => channel.toString(16).padStart(2, "0"))
+    .join("")}`
+}
+
+function hexLuminance(hex: string) {
+  const value = Number.parseInt(hex.slice(1), 16)
+  const [r, g, b] = [(value >> 16) & 255, (value >> 8) & 255, value & 255].map((channel) => {
+    const ratio = channel / 255
+    return ratio <= 0.04045 ? ratio / 12.92 : ((ratio + 0.055) / 1.055) ** 2.4
+  })
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b
+}
+
+export function walletCardFace(icon: string, color: string) {
+  const base = INSTITUTION_COLORS[icon] ?? WALLET_FALLBACK_COLORS[color] ?? "#7C3AED"
+  return {
+    from: base,
+    to: shadeHex(base, 0.68),
+    ink: hexLuminance(base) > 0.55 ? "#111111" : "#FFFFFF",
+  }
+}
+
 export const SEED_CATEGORIES = [
   ["Makanan", "expense", "orange", "receipt"],
   ["Transportasi", "expense", "blue", "car"],

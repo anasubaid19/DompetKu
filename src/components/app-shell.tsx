@@ -14,6 +14,7 @@ import { PullToRefresh } from "@/components/pull-to-refresh"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Button } from "@/components/ui/button"
 import { authClient } from "@/lib/auth-client"
+import { cn } from "@/lib/utils"
 
 const navigation = [
   { to: "/app", label: "Ringkasan", icon: Home01Icon },
@@ -23,11 +24,31 @@ const navigation = [
   { to: "/app/settings", label: "Pengaturan", icon: Settings01Icon },
 ] as const
 
+function DueBadge({
+  count,
+  className,
+  ...props
+}: React.ComponentProps<"span"> & { count: number }) {
+  return (
+    <span
+      className={cn(
+        "grid h-5 min-w-5 place-items-center rounded-full bg-destructive px-1 text-[11px] font-semibold leading-none text-background tabular-nums",
+        className,
+      )}
+      {...props}
+    >
+      {count > 9 ? "9+" : count}
+    </span>
+  )
+}
+
 export function AppShell({
   user,
+  dueCount,
   children,
 }: {
   user: { name: string; email: string }
+  dueCount: number
   children: React.ReactNode
 }) {
   const router = useRouter()
@@ -73,6 +94,12 @@ export function AppShell({
             >
               <HugeiconsIcon icon={item.icon} className="size-[18px]" />
               {item.label}
+              {item.to === "/app/planning" && dueCount > 0 && (
+                <>
+                  <DueBadge className="ml-auto" count={dueCount} />
+                  <span className="sr-only">jatuh tempo</span>
+                </>
+              )}
             </Link>
           ))}
         </nav>
@@ -138,8 +165,12 @@ export function AppShell({
               className: "bg-primary text-primary-foreground",
               "aria-current": "page",
             }}
-            aria-label={item.label}
-            className="group grid size-11 place-items-center rounded-xl shadow-md outline-none transition-[transform,background-color,color,box-shadow] duration-300 ease-entrance pointer-fine:hover:-translate-y-2 pointer-fine:hover:scale-110 focus-visible:-translate-y-2 focus-visible:scale-110 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-[0.96] motion-reduce:transform-none"
+            aria-label={
+              item.to === "/app/planning" && dueCount > 0
+                ? `${item.label}, ${dueCount} jatuh tempo`
+                : item.label
+            }
+            className="group relative grid size-11 place-items-center rounded-xl shadow-md outline-none transition-[transform,background-color,color,box-shadow] duration-300 ease-entrance pointer-fine:hover:-translate-y-2 pointer-fine:hover:scale-110 focus-visible:-translate-y-2 focus-visible:scale-110 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-[0.96] motion-reduce:transform-none"
             inactiveProps={{
               className: "bg-secondary text-muted-foreground pointer-fine:hover:bg-secondary/80",
             }}
@@ -147,6 +178,13 @@ export function AppShell({
             to={item.to}
           >
             <HugeiconsIcon aria-hidden icon={item.icon} className="size-[18px]" />
+            {item.to === "/app/planning" && dueCount > 0 && (
+              <DueBadge
+                aria-hidden
+                className="absolute -right-1.5 -top-1.5 ring-2 ring-background"
+                count={dueCount}
+              />
+            )}
           </Link>
         ))}
       </nav>
