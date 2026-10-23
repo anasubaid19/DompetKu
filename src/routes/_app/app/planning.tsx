@@ -17,6 +17,7 @@ import { HugeiconsIcon } from "@hugeicons/react"
 import { createFileRoute, useRouter } from "@tanstack/react-router"
 import { type FormEvent, type ReactNode, useState } from "react"
 import { toast } from "sonner"
+import { EmptyState } from "@/components/empty-state"
 import {
   CategoryLabel,
   CategorySelect,
@@ -237,7 +238,7 @@ function PlanningPage() {
             })}
           </div>
           {budgets.length === 0 && (
-            <Empty icon={Target01Icon} text="Belum ada anggaran kategori." />
+            <EmptyState icon={Target01Icon} text="Belum ada anggaran kategori." />
           )}
 
           <div className="grid grid-cols-1 gap-4 pt-2">
@@ -312,7 +313,7 @@ function PlanningPage() {
               })}
             </div>
             {data.walletBudgets.length === 0 && (
-              <Empty icon={WalletAdd01Icon} text="Belum ada anggaran per dompet." />
+              <EmptyState icon={WalletAdd01Icon} text="Belum ada anggaran per dompet." />
             )}
           </div>
         </section>
@@ -401,7 +402,7 @@ function PlanningPage() {
             })}
           </div>
           {savings.length === 0 && (
-            <Empty icon={MoneySavingJarIcon} text="Belum ada target tabungan." />
+            <EmptyState icon={MoneySavingJarIcon} text="Belum ada target tabungan." />
           )}
         </section>
       )}
@@ -432,7 +433,9 @@ function PlanningPage() {
               />
             ))}
           </div>
-          {debts.length === 0 && <Empty icon={UserIcon} text="Belum ada hutang atau piutang." />}
+          {debts.length === 0 && (
+            <EmptyState icon={UserIcon} text="Belum ada hutang atau piutang." />
+          )}
         </section>
       )}
 
@@ -542,7 +545,7 @@ function PlanningPage() {
             })}
           </div>
           {subscriptions.length === 0 && (
-            <Empty icon={Invoice01Icon} text="Belum ada langganan atau pemasukan rutin." />
+            <EmptyState icon={Invoice01Icon} text="Belum ada langganan atau pemasukan rutin." />
           )}
         </section>
       )}
@@ -1858,18 +1861,5 @@ function SectionHeading({
       </div>
       {action}
     </div>
-  )
-}
-
-function Empty({ icon, text }: { icon: typeof Target01Icon; text: string }) {
-  return (
-    <Card>
-      <CardContent className="flex items-center gap-3 py-4">
-        <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-secondary text-muted-foreground">
-          <HugeiconsIcon icon={icon} />
-        </span>
-        <p className="min-w-0 text-sm font-medium">{text}</p>
-      </CardContent>
-    </Card>
   )
 }

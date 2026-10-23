@@ -13,6 +13,7 @@ import { createFileRoute, Link } from "@tanstack/react-router"
 import { useState } from "react"
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis } from "recharts"
 import { average, CycleCompare, percentChange } from "@/components/cycle-compare"
+import { EmptyState } from "@/components/empty-state"
 import { TransactionDialog, WalletDialog } from "@/components/finance-dialogs"
 import { CategoryLabel, WalletLabel } from "@/components/finance-visuals"
 import { PageHeader } from "@/components/page-header"
@@ -461,15 +462,11 @@ function DashboardPage() {
                 </div>
               </div>
             ) : (
-              <div className="flex items-center gap-3 py-4">
-                <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-secondary text-muted-foreground">
-                  <HugeiconsIcon icon={TransactionHistoryIcon} />
-                </span>
-                <div>
-                  <p className="text-sm font-medium">Belum ada arus kas</p>
-                  <p className="text-caption mt-1">Grafik akan terisi setelah ada transaksi.</p>
-                </div>
-              </div>
+              <EmptyState
+                description="Grafik akan terisi setelah ada transaksi."
+                icon={TransactionHistoryIcon}
+                text="Belum ada arus kas"
+              />
             )}
           </CardContent>
         </Card>
@@ -571,16 +568,9 @@ function DashboardPage() {
             )
           })}
           {data.transactions.length === 0 && (
-            <div className="flex flex-col items-start gap-4 py-4 sm:flex-row sm:items-center">
-              <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-secondary text-muted-foreground">
-                <HugeiconsIcon icon={TransactionHistoryIcon} />
-              </span>
-              <div className="flex-1">
-                <p className="text-sm font-medium">Belum ada transaksi</p>
-                <p className="text-caption mt-1">Mulai catat pemasukan atau pengeluaranmu.</p>
-              </div>
-              <div>
-                {data.wallets.length > 0 ? (
+            <EmptyState
+              action={
+                data.wallets.length > 0 ? (
                   <TransactionDialog
                     categories={data.categories}
                     recentTransactions={data.transactions}
@@ -588,9 +578,12 @@ function DashboardPage() {
                   />
                 ) : (
                   <WalletDialog />
-                )}
-              </div>
-            </div>
+                )
+              }
+              description="Mulai catat pemasukan atau pengeluaranmu."
+              icon={TransactionHistoryIcon}
+              text="Belum ada transaksi"
+            />
           )}
         </CardContent>
       </Card>
