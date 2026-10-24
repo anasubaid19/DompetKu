@@ -17,8 +17,8 @@ import {
 import { HugeiconsIcon } from "@hugeicons/react"
 import { type ChangeEvent, useState } from "react"
 import { Select } from "@/components/ui/select"
-import type { Category, Wallet } from "@/lib/finance.functions"
 import { CATEGORY_COLORS, FINANCIAL_INSTITUTIONS } from "@/lib/finance-options"
+import type { Category, Wallet } from "@/lib/finance-types"
 import { cn } from "@/lib/utils"
 
 const categoryIcons: Record<string, typeof ReceiptIcon> = {
@@ -148,6 +148,18 @@ export function CategorySelect({
 }) {
   const [value, setValue] = useState(defaultValue ?? "")
   const selected = categories.find((category) => category.id === value)
+
+  // Build parent -> children map
+  const parents = categories.filter((c) => !c.parent_id)
+  const childrenByParent = new Map<string, Category[]>()
+  for (const cat of categories) {
+    if (cat.parent_id) {
+      const arr = childrenByParent.get(cat.parent_id) ?? []
+      arr.push(cat)
+      childrenByParent.set(cat.parent_id, arr)
+    }
+  }
+
   return (
     <div className="relative">
       {selected && (
@@ -165,11 +177,25 @@ export function CategorySelect({
         value={value}
       >
         <option value="">{placeholder}</option>
-        {categories.map((category) => (
-          <option key={category.id} value={category.id}>
-            {category.name}
-          </option>
-        ))}
+        {parents.map((parent) => {
+          const children = childrenByParent.get(parent.id) ?? []
+          if (children.length === 0) {
+            return (
+              <option key={parent.id} value={parent.id}>
+                {parent.name}
+              </option>
+            )
+          }
+          return (
+            <optgroup key={parent.id} label={parent.name}>
+              {children.map((child) => (
+                <option key={child.id} value={child.id}>
+                  {child.name}
+                </option>
+              ))}
+            </optgroup>
+          )
+        })}
       </Select>
     </div>
   )

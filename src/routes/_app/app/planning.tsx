@@ -60,6 +60,7 @@ import {
   deleteWalletBudget,
   type FinanceTransaction,
   getFinanceData,
+  getRootCategory,
   moveSavingFunds,
   paySubscription,
   recordDebtPayment,
@@ -107,10 +108,10 @@ function PlanningPage() {
       item.transaction_date >= cycle.start &&
       item.transaction_date <= cycle.end
     ) {
-      expenseByCategory.set(
-        item.category_id,
-        (expenseByCategory.get(item.category_id) ?? 0) + item.amount,
-      )
+      // Roll up to root parent category
+      const rootCategory = getRootCategory(data.categories, item.category_id)
+      const key = rootCategory?.id ?? item.category_id
+      expenseByCategory.set(key, (expenseByCategory.get(key) ?? 0) + item.amount)
     }
   }
 

@@ -7,192 +7,62 @@ import {
   isFinancialInstitution,
   isSeedCategory,
 } from "@/lib/finance-options"
+import type {
+  Budget,
+  Category,
+  CategoryTreeNode,
+  Debt,
+  DebtState,
+  FinanceData,
+  FinanceTransaction,
+  LedgerEntry,
+  Saving,
+  Settings,
+  Subscription,
+  Wallet,
+  WalletBudget,
+} from "@/lib/finance-types"
+import {
+  calculateLedgerBalances,
+  flattenCategoryTree,
+  getCategoryAndDescendantsIds,
+  getCategoryTree,
+  getRootCategory,
+  nextDebtState,
+  optionalText,
+  positiveMoney,
+  requiredText,
+} from "@/lib/finance-types"
 import { addMonths, daysUntil, today } from "@/lib/utils"
 
-export type Wallet = {
-  id: string
-  name: string
-  type: "daily" | "saving"
-  balance: number
-  color: string
-  icon: string
+// Re-export types for backward compatibility
+export type {
+  Budget,
+  Category,
+  CategoryTreeNode,
+  Debt,
+  DebtState,
+  FinanceData,
+  FinanceTransaction,
+  LedgerEntry,
+  Saving,
+  Settings,
+  Subscription,
+  Wallet,
+  WalletBudget,
 }
 
-export type Category = {
-  id: string
-  name: string
-  type: "income" | "expense"
-  color: string
-  icon: string
-}
-
-export type FinanceTransaction = {
-  id: string
-  type: "income" | "expense" | "transfer"
-  amount: number
-  fee: number
-  wallet_id: string
-  target_wallet_id: string | null
-  category_id: string | null
-  saving_id: string | null
-  debt_id: string | null
-  description: string
-  transaction_date: string
-  category_name: string | null
-  wallet_name: string
-  target_wallet_name: string | null
-}
-
-export type Debt = {
-  id: string
-  type: "hutang" | "piutang"
-  contact: string
-  amount: number
-  paid_amount: number
-  due_date: string | null
-  note: string
-  status: "active" | "paid"
-}
-
-type DebtState = Pick<Debt, "amount" | "paid_amount" | "status">
-
-export function nextDebtState(
-  debt: DebtState,
-  operation: { type: "add" | "pay"; amount: number },
-): DebtState {
-  if (operation.type === "add") {
-    const amount = debt.amount + operation.amount
-    return {
-      amount,
-      paid_amount: debt.paid_amount,
-      status: debt.paid_amount >= amount ? "paid" : "active",
-    }
-  }
-  const paidAmount = debt.paid_amount + operation.amount
-  if (paidAmount > debt.amount) throw new Error("Nominal cicilan melebihi sisa kewajiban")
-  return {
-    amount: debt.amount,
-    paid_amount: paidAmount,
-    status: paidAmount >= debt.amount ? "paid" : "active",
-  }
-}
-
-export type Budget = {
-  id: string
-  category_id: string
-  amount: number
-  category_name: string
-  category_color: string
-}
-
-export type WalletBudget = {
-  id: string
-  wallet_id: string
-  amount: number
-  wallet_name: string
-}
-
-export type Saving = {
-  id: string
-  name: string
-  target_amount: number
-  saved_amount: number
-  wallet_id: string | null
-  color: string
-  target_date: string | null
-  wallet_name: string | null
-}
-
-export type Subscription = {
-  id: string
-  name: string
-  amount: number
-  wallet_id: string | null
-  category_id: string | null
-  next_due_date: string
-  interval_months: number
-  direction: "expense" | "income"
-  active: number
-  wallet_name: string | null
-  category_name: string | null
-}
-
-export type Settings = {
-  currency: string
-  cycle_start: number
-  cycle_length: number
-  accent: string
-  hide_balance: number
-}
-
-export type FinanceData = {
-  wallets: Wallet[]
-  categories: Category[]
-  transactions: FinanceTransaction[]
-  debts: Debt[]
-  budgets: Budget[]
-  walletBudgets: WalletBudget[]
-  savings: Saving[]
-  subscriptions: Subscription[]
-  settings: Settings
-}
-
-type LedgerEntry = {
-  type: "income" | "expense" | "transfer"
-  amount: number
-  fee: number
-  walletId: string
-  targetWalletId: string | null
-}
-
-export function calculateLedgerBalances(
-  initial: Record<string, number>,
-  previous: LedgerEntry | null,
-  next: LedgerEntry | null,
-) {
-  const balances = { ...initial }
-  const apply = (entry: LedgerEntry, direction: 1 | -1) => {
-    const change = (walletId: string, amount: number) => {
-      if (!(walletId in balances)) throw new Error("Dompet tidak ditemukan")
-      balances[walletId] += amount * direction
-    }
-
-    if (entry.type === "income") change(entry.walletId, entry.amount)
-    if (entry.type === "expense") change(entry.walletId, -entry.amount)
-    if (entry.type === "transfer") {
-      if (!entry.targetWalletId) throw new Error("Dompet tujuan tidak ditemukan")
-      change(entry.walletId, -(entry.amount + entry.fee))
-      change(entry.targetWalletId, entry.amount)
-    }
-  }
-
-  if (previous) apply(previous, -1)
-  if (next) apply(next, 1)
-  if (Object.values(balances).some((balance) => balance < 0)) {
-    throw new Error("Saldo dompet tidak mencukupi")
-  }
-  return balances
-}
-
-export function requiredText(value: unknown, label: string, max = 100) {
-  if (typeof value !== "string" || value.trim().length === 0 || value.trim().length > max) {
-    throw new Error(`${label} tidak valid`)
-  }
-  return value.trim()
-}
-
-export function optionalText(value: unknown, max = 240) {
-  if (value == null || value === "") return ""
-  if (typeof value !== "string" || value.length > max) throw new Error("Teks tidak valid")
-  return value.trim()
-}
-
-export function positiveMoney(value: unknown, label = "Nominal") {
-  const amount = Number(value)
-  if (!Number.isSafeInteger(amount) || amount <= 0 || amount > 100_000_000_000_000) {
-    throw new Error(`${label} tidak valid`)
-  }
-  return amount
+// Re-export pure functions for backward compatibility
+export {
+  calculateLedgerBalances,
+  flattenCategoryTree,
+  getCategoryAndDescendantsIds,
+  getCategoryTree,
+  getRootCategory,
+  nextDebtState,
+  optionalText,
+  positiveMoney,
+  requiredText,
 }
 
 function ownedWallet(userId: string, walletId: unknown) {
@@ -213,6 +83,23 @@ function ownedCategory(userId: string, categoryId: unknown) {
   return category
 }
 
+export function getCategoryDescendants(userId: string, categoryId: string): string[] {
+  const descendants: string[] = []
+  const stack = [categoryId]
+  while (stack.length > 0) {
+    const current = stack.pop()
+    if (!current) continue
+    const children = db
+      .query("SELECT id FROM categories WHERE parent_id = ? AND user_id = ?")
+      .all(current, userId) as { id: string }[]
+    for (const child of children) {
+      descendants.push(child.id)
+      stack.push(child.id)
+    }
+  }
+  return descendants
+}
+
 export const getFinanceData = createServerFn({ method: "GET" }).handler(async () => {
   const user = await requireUser()
   ensureDefaults(user.id)
@@ -224,7 +111,7 @@ export const getFinanceData = createServerFn({ method: "GET" }).handler(async ()
     .all(user.id) as Wallet[]
   const categories = db
     .query(
-      "SELECT id, name, type, color, icon FROM categories WHERE user_id = ? ORDER BY type, name",
+      "SELECT id, name, type, color, icon, parent_id FROM categories WHERE user_id = ? ORDER BY type, name",
     )
     .all(user.id) as Category[]
   const transactions = db
@@ -1156,7 +1043,13 @@ export const updateSettings = createServerFn({ method: "POST" })
 
 export const createCategory = createServerFn({ method: "POST" })
   .validator(
-    (data: { name: string; type: "income" | "expense"; color: string; icon: string }) => data,
+    (data: {
+      name: string
+      type: "income" | "expense"
+      color: string
+      icon: string
+      parentId?: string
+    }) => data,
   )
   .handler(async ({ data }) => {
     const user = await requireUser()
@@ -1166,8 +1059,17 @@ export const createCategory = createServerFn({ method: "POST" })
     if (!isCategoryColor(color) || !isCategoryIcon(icon)) {
       throw new Error("Tampilan kategori tidak valid")
     }
+    let parentId: string | null = null
+    if (data.parentId) {
+      parentId = requiredText(data.parentId, "Kategori induk", 64)
+      const parent = db
+        .query("SELECT id, type FROM categories WHERE id = ? AND user_id = ?")
+        .get(parentId, user.id) as { id: string; type: string } | null
+      if (!parent) throw new Error("Kategori induk tidak ditemukan")
+      if (parent.type !== type) throw new Error("Kategori induk harus tipe yang sama")
+    }
     db.query(
-      "INSERT INTO categories (id, user_id, name, type, color, icon) VALUES (?, ?, ?, ?, ?, ?)",
+      "INSERT INTO categories (id, user_id, name, type, color, icon, parent_id) VALUES (?, ?, ?, ?, ?, ?, ?)",
     ).run(
       crypto.randomUUID(),
       user.id,
@@ -1175,11 +1077,15 @@ export const createCategory = createServerFn({ method: "POST" })
       type,
       color,
       icon,
+      parentId,
     )
   })
 
 export const updateCategory = createServerFn({ method: "POST" })
-  .validator((data: { id: string; name: string; color: string; icon: string }) => data)
+  .validator(
+    (data: { id: string; name: string; color: string; icon: string; parentId?: string | null }) =>
+      data,
+  )
   .handler(async ({ data }) => {
     const user = await requireUser()
     const category = ownedCategory(user.id, data.id)
@@ -1191,9 +1097,42 @@ export const updateCategory = createServerFn({ method: "POST" })
     if (!isCategoryColor(color) || !isCategoryIcon(icon)) {
       throw new Error("Tampilan kategori tidak valid")
     }
+    let parentId: string | null = data.parentId ?? category.parent_id
+    if (data.parentId !== undefined) {
+      if (data.parentId) {
+        if (data.parentId === category.id)
+          throw new Error("Kategori tidak bisa menjadi induk dirinya sendiri")
+        const parent = db
+          .query("SELECT id, type FROM categories WHERE id = ? AND user_id = ?")
+          .get(data.parentId, user.id) as { id: string; type: string } | null
+        if (!parent) throw new Error("Kategori induk tidak ditemukan")
+        if (parent.type !== category.type) throw new Error("Kategori induk harus tipe yang sama")
+        // Check for circular reference
+        let current: string | null = data.parentId
+        while (current) {
+          if (current === category.id) throw new Error("Tidak bisa membuat referensi circular")
+          const p = db
+            .query("SELECT parent_id FROM categories WHERE id = ? AND user_id = ?")
+            .get(current, user.id) as { parent_id: string | null } | null
+          current = p?.parent_id ?? null
+        }
+        parentId = data.parentId
+      } else {
+        parentId = null
+      }
+    }
     const result = db
-      .query("UPDATE categories SET name = ?, color = ?, icon = ? WHERE id = ? AND user_id = ?")
-      .run(requiredText(data.name, "Nama kategori", 50), color, icon, category.id, user.id)
+      .query(
+        "UPDATE categories SET name = ?, color = ?, icon = ?, parent_id = ? WHERE id = ? AND user_id = ?",
+      )
+      .run(
+        requiredText(data.name, "Nama kategori", 50),
+        color,
+        icon,
+        parentId,
+        category.id,
+        user.id,
+      )
     if (result.changes !== 1) throw new Error("Kategori tidak ditemukan")
   })
 
@@ -1205,6 +1144,12 @@ export const deleteCategory = createServerFn({ method: "POST" })
     if (isSeedCategory(category.name, category.type)) {
       throw new Error("Kategori bawaan tidak dapat dihapus")
     }
+    // Check if category has children
+    const hasChildren = db
+      .query("SELECT 1 FROM categories WHERE parent_id = ? AND user_id = ?")
+      .get(category.id, user.id)
+    if (hasChildren)
+      throw new Error("Kategori memiliki sub-kategori, hapus atau pindahkan sub-kategori dulu")
     const used = db
       .query(
         `SELECT 1 WHERE EXISTS (

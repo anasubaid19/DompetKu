@@ -29,11 +29,13 @@ db.exec(`
     type TEXT NOT NULL CHECK (type IN ('income', 'expense')),
     color TEXT NOT NULL DEFAULT 'violet',
     icon TEXT NOT NULL DEFAULT 'receipt',
+    parent_id TEXT REFERENCES categories(id) ON DELETE SET NULL,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(user_id, name, type)
   );
 
   CREATE INDEX IF NOT EXISTS categories_user_idx ON categories(user_id);
+  CREATE INDEX IF NOT EXISTS categories_parent_idx ON categories(parent_id);
 
   CREATE TABLE IF NOT EXISTS transactions (
     id TEXT PRIMARY KEY,
@@ -145,6 +147,14 @@ if (!subscriptionColumns.some((column) => column.name === "interval_months")) {
 }
 if (!subscriptionColumns.some((column) => column.name === "direction")) {
   db.exec("ALTER TABLE subscriptions ADD COLUMN direction TEXT NOT NULL DEFAULT 'expense'")
+}
+
+const categoryColumns = db.query("PRAGMA table_info(categories)").all() as { name: string }[]
+if (!categoryColumns.some((column) => column.name === "parent_id")) {
+  db.exec(
+    "ALTER TABLE categories ADD COLUMN parent_id TEXT REFERENCES categories(id) ON DELETE SET NULL",
+  )
+  db.exec("CREATE INDEX IF NOT EXISTS categories_parent_idx ON categories(parent_id)")
 }
 
 export function ensureDefaults(userId: string) {

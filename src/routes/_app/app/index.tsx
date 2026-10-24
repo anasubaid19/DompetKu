@@ -22,7 +22,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Progress } from "@/components/ui/progress"
 import { SegmentedControl } from "@/components/ui/segmented-control"
 import { WalletDeck } from "@/components/wallet-deck"
-import { getFinanceData } from "@/lib/finance.functions"
+import { getFinanceData, getRootCategory } from "@/lib/finance.functions"
 import {
   cashFlowMessage,
   cn,
@@ -99,15 +99,17 @@ function DashboardPage() {
       item.transaction_date >= cycle.start &&
       item.transaction_date <= cycle.end
     ) {
-      expenseByCategory.set(
-        item.category_id,
-        (expenseByCategory.get(item.category_id) ?? 0) + item.amount,
-      )
+      // Roll up to root parent category
+      const rootCategory = getRootCategory(data.categories, item.category_id)
+      const key = rootCategory?.id ?? item.category_id
+      expenseByCategory.set(key, (expenseByCategory.get(key) ?? 0) + item.amount)
     }
   }
   const budgetAlerts = data.budgets
     .map((budget) => {
-      const spent = expenseByCategory.get(budget.category_id) ?? 0
+      const rootCategory = getRootCategory(data.categories, budget.category_id)
+      const key = rootCategory?.id ?? budget.category_id
+      const spent = expenseByCategory.get(key) ?? 0
       return { ...budget, spent, percent: Math.round((spent / budget.amount) * 100) }
     })
     .filter((budget) => budget.percent >= 80)

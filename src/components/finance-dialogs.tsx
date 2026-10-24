@@ -26,22 +26,24 @@ import { Input } from "@/components/ui/input"
 import { SegmentedControl } from "@/components/ui/segmented-control"
 import { Select } from "@/components/ui/select"
 import {
-  type Category,
   createCategory,
   createTransaction,
   createWallet,
   deleteCategory,
   deleteWallet,
-  type FinanceTransaction,
   updateCategory,
   updateTransaction,
   updateWallet,
-  type Wallet,
 } from "@/lib/finance.functions"
 import { CATEGORY_COLORS, CATEGORY_ICONS } from "@/lib/finance-options"
+import type {
+  Category as CategoryType,
+  FinanceTransaction as FinanceTransactionType,
+  Wallet as WalletType,
+} from "@/lib/finance-types"
 import { cn, dateKey, formatNumberInput, parseNumberInput, today } from "@/lib/utils"
 
-export function WalletDialog({ wallet }: { wallet?: Wallet } = {}) {
+export function WalletDialog({ wallet }: { wallet?: WalletType } = {}) {
   const router = useRouter()
   const formId = useId()
   const [open, setOpen] = useState(false)
@@ -216,9 +218,11 @@ export function WalletDialog({ wallet }: { wallet?: Wallet } = {}) {
 export function CategoryDialog({
   type,
   category,
+  categories: allCategories = [],
 }: {
   type?: "expense" | "income"
-  category?: Category
+  category?: CategoryType
+  categories?: CategoryType[]
 } = {}) {
   const router = useRouter()
   const formId = useId()
@@ -226,13 +230,21 @@ export function CategoryDialog({
   const [pending, setPending] = useState(false)
   const [color, setColor] = useState(category?.color ?? "violet")
   const [icon, setIcon] = useState(category?.icon ?? "receipt")
+  const [parentId, setParentId] = useState(category?.parent_id ?? "")
   const [confirmingDelete, setConfirmingDelete] = useState(false)
+
+  const categoryType = category?.type ?? type ?? "expense"
+  // Filter potential parents: same type, not self, not descendants
+  const potentialParents = allCategories.filter(
+    (c) => c.type === categoryType && c.id !== category?.id && c.parent_id !== category?.id,
+  )
 
   function changeOpen(nextOpen: boolean) {
     setOpen(nextOpen)
     if (nextOpen) {
       setColor(category?.color ?? "violet")
       setIcon(category?.icon ?? "receipt")
+      setParentId(category?.parent_id ?? "")
     } else {
       setConfirmingDelete(false)
     }
@@ -246,15 +258,22 @@ export function CategoryDialog({
     try {
       if (category) {
         await updateCategory({
-          data: { id: category.id, name: String(form.get("name")), color, icon },
+          data: {
+            id: category.id,
+            name: String(form.get("name")),
+            color,
+            icon,
+            parentId: parentId || null,
+          },
         })
       } else {
         await createCategory({
           data: {
             name: String(form.get("name")),
-            type: type ?? (form.get("type") === "income" ? "income" : "expense"),
+            type: categoryType,
             color,
             icon,
+            parentId: parentId || undefined,
           },
         })
       }
@@ -285,6 +304,7 @@ export function CategoryDialog({
                 type: category.type,
                 color: category.color,
                 icon: category.icon,
+                parentId: category.parent_id ?? undefined,
               },
             }).then(() => router.invalidate())
           },
@@ -347,7 +367,7 @@ export function CategoryDialog({
               <DialogTitle>{category ? "Edit kategori" : "Kategori baru"}</DialogTitle>
               <DialogDescription>
                 {category
-                  ? "Perbarui nama, warna, dan ikon tanpa mengubah jenis kategori."
+                  ? "Perbarui nama, warna, ikon, dan kategori induk tanpa mengubah jenis kategori."
                   : "Gunakan nama singkat yang mudah ditemukan saat mencatat transaksi."}
               </DialogDescription>
             </DialogHeader>
@@ -366,6 +386,22 @@ export function CategoryDialog({
                   <Select name="type">
                     <option value="expense">Pengeluaran</option>
                     <option value="income">Pemasukan</option>
+                  </Select>
+                </FormField>
+              )}
+              {potentialParents.length > 0 && (
+                <FormField label="Kategori induk" hint="Opsional — untuk membuat sub-kategori">
+                  <Select
+                    name="parentId"
+                    value={parentId}
+                    onChange={(e) => setParentId(e.target.value)}
+                  >
+                    <option value="">— Tidak ada (kategori utama) —</option>
+                    {potentialParents.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
                   </Select>
                 </FormField>
               )}
@@ -455,10 +491,10 @@ export function TransactionDialog({
   transaction,
   fab = false,
 }: {
-  wallets: Wallet[]
-  categories: Category[]
-  recentTransactions?: FinanceTransaction[]
-  transaction?: FinanceTransaction
+  wallets: WalletType[]
+  categories: CategoryType[]
+  recentTransactions?: FinanceTransactionType[]
+  transaction?: FinanceTransactionType
   fab?: boolean
 }) {
   const router = useRouter()

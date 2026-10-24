@@ -2,8 +2,8 @@ import { useState } from "react"
 import { WalletDialog } from "@/components/finance-dialogs"
 import { WalletLogo } from "@/components/finance-visuals"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import type { Wallet } from "@/lib/finance.functions"
 import { walletCardFace } from "@/lib/finance-options"
+import type { Wallet } from "@/lib/finance-types"
 import { formatMoney } from "@/lib/utils"
 
 const CARD_H = 150

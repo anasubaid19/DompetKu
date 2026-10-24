@@ -24,7 +24,7 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Select } from "@/components/ui/select"
-import { getFinanceData } from "@/lib/finance.functions"
+import { getFinanceData, getRootCategory } from "@/lib/finance.functions"
 import { categoryChartColor } from "@/lib/finance-options"
 import { formatCompactNumber, formatMoney, recentCycles } from "@/lib/utils"
 
@@ -95,8 +95,13 @@ function ReportsPage() {
   for (const item of data.transactions) {
     if (item.transaction_date < expenseStart || item.transaction_date > expenseEnd) continue
     if (item.type === "expense") {
-      const key = item.category_id ?? "uncategorized"
-      const category = item.category_id ? categoriesById.get(item.category_id) : undefined
+      // Roll up to root parent category
+      const rootCategory = item.category_id
+        ? getRootCategory(data.categories, item.category_id)
+        : null
+      const key = rootCategory?.id ?? item.category_id ?? "uncategorized"
+      const category =
+        rootCategory ?? (item.category_id ? categoriesById.get(item.category_id) : undefined)
       const current = categoryTotals.get(key)
       categoryTotals.set(key, {
         name: category?.name ?? "Tanpa kategori",
@@ -131,7 +136,10 @@ function ReportsPage() {
     for (const item of data.transactions) {
       if (item.type !== "expense") continue
       if (item.transaction_date < start || item.transaction_date > end) continue
-      const key = item.category_id ?? "uncategorized"
+      const rootCategory = item.category_id
+        ? getRootCategory(data.categories, item.category_id)
+        : null
+      const key = rootCategory?.id ?? item.category_id ?? "uncategorized"
       map.set(key, (map.get(key) ?? 0) + item.amount)
     }
     return map

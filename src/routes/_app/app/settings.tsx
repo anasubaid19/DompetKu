@@ -1,5 +1,7 @@
 import {
   BookOpen01Icon,
+  ChevronDownIcon,
+  ChevronRightIcon,
   Download01Icon,
   PaintBrush01Icon,
   Settings01Icon,
@@ -32,6 +34,8 @@ import { Select } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import {
   type Category,
+  type CategoryTreeNode,
+  getCategoryTree,
   getFinanceData,
   importFinanceData,
   type RestoreSummary,
@@ -195,18 +199,27 @@ function SettingsPage() {
           <CardHeader>
             <div>
               <CardTitle>Kategori kustom</CardTitle>
-              <CardDescription>Kategori bawaan dan milikmu sendiri.</CardDescription>
+              <CardDescription>
+                Kategori bawaan dan milikmu sendiri. Gunakan kategori induk untuk membuat
+                sub-kategori.
+              </CardDescription>
             </div>
-            <CategoryDialog />
+            <CategoryDialog categories={data.categories} />
           </CardHeader>
           <CardContent className="grid grid-cols-1 gap-4">
             <div className="min-w-0">
               <p className="text-caption mb-2 uppercase tracking-wider">Pengeluaran</p>
-              <CategoryBadges items={data.categories.filter((item) => item.type === "expense")} />
+              <CategoryTree
+                categories={data.categories.filter((item) => item.type === "expense")}
+                allCategories={data.categories}
+              />
             </div>
             <div className="min-w-0">
               <p className="text-caption mb-2 uppercase tracking-wider">Pemasukan</p>
-              <CategoryBadges items={data.categories.filter((item) => item.type === "income")} />
+              <CategoryTree
+                categories={data.categories.filter((item) => item.type === "income")}
+                allCategories={data.categories}
+              />
             </div>
           </CardContent>
         </Card>
@@ -266,22 +279,75 @@ function SettingsPage() {
   )
 }
 
-function CategoryBadges({ items }: { items: Category[] }) {
-  return (
-    <div className="flex flex-wrap gap-2">
-      {items.map((item) => (
-        <span className="inline-flex min-w-0 max-w-full items-center gap-1" key={item.id}>
-          <Badge className="min-w-0 max-w-full gap-1.5">
-            <CategoryIndicator category={item} />
-            <span className="min-w-0 truncate" title={item.name}>
-              {item.name}
-            </span>
-          </Badge>
-          {!isSeedCategory(item.name, item.type) && <CategoryDialog category={item} />}
-        </span>
-      ))}
-    </div>
-  )
+function CategoryTree({
+  categories,
+  allCategories,
+  level = 0,
+}: {
+  categories: Category[]
+  allCategories: Category[]
+  level?: number
+}) {
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({})
+  const tree = getCategoryTree(categories)
+
+  function renderNode(node: CategoryTreeNode, depth: number) {
+    const hasChildren = node.children.length > 0
+    const isExpanded = expanded[node.id] ?? true
+
+    return (
+      <div
+        key={node.id}
+        className={cn("min-w-0", depth > 0 && "pl-6 border-l border-border/50 ml-2")}
+      >
+        <div className="flex items-center gap-2">
+          {hasChildren && (
+            <button
+              type="button"
+              onClick={() => setExpanded((prev) => ({ ...prev, [node.id]: !isExpanded }))}
+              className="inline-flex size-6 shrink-0 items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+              aria-expanded={isExpanded}
+              aria-controls={`${node.id}-children`}
+            >
+              <HugeiconsIcon
+                className="size-4 transition-transform"
+                icon={isExpanded ? ChevronDownIcon : ChevronRightIcon}
+              />
+            </button>
+          )}
+          <span className="inline-flex min-w-0 max-w-full items-center gap-1">
+            <Badge
+              className={cn(
+                "min-w-0 max-w-full gap-1.5",
+                isSeedCategory(node.name, node.type)
+                  ? "bg-secondary text-secondary-foreground"
+                  : "bg-transparent border border-border",
+              )}
+            >
+              <CategoryIndicator category={node} />
+              <span className="min-w-0 truncate" title={node.name}>
+                {node.name}
+              </span>
+            </Badge>
+            {!isSeedCategory(node.name, node.type) && (
+              <CategoryDialog category={node} categories={allCategories} />
+            )}
+          </span>
+        </div>
+        {hasChildren && (
+          <div id={`${node.id}-children`} className={cn("mt-1", !isExpanded && "hidden")}>
+            {node.children.map((child) => renderNode(child, depth + 1))}
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  if (categories.length === 0) {
+    return <p className="text-caption text-muted-foreground">Belum ada kategori</p>
+  }
+
+  return <div className="grid gap-2">{tree.map((node) => renderNode(node, level))}</div>
 }
 
 function RestoreSummaryView({ summary }: { summary: RestoreSummary }) {
