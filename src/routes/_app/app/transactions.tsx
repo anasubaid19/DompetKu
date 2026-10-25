@@ -43,6 +43,7 @@ import {
 } from "@/lib/utils"
 
 export const Route = createFileRoute("/_app/app/transactions")({
+  head: () => ({ meta: [{ title: "Transaksi · DompetKu" }] }),
   loader: () => getFinanceData(),
   component: TransactionsPage,
 })
@@ -166,19 +167,23 @@ function TransactionsPage() {
                   </span>
                   <div className="min-w-0">
                     <div className="flex min-w-0 items-center gap-2">
-                      <h2
+                      <p
                         className="truncate text-sm font-medium"
                         title={item.description || item.category_name || "Transfer antar-dompet"}
                       >
                         {item.description || item.category_name || "Transfer antar-dompet"}
-                      </h2>
-                      <Badge className="min-w-0 max-w-full gap-1.5">
-                        {category ? (
+                      </p>
+                      {category &&
+                      item.description.trim() &&
+                      item.description.trim() !== category.name ? (
+                        <Badge className="min-w-0 max-w-full gap-1.5">
                           <CategoryLabel category={category} />
-                        ) : (
-                          TRANSACTION_TYPE_LABELS[item.type]
-                        )}
-                      </Badge>
+                        </Badge>
+                      ) : !category ? (
+                        <Badge className="min-w-0 max-w-full gap-1.5">
+                          {TRANSACTION_TYPE_LABELS[item.type]}
+                        </Badge>
+                      ) : null}
                     </div>
                     <div className="text-caption mt-1 flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1">
                       {wallet && <WalletLabel wallet={wallet} />}

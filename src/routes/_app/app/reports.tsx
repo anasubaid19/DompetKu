@@ -29,6 +29,7 @@ import { categoryChartColor } from "@/lib/finance-options"
 import { formatCompactNumber, formatMoney, recentCycles } from "@/lib/utils"
 
 export const Route = createFileRoute("/_app/app/reports")({
+  head: () => ({ meta: [{ title: "Laporan · DompetKu" }] }),
   loader: () => getFinanceData(),
   component: ReportsPage,
 })
@@ -271,7 +272,8 @@ function ReportsPage() {
                     <span className="size-2 rounded-sm bg-[var(--success)]" /> Pemasukan
                   </span>
                   <span className="inline-flex items-center gap-1.5">
-                    <span className="size-2 rounded-sm bg-[var(--destructive)]" /> Pengeluaran
+                    <span className="size-2 rounded-sm border-2 border-[var(--destructive)]" />{" "}
+                    Pengeluaran
                   </span>
                 </div>
                 <div className="min-h-0 min-w-0 flex-1">
@@ -311,9 +313,12 @@ function ReportsPage() {
                       <Bar
                         dataKey="pengeluaran"
                         fill="var(--destructive)"
+                        fillOpacity={0.18}
                         isAnimationActive={false}
                         name="Pengeluaran"
                         radius={[6, 6, 0, 0]}
+                        stroke="var(--destructive)"
+                        strokeWidth={2}
                       />
                     </BarChart>
                   </ResponsiveContainer>
@@ -454,7 +459,15 @@ function ReportsPage() {
                       tick={{ fill: "var(--muted-foreground)" }}
                       tickLine={false}
                     />
-                    <YAxis domain={[netWorthMin - netWorthPad, netWorthMax + netWorthPad]} hide />
+                    <YAxis
+                      axisLine={false}
+                      domain={[netWorthMin - netWorthPad, netWorthMax + netWorthPad]}
+                      fontSize={10}
+                      tick={{ fill: "var(--muted-foreground)" }}
+                      tickFormatter={(value) => formatCompactNumber(Number(value))}
+                      tickLine={false}
+                      width={44}
+                    />
                     <Tooltip formatter={(value) => money(Number(value))} />
                     <Area
                       dataKey="kekayaan"

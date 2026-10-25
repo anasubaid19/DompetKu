@@ -248,7 +248,7 @@ function LandingPage() {
 
 function DashboardPreview() {
   return (
-    <div className="relative mx-auto w-full max-w-[560px] lg:ml-auto">
+    <div aria-hidden className="relative mx-auto w-full max-w-[560px] lg:ml-auto">
       <div
         aria-hidden
         className="absolute -inset-5 -rotate-2 rounded-[2.8rem] bg-primary/12 sm:rounded-[3.3rem]"

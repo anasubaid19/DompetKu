@@ -17,7 +17,8 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
     event.preventDefault()
     setError("")
     setPending(true)
-    const form = new FormData(event.currentTarget)
+    const element = event.currentTarget
+    const form = new FormData(element)
     const email = String(form.get("email") ?? "").trim()
     const password = String(form.get("password") ?? "")
     const name = String(form.get("name") ?? "").trim()
@@ -34,6 +35,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
           : "Akun tidak dapat dibuat. Periksa data lalu coba lagi.",
       )
       setPending(false)
+      element.querySelector<HTMLInputElement>('input[name="email"]')?.focus()
       return
     }
     await router.navigate({ to: "/app" })
@@ -69,6 +71,8 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
           )}
           <FormField label="Email">
             <Input
+              aria-describedby={error ? "auth-error" : undefined}
+              aria-invalid={error ? true : undefined}
               autoComplete="email"
               name="email"
               placeholder="nama@email.com"
@@ -79,6 +83,8 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
           <FormField hint={mode === "register" ? "Minimal 8 karakter" : undefined} label="Password">
             <div className="relative">
               <Input
+                aria-describedby={error ? "auth-error" : undefined}
+                aria-invalid={error ? true : undefined}
                 autoComplete={mode === "register" ? "new-password" : "current-password"}
                 className="pr-12"
                 minLength={8}
@@ -101,6 +107,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
             <p
               aria-live="polite"
               className="rounded-xl bg-destructive/10 px-3 py-2 text-sm text-destructive"
+              id="auth-error"
             >
               {error}
             </p>

@@ -221,7 +221,10 @@ function HelpPage() {
                   </div>
                 </div>
 
-                <div className="border-t bg-secondary/45 p-6 lg:border-l lg:border-t-0 sm:p-9">
+                <div
+                  aria-hidden
+                  className="hidden border-t bg-secondary/45 p-6 lg:block lg:border-l lg:border-t-0 sm:p-9"
+                >
                   <div className="mx-auto max-w-[310px] rounded-[2rem] border-[6px] border-foreground bg-background p-4 shadow-xl">
                     <div className="mx-auto mb-5 h-1.5 w-16 rounded-full bg-foreground/15" />
                     <p className="text-xs font-medium uppercase text-muted-foreground">

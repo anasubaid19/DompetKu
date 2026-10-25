@@ -36,6 +36,7 @@ import {
 } from "@/lib/utils"
 
 export const Route = createFileRoute("/_app/app/")({
+  head: () => ({ meta: [{ title: "Ringkasan · DompetKu" }] }),
   loader: () => getFinanceData(),
   component: DashboardPage,
 })
@@ -405,7 +406,8 @@ function DashboardPage() {
                     <span className="size-2 rounded-full bg-[var(--success)]" /> Pemasukan
                   </span>
                   <span className="inline-flex items-center gap-1.5">
-                    <span className="size-2 rounded-full bg-[var(--destructive)]" /> Pengeluaran
+                    <span className="w-4 border-t-2 border-dashed border-[var(--destructive)]" />{" "}
+                    Pengeluaran
                   </span>
                 </div>
                 <div className="min-h-0 min-w-0 flex-1">
@@ -456,6 +458,7 @@ function DashboardPage() {
                         isAnimationActive={false}
                         name="Pengeluaran"
                         stroke="var(--destructive)"
+                        strokeDasharray="5 4"
                         strokeWidth={2}
                         type="monotone"
                       />
@@ -548,8 +551,14 @@ function DashboardPage() {
                     {item.description || item.category_name || "Transfer dompet"}
                   </p>
                   <div className="text-caption mt-1 flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1">
-                    {category && <CategoryLabel category={category} />}
-                    {category && <span aria-hidden>·</span>}
+                    {category &&
+                      item.description.trim() &&
+                      item.description.trim() !== category.name && (
+                        <>
+                          <CategoryLabel category={category} />
+                          <span aria-hidden>·</span>
+                        </>
+                      )}
                     {wallet && <WalletLabel wallet={wallet} />}
                     {targetWallet && <span aria-hidden>→</span>}
                     {targetWallet && <WalletLabel wallet={targetWallet} />}

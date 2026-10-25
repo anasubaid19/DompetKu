@@ -90,9 +90,13 @@ export function CategoryLabel({
   category: Pick<Category, "name" | "color" | "icon">
   className?: string
 }) {
+  const color = CATEGORY_COLORS.find((option) => option.value === category.color)
   return (
     <span className={cn("inline-flex min-w-0 max-w-full items-center gap-1.5", className)}>
-      <CategoryIndicator category={category} />
+      <span
+        aria-hidden
+        className={cn("size-2 shrink-0 rounded-full", color?.className ?? "bg-violet-500")}
+      />
       <span className="min-w-0 truncate" title={category.name}>
         {category.name}
       </span>

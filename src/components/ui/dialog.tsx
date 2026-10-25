@@ -14,6 +14,7 @@ function DialogContent({ className, children, ...props }: DialogPrimitive.Popup.
     <DialogPrimitive.Portal>
       <DialogPrimitive.Backdrop className="fixed inset-0 z-50 bg-black/35 backdrop-blur-sm data-closed:hidden data-open:animate-in data-open:fade-in-0" />
       <DialogPrimitive.Popup
+        aria-modal="true"
         className={cn(
           "fixed inset-x-0 bottom-0 z-50 grid max-h-[92svh] gap-5 overflow-y-auto rounded-t-4xl bg-popover p-5 text-popover-foreground shadow-xl outline-none duration-normal data-closed:hidden data-open:animate-in data-open:slide-in-from-bottom-4 sm:inset-auto sm:left-1/2 sm:top-1/2 sm:w-full sm:max-w-lg sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-4xl sm:p-6 sm:data-open:zoom-in-95",
           className,
@@ -25,7 +26,7 @@ function DialogContent({ className, children, ...props }: DialogPrimitive.Popup.
           render={
             <Button
               aria-label="Tutup"
-              className="absolute right-4 top-4"
+              className="absolute right-4 top-4 z-20"
               size="icon"
               variant="ghost"
             />
@@ -39,7 +40,15 @@ function DialogContent({ className, children, ...props }: DialogPrimitive.Popup.
 }
 
 function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
-  return <div className={cn("flex flex-col gap-1.5 pr-10", className)} {...props} />
+  return (
+    <div
+      className={cn(
+        "sticky -top-5 z-10 -mx-5 flex flex-col gap-1.5 bg-popover px-5 pb-2 pr-10 pt-5 sm:-top-6 sm:-mx-6 sm:px-6 sm:pt-6",
+        className,
+      )}
+      {...props}
+    />
+  )
 }
 
 function DialogTitle({ className, ...props }: DialogPrimitive.Title.Props) {
@@ -58,7 +67,10 @@ function DialogDescription({ className, ...props }: DialogPrimitive.Description.
 function DialogFooter({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
-      className={cn("flex flex-col-reverse gap-2 sm:flex-row sm:justify-end", className)}
+      className={cn(
+        "sticky -bottom-5 z-10 -mx-5 flex flex-col-reverse gap-2 border-t bg-popover px-5 pb-5 pt-3 sm:-bottom-6 sm:-mx-6 sm:flex-row sm:justify-end sm:px-6",
+        className,
+      )}
       {...props}
     />
   )

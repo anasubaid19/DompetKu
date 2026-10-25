@@ -37,7 +37,7 @@ export function CycleCompare({
       <p className="mt-1 text-xl font-semibold tabular-nums break-words">{value}</p>
       <p className={cn("text-caption mt-1 tabular-nums", tone)}>
         {delta === null
-          ? "Belum ada pembanding"
+          ? `Belum ada ${label.toLowerCase()} di siklus lalu`
           : delta === 0
             ? "Sama dengan siklus lalu"
             : `${direction} ${Math.abs(delta)}% vs siklus lalu`}

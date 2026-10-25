@@ -1,15 +1,15 @@
 import {
+  Alert02Icon,
   BookOpen01Icon,
   ChevronDownIcon,
   ChevronRightIcon,
   Download01Icon,
   PaintBrush01Icon,
-  Settings01Icon,
   Upload01Icon,
 } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router"
-import { type ChangeEvent, type FormEvent, useState } from "react"
+import { type ChangeEvent, type FormEvent, useEffect, useState } from "react"
 import { toast } from "sonner"
 import { CategoryDialog } from "@/components/finance-dialogs"
 import { CategoryIndicator } from "@/components/finance-visuals"
@@ -46,6 +46,7 @@ import { isSeedCategory } from "@/lib/finance-options"
 import { cn, today, transactionsToCsv } from "@/lib/utils"
 
 export const Route = createFileRoute("/_app/app/settings")({
+  head: () => ({ meta: [{ title: "Pengaturan · DompetKu" }] }),
   loader: () => getFinanceData(),
   component: SettingsPage,
 })
@@ -212,6 +213,7 @@ function SettingsPage() {
               <CategoryTree
                 categories={data.categories.filter((item) => item.type === "expense")}
                 allCategories={data.categories}
+                label="Kategori pengeluaran"
               />
             </div>
             <div className="min-w-0">
@@ -219,6 +221,7 @@ function SettingsPage() {
               <CategoryTree
                 categories={data.categories.filter((item) => item.type === "income")}
                 allCategories={data.categories}
+                label="Kategori pemasukan"
               />
             </div>
           </CardContent>
@@ -268,7 +271,7 @@ function SettingsPage() {
                 Operasi ini tidak dapat dibatalkan tanpa file backup.
               </CardDescription>
             </div>
-            <HugeiconsIcon className="size-5 text-destructive" icon={Settings01Icon} />
+            <HugeiconsIcon className="size-5 text-destructive" icon={Alert02Icon} />
           </CardHeader>
           <CardContent>
             <ResetDialog />
@@ -279,17 +282,53 @@ function SettingsPage() {
   )
 }
 
+// Shared by the expense and income trees so one does not overwrite the other,
+// and mirrored to localStorage so expansion choices survive a reload.
+const EXPANSION_KEY = "dompetku:category-expansion"
+const categoryExpansion = new Map<string, boolean>(readStoredExpansion())
+
+function readStoredExpansion(): [string, boolean][] {
+  if (typeof window === "undefined") return []
+  try {
+    const stored = JSON.parse(window.localStorage.getItem(EXPANSION_KEY) ?? "{}")
+    return Object.entries(stored).filter(
+      (entry): entry is [string, boolean] => typeof entry[1] === "boolean",
+    )
+  } catch {
+    return []
+  }
+}
+
 function CategoryTree({
   categories,
   allCategories,
+  label,
   level = 0,
 }: {
   categories: Category[]
   allCategories: Category[]
+  label?: string
   level?: number
 }) {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
   const tree = getCategoryTree(categories)
+
+  useEffect(() => {
+    setExpanded(Object.fromEntries(categoryExpansion))
+  }, [])
+
+  function toggleExpanded(id: string, next: boolean) {
+    categoryExpansion.set(id, next)
+    try {
+      window.localStorage.setItem(
+        EXPANSION_KEY,
+        JSON.stringify(Object.fromEntries(categoryExpansion)),
+      )
+    } catch {
+      // Storage unavailable; the in-memory map still covers this visit.
+    }
+    setExpanded((prev) => ({ ...prev, [id]: next }))
+  }
 
   function renderNode(node: CategoryTreeNode, depth: number) {
     const hasChildren = node.children.length > 0
@@ -305,7 +344,7 @@ function CategoryTree({
           {hasChildren && (
             <button
               type="button"
-              onClick={() => setExpanded((prev) => ({ ...prev, [node.id]: !isExpanded }))}
+              onClick={() => toggleExpanded(node.id, !isExpanded)}
               aria-label={`${isExpanded ? "Sembunyikan" : "Tampilkan"} sub-kategori ${node.name} (${node.children.length})`}
               className="relative inline-flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors before:absolute before:-inset-1.5 before:content-[''] hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/20 pointer-coarse:before:-inset-2.5"
               aria-expanded={isExpanded}
@@ -344,7 +383,11 @@ function CategoryTree({
     return <p className="text-caption text-muted-foreground">Belum ada kategori</p>
   }
 
-  return <ul className="grid gap-2">{tree.map((node) => renderNode(node, level))}</ul>
+  return (
+    <ul aria-label={label} className="grid gap-2">
+      {tree.map((node) => renderNode(node, level))}
+    </ul>
+  )
 }
 
 function RestoreSummaryView({ summary }: { summary: RestoreSummary }) {

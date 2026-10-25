@@ -7,7 +7,7 @@ import type { Wallet } from "@/lib/finance-types"
 import { formatMoney } from "@/lib/utils"
 
 const CARD_H = 150
-const PEEK = 30
+const PEEK = 40
 const SPREAD = 64
 const POCKET_H = 190
 const LIFT = 34

@@ -77,6 +77,7 @@ import {
 import { cn, cycleRange, daysUntil, formatMoney, parseNumberInput, today } from "@/lib/utils"
 
 export const Route = createFileRoute("/_app/app/planning")({
+  head: () => ({ meta: [{ title: "Rencana · DompetKu" }] }),
   loader: () => getFinanceData(),
   component: PlanningPage,
 })
@@ -143,14 +144,14 @@ function PlanningPage() {
           aria-label="Cari rencana"
           className="pl-10"
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="Cari anggaran, target, kontak, atau langganan…"
+          placeholder="Cari anggaran, target, atau kontak…"
           value={query}
         />
       </div>
 
       <SegmentedControl
         ariaLabel="Bagian perencanaan"
-        className="grid grid-cols-2 sm:flex sm:w-fit"
+        className="w-full overflow-x-auto sm:w-fit"
         onChange={setTab}
         options={[
           { label: "Anggaran", value: "budget" },

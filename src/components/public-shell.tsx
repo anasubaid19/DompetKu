@@ -73,16 +73,22 @@ export function PublicFooter() {
       <div className="mx-auto flex max-w-[1200px] flex-col gap-4 px-4 py-8 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-9">
         <p>DompetKu. Catatan keuangan pribadi.</p>
         <div className="flex gap-5">
-          <Link className="transition-colors duration-fast hover:text-foreground" to="/help">
+          <Link
+            className="-my-3 py-3 transition-colors duration-fast hover:text-foreground"
+            to="/help"
+          >
             Tutorial & FAQ
           </Link>
           {session?.user ? (
-            <Link className="transition-colors duration-fast hover:text-foreground" to="/app">
+            <Link
+              className="-my-3 py-3 transition-colors duration-fast hover:text-foreground"
+              to="/app"
+            >
               Buka aplikasi
             </Link>
           ) : (
             <Link
-              className="transition-colors duration-fast hover:text-foreground"
+              className="-my-3 py-3 transition-colors duration-fast hover:text-foreground"
               search={{ redirect: "/app" }}
               to="/login"
             >
