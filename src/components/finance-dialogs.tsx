@@ -232,11 +232,13 @@ export function CategoryDialog({
   const [icon, setIcon] = useState(category?.icon ?? "receipt")
   const [parentId, setParentId] = useState(category?.parent_id ?? "")
   const [confirmingDelete, setConfirmingDelete] = useState(false)
+  const [categoryType, setCategoryType] = useState<"expense" | "income">(
+    category?.type ?? type ?? "expense",
+  )
 
-  const categoryType = category?.type ?? type ?? "expense"
-  // Filter potential parents: same type, not self, not descendants
+  // Only root categories can become parents, so nesting stays one level deep
   const potentialParents = allCategories.filter(
-    (c) => c.type === categoryType && c.id !== category?.id && c.parent_id !== category?.id,
+    (c) => c.type === categoryType && !c.parent_id && c.id !== category?.id,
   )
 
   function changeOpen(nextOpen: boolean) {
@@ -245,6 +247,7 @@ export function CategoryDialog({
       setColor(category?.color ?? "violet")
       setIcon(category?.icon ?? "receipt")
       setParentId(category?.parent_id ?? "")
+      setCategoryType(category?.type ?? type ?? "expense")
     } else {
       setConfirmingDelete(false)
     }
@@ -383,7 +386,14 @@ export function CategoryDialog({
               </FormField>
               {!type && !category && (
                 <FormField label="Jenis">
-                  <Select name="type">
+                  <Select
+                    name="type"
+                    onChange={(event) => {
+                      setCategoryType(event.target.value as "expense" | "income")
+                      setParentId("")
+                    }}
+                    value={categoryType}
+                  >
                     <option value="expense">Pengeluaran</option>
                     <option value="income">Pemasukan</option>
                   </Select>
@@ -394,7 +404,14 @@ export function CategoryDialog({
                   <Select
                     name="parentId"
                     value={parentId}
-                    onChange={(e) => setParentId(e.target.value)}
+                    onChange={(e) => {
+                      setParentId(e.target.value)
+                      const parent = allCategories.find((c) => c.id === e.target.value)
+                      if (parent) {
+                        setColor(parent.color)
+                        setIcon(parent.icon)
+                      }
+                    }}
                   >
                     <option value="">— Tidak ada (kategori utama) —</option>
                     {potentialParents.map((c) => (
@@ -684,7 +701,7 @@ export function TransactionDialog({
                     required
                   />
                 </div>
-                <CategoryDialog type={type} />
+                <CategoryDialog categories={validCategories} type={type} />
               </div>
             </div>
           )}

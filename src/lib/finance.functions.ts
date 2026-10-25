@@ -83,23 +83,6 @@ function ownedCategory(userId: string, categoryId: unknown) {
   return category
 }
 
-export function getCategoryDescendants(userId: string, categoryId: string): string[] {
-  const descendants: string[] = []
-  const stack = [categoryId]
-  while (stack.length > 0) {
-    const current = stack.pop()
-    if (!current) continue
-    const children = db
-      .query("SELECT id FROM categories WHERE parent_id = ? AND user_id = ?")
-      .all(current, userId) as { id: string }[]
-    for (const child of children) {
-      descendants.push(child.id)
-      stack.push(child.id)
-    }
-  }
-  return descendants
-}
-
 export const getFinanceData = createServerFn({ method: "GET" }).handler(async () => {
   const user = await requireUser()
   ensureDefaults(user.id)

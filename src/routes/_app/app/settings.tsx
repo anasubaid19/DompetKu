@@ -294,18 +294,20 @@ function CategoryTree({
   function renderNode(node: CategoryTreeNode, depth: number) {
     const hasChildren = node.children.length > 0
     const isExpanded = expanded[node.id] ?? true
+    const seed = isSeedCategory(node.name, node.type)
 
     return (
-      <div
+      <li
         key={node.id}
-        className={cn("min-w-0", depth > 0 && "pl-6 border-l border-border/50 ml-2")}
+        className={cn("min-w-0", depth > 0 && "ml-3 border-l border-border/70 pl-5")}
       >
         <div className="flex items-center gap-2">
           {hasChildren && (
             <button
               type="button"
               onClick={() => setExpanded((prev) => ({ ...prev, [node.id]: !isExpanded }))}
-              className="inline-flex size-6 shrink-0 items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+              aria-label={`${isExpanded ? "Sembunyikan" : "Tampilkan"} sub-kategori ${node.name} (${node.children.length})`}
+              className="relative inline-flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors before:absolute before:-inset-1.5 before:content-[''] hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/20 pointer-coarse:before:-inset-2.5"
               aria-expanded={isExpanded}
               aria-controls={`${node.id}-children`}
             >
@@ -316,30 +318,25 @@ function CategoryTree({
             </button>
           )}
           <span className="inline-flex min-w-0 max-w-full items-center gap-1">
-            <Badge
-              className={cn(
-                "min-w-0 max-w-full gap-1.5",
-                isSeedCategory(node.name, node.type)
-                  ? "bg-secondary text-secondary-foreground"
-                  : "bg-transparent border border-border",
-              )}
-            >
+            <Badge className="min-w-0 max-w-full gap-1.5">
               <CategoryIndicator category={node} />
               <span className="min-w-0 truncate" title={node.name}>
                 {node.name}
               </span>
+              {hasChildren && !isExpanded && (
+                <span className="shrink-0 font-normal tabular-nums">({node.children.length})</span>
+              )}
+              {seed && <span className="sr-only">, kategori bawaan</span>}
             </Badge>
-            {!isSeedCategory(node.name, node.type) && (
-              <CategoryDialog category={node} categories={allCategories} />
-            )}
+            {!seed && <CategoryDialog category={node} categories={allCategories} />}
           </span>
         </div>
         {hasChildren && (
-          <div id={`${node.id}-children`} className={cn("mt-1", !isExpanded && "hidden")}>
+          <ul id={`${node.id}-children`} className={cn("mt-1", !isExpanded && "hidden")}>
             {node.children.map((child) => renderNode(child, depth + 1))}
-          </div>
+          </ul>
         )}
-      </div>
+      </li>
     )
   }
 
@@ -347,7 +344,7 @@ function CategoryTree({
     return <p className="text-caption text-muted-foreground">Belum ada kategori</p>
   }
 
-  return <div className="grid gap-2">{tree.map((node) => renderNode(node, level))}</div>
+  return <ul className="grid gap-2">{tree.map((node) => renderNode(node, level))}</ul>
 }
 
 function RestoreSummaryView({ summary }: { summary: RestoreSummary }) {

@@ -188,6 +188,7 @@ export function CategorySelect({
           }
           return (
             <optgroup key={parent.id} label={parent.name}>
+              <option value={parent.id}>{parent.name} (umum)</option>
               {children.map((child) => (
                 <option key={child.id} value={child.id}>
                   {child.name}
