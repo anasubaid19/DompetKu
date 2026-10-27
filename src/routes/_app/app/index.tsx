@@ -187,7 +187,7 @@ function DashboardPage() {
     <div className="grid grid-cols-1 gap-5 pb-14 lg:pb-0">
       <PageHeader
         action={
-          <>
+          <div className="hidden gap-2 lg:flex">
             <WalletDialog />
             <div className="hidden lg:block">
               <TransactionDialog
@@ -196,7 +196,7 @@ function DashboardPage() {
                 wallets={data.wallets}
               />
             </div>
-          </>
+          </div>
         }
         description={`${cycle.label}. Saldo, pemasukan, dan pengeluaran siklus ini.`}
         eyebrow="Ringkasan"
@@ -220,7 +220,7 @@ function DashboardPage() {
         </Card>
       )}
 
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4">
+      <div className="grid grid-cols-2 gap-2 md:grid-cols-3 md:gap-4">
         <SummaryCard
           cardClassName="col-span-2 md:col-span-1"
           icon={Wallet01Icon}
@@ -239,6 +239,10 @@ function DashboardPage() {
           label="Pengeluaran siklus ini"
           value={money(expense)}
         />
+      </div>
+
+      <div className="flex gap-2 lg:hidden">
+        <WalletDialog />
       </div>
 
       <section
@@ -688,15 +692,15 @@ function SummaryCard({
 }) {
   return (
     <Card className={cardClassName}>
-      <CardContent className="flex items-start justify-between gap-3 p-4 sm:gap-4 sm:p-5">
+      <CardContent className="flex items-start justify-between gap-2 p-3 sm:gap-3 sm:p-4 md:p-5">
         <div className="min-w-0">
-          <p className="text-sm text-muted-foreground">{label}</p>
-          <p className="mt-2 text-lg font-semibold tracking-[-0.04em] tabular-nums break-words sm:mt-3 sm:text-2xl">
+          <p className="text-xs text-muted-foreground sm:text-sm">{label}</p>
+          <p className="mt-1 text-base font-semibold tracking-[-0.04em] tabular-nums break-words sm:mt-2 sm:text-lg md:mt-3 md:text-2xl">
             {value}
           </p>
         </div>
         <span
-          className={`hidden size-10 place-items-center rounded-2xl bg-secondary sm:grid ${className ?? "text-primary"}`}
+          className={`hidden size-9 place-items-center rounded-2xl bg-secondary sm:grid sm:size-10 ${className ?? "text-primary"}`}
         >
           <HugeiconsIcon icon={icon} />
         </span>
