@@ -1,13 +1,15 @@
+import { ChevronDownIcon } from "@hugeicons/core-free-icons"
+import { HugeiconsIcon } from "@hugeicons/react"
 import { useState } from "react"
 import { WalletDialog } from "@/components/finance-dialogs"
 import { WalletLogo } from "@/components/finance-visuals"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { walletCardFace } from "@/lib/finance-options"
 import type { Wallet } from "@/lib/finance-types"
-import { formatMoney } from "@/lib/utils"
+import { cn, formatMoney } from "@/lib/utils"
 
 const CARD_H = 150
-const PEEK = 40
+const PEEK = 20
 const SPREAD = 64
 const POCKET_H = 190
 const LIFT = 34
@@ -25,7 +27,8 @@ export function WalletDeck({
   hidden: boolean
 }) {
   const [open, setOpen] = useState(false)
-  const deck = wallets.slice(0, 4)
+  const [listOpen, setListOpen] = useState(false)
+  const deck = wallets
   const money = (value: number) => (hidden ? "••••••" : formatMoney(value, currency))
   const height = TOP + deck.length * PEEK + POCKET_H + 6
   const grown = height + Math.max(0, deck.length - 1) * (SPREAD - PEEK) + LIFT
@@ -83,8 +86,8 @@ export function WalletDeck({
                       >
                         {wallet.name}
                       </p>
-                      <p className="mt-0.5 text-xs font-medium opacity-80">
-                        {wallet.type === "saving" ? "Tabungan" : "Harian"}
+                      <p className="mt-0.5 text-xs font-medium tabular-nums opacity-80">
+                        {money(wallet.balance)}
                       </p>
                     </div>
                     <span className="grid size-7 shrink-0 place-items-center rounded-lg bg-white/90">
@@ -135,28 +138,50 @@ export function WalletDeck({
         </div>
 
         {wallets.length > 0 && (
-          <ul className="mt-4 grid grid-cols-1 gap-1">
-            {wallets.map((wallet) => (
-              <li
-                className="flex min-w-0 items-center gap-3 rounded-2xl bg-secondary/55 p-2.5"
-                key={wallet.id}
-              >
-                <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-card text-primary shadow-sm">
-                  <WalletLogo wallet={wallet} />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium" title={wallet.name}>
-                    {wallet.name}
-                  </p>
-                  <p className="text-caption">{wallet.type === "saving" ? "Tabungan" : "Harian"}</p>
-                </div>
-                <p className="min-w-0 text-sm font-semibold tabular-nums break-words text-right">
-                  {money(wallet.balance)}
-                </p>
-                <WalletDialog wallet={wallet} />
-              </li>
-            ))}
-          </ul>
+          <div className="mt-4">
+            <button
+              aria-expanded={listOpen}
+              className="flex w-full items-center justify-between rounded-xl px-2 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+              onClick={() => setListOpen((value) => !value)}
+              type="button"
+            >
+              <span>{listOpen ? "Sembunyikan daftar dompet" : "Tampilkan daftar dompet"}</span>
+              <HugeiconsIcon
+                aria-hidden
+                className={cn(
+                  "size-4 transition-transform duration-fast",
+                  listOpen ? "rotate-180" : "rotate-0",
+                )}
+                icon={ChevronDownIcon}
+              />
+            </button>
+            {listOpen && (
+              <ul className="mt-1 grid grid-cols-1 gap-1">
+                {wallets.map((wallet) => (
+                  <li
+                    className="flex min-w-0 items-center gap-3 rounded-2xl bg-secondary/55 p-2.5"
+                    key={wallet.id}
+                  >
+                    <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-card text-primary shadow-sm">
+                      <WalletLogo wallet={wallet} />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium" title={wallet.name}>
+                        {wallet.name}
+                      </p>
+                      <p className="text-caption">
+                        {wallet.type === "saving" ? "Tabungan" : "Harian"}
+                      </p>
+                    </div>
+                    <p className="min-w-0 text-sm font-semibold tabular-nums break-words text-right">
+                      {money(wallet.balance)}
+                    </p>
+                    <WalletDialog wallet={wallet} />
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         )}
       </CardContent>
     </Card>
