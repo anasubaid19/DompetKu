@@ -22,13 +22,6 @@ export function formatCompactNumber(amount: number) {
   }).format(amount)
 }
 
-export function cashFlowMessage(income: number, expense: number) {
-  if (income === 0 && expense === 0)
-    return "Mulai catat transaksi untuk melihat kondisi arus kasmu."
-  if (income >= expense) return "Arus kasmu positif. Pertahankan ruang untuk menabung."
-  return "Pengeluaran melebihi pemasukan. Tinjau kategori terbesar."
-}
-
 export function formatNumberInput(value: string | number | null | undefined) {
   const digits = String(value ?? "")
     .replace(/\D/g, "")

@@ -24,6 +24,16 @@
 
 ## Current State
 
+Completed on 2026-10-27 (financial health scoring):
+
+- Replaced the binary `cashFlowMessage` strip (`income >= expense`) with a scored health card on Ringkasan. New `src/lib/health.ts` (pure, no `db`) returns one of `sehat` / `perlu_perhatian` / `berisiko` / `data_belum_cukup` from four metrics: cash-flow surplus, savings rate, debt-installment ratio, and liquid buffer in months.
+- Status is the worst assessed metric, never an average, so one severe indicator cannot be hidden by healthy ones. `sehat` requires at least two assessed metrics plus at least one wallet; a fresh user with no complete cycle gets `data_belum_cukup` with no metric chips. When income is irregular (CV > 20%) or the current cycle has no income, all ratios use the last three complete cycles and the card says so.
+- Thresholds live in `HEALTH_THRESHOLDS` with sources in comments: OJK "Periksa Dompet" (installments < 35% of income, savings > 10%, assets >= 4 months of spending) and OJK "Periksa Anggaran" (installments 30% of the budget). The 10% cash-flow and 20% CV limits are product recommendations, marked as such. A test asserts the numbers so they cannot drift silently.
+- Root-cause fix: a new debt disbursed into a wallet used to be booked as income under "Piutang Dibayar", so borrowing made the old strip say "Arus kasmu positif". `applyDebtMoneyMovement` now files it under a "Pinjaman Masuk" category (created on demand, no schema change), and `health.ts` also excludes legacy `Tambahan hutang:` rows from income.
+- Landing mockup badge "Keuangan sehat" (hardcoded, `src/routes/index.tsx`) removed so the marketing preview no longer claims a status nothing computes.
+- Not done: the "Pemasukan siklus ini" KPI and Laporan still count a loan disbursement as income (only the health card excludes it); making that consistent means touching every report aggregation.
+- Verification: `check` ✓, `typecheck` ✓, `bun test` 27 passed / 91 assertions (9 new health tests) ✓, `build` ✓; visual QA at 1440×1000 and 390×844 in light/dark on a scratch database for the sehat, boros, and high-installment states, plus the `data_belum_cukup` state, zero horizontal overflow.
+
 Completed on 2026-10-21 (QA polish + consistency pass):
 
 - Browser QA with the taste inspector (1440/768/390) found one real bug: deleting a custom category always failed because `deleteCategory` put `LIMIT` inside a `UNION ALL` branch, which SQLite rejects. It now runs three `EXISTS` checks before deleting; verified through the UI.
@@ -125,7 +135,7 @@ bun test
 bun run build
 ```
 
-Latest result: all commands passed; tests reported 16 passed, 0 failed, and 59 assertions.
+Latest result: all commands passed; tests reported 27 passed, 0 failed, and 91 assertions.
 
 For UI changes, also inspect desktop and mobile layouts in both themes, including dialogs and the fixed mobile navigation.
 

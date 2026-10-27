@@ -445,8 +445,15 @@ const DEBT_CATEGORIES = {
   income: { name: "Piutang Dibayar", color: "green", icon: "money" },
 } as const
 
-function ensureDebtCategoryId(userId: string, txType: "income" | "expense") {
-  const preset = DEBT_CATEGORIES[txType]
+// Pinjaman cair bukan pendapatan. Kategori terpisah membuat laporan dan
+// penilaian kesehatan tidak menganggap utang baru sebagai pemasukan.
+const LOAN_INFLOW_CATEGORY = { name: "Pinjaman Masuk", color: "cyan", icon: "money" } as const
+
+function ensureCategoryId(
+  userId: string,
+  txType: "income" | "expense",
+  preset: { name: string; color: string; icon: string },
+) {
   const existing = db
     .query("SELECT id FROM categories WHERE user_id = ? AND name = ? AND type = ?")
     .get(userId, preset.name, txType) as { id: string } | null
@@ -456,6 +463,10 @@ function ensureDebtCategoryId(userId: string, txType: "income" | "expense") {
     "INSERT INTO categories (id, user_id, name, type, color, icon) VALUES (?, ?, ?, ?, ?, ?)",
   ).run(id, userId, preset.name, txType, preset.color, preset.icon)
   return id
+}
+
+function ensureDebtCategoryId(userId: string, txType: "income" | "expense") {
+  return ensureCategoryId(userId, txType, DEBT_CATEGORIES[txType])
 }
 
 function applyDebtMoneyMovement(
@@ -475,6 +486,10 @@ function applyDebtMoneyMovement(
     targetWalletId: null,
   }
   updateWalletBalances(userId, null, movement)
+  const categoryId =
+    kind === "add" && draft.txType === "income"
+      ? ensureCategoryId(userId, "income", LOAN_INFLOW_CATEGORY)
+      : ensureDebtCategoryId(userId, draft.txType)
   db.query(`
     INSERT INTO transactions
       (id, user_id, type, amount, fee, wallet_id, target_wallet_id, category_id, debt_id,
@@ -486,7 +501,7 @@ function applyDebtMoneyMovement(
     draft.txType,
     amount,
     movement.walletId,
-    ensureDebtCategoryId(userId, draft.txType),
+    categoryId,
     link ? debt.id : null,
     draft.description,
     today(),

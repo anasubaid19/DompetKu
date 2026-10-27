@@ -254,16 +254,11 @@ function DashboardPreview() {
         className="absolute -inset-5 -rotate-2 rounded-[2.8rem] bg-primary/12 sm:rounded-[3.3rem]"
       />
       <div className="relative overflow-hidden rounded-[2.5rem] bg-card p-4 shadow-2xl shadow-primary/10 ring-1 ring-foreground/10 sm:rounded-[3rem] sm:p-6">
-        <div className="flex items-center justify-between border-b pb-4">
-          <div className="flex items-center gap-2">
-            <span className="grid size-8 place-items-center rounded-xl bg-primary text-primary-foreground">
-              <HugeiconsIcon className="size-4" icon={Wallet01Icon} />
-            </span>
-            <span className="text-sm font-semibold">Ringkasan</span>
-          </div>
-          <span className="rounded-full bg-success/10 px-2.5 py-1 text-xs font-medium text-success">
-            Keuangan sehat
+        <div className="flex items-center gap-2 border-b pb-4">
+          <span className="grid size-8 place-items-center rounded-xl bg-primary text-primary-foreground">
+            <HugeiconsIcon className="size-4" icon={Wallet01Icon} />
           </span>
+          <span className="text-sm font-semibold">Ringkasan</span>
         </div>
         <div className="mt-5 grid gap-3 sm:grid-cols-2">
           <div className="rounded-3xl bg-foreground p-5 text-background sm:col-span-2">

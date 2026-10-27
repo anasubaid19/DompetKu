@@ -23,8 +23,8 @@ import { Progress } from "@/components/ui/progress"
 import { SegmentedControl } from "@/components/ui/segmented-control"
 import { WalletDeck } from "@/components/wallet-deck"
 import { getFinanceData, getRootCategory } from "@/lib/finance.functions"
+import { assessFinancialHealth, type HealthStatus } from "@/lib/health"
 import {
-  cashFlowMessage,
   cn,
   cycleRange,
   daysUntil,
@@ -62,6 +62,26 @@ const chartRangeOptions = [
   },
 ] as const
 
+const healthTone: Record<HealthStatus, { box: string; badge: string }> = {
+  sehat: { box: "border-success/25 bg-success/[0.06]", badge: "bg-success/10 text-success" },
+  perlu_perhatian: {
+    box: "border-warning/30 bg-warning/[0.07]",
+    badge: "bg-warning/10 text-warning",
+  },
+  berisiko: {
+    box: "border-destructive/25 bg-destructive/[0.06]",
+    badge: "bg-destructive/10 text-destructive",
+  },
+  data_belum_cukup: { box: "border-border bg-muted/40", badge: "bg-muted text-muted-foreground" },
+}
+
+const healthLabel: Record<HealthStatus, string> = {
+  sehat: "Sehat",
+  perlu_perhatian: "Perlu perhatian",
+  berisiko: "Berisiko",
+  data_belum_cukup: "Data belum cukup",
+}
+
 function DashboardPage() {
   const data = Route.useLoaderData()
   const [chartRange, setChartRange] = useState<"cycle" | "weekly">("cycle")
@@ -81,6 +101,7 @@ function DashboardPage() {
   const elapsedDays = Math.max(1, 1 - daysUntil(cycle.start))
   const remainingDays = Math.max(0, daysUntil(cycle.end))
   const projectedExpense = Math.round((expense / elapsedDays) * (elapsedDays + remainingDays))
+  const health = assessFinancialHealth(data)
   const balance = data.wallets.reduce((sum, wallet) => sum + wallet.balance, 0)
   const hide = Boolean(data.settings.hide_balance)
   const money = (value: number) => (hide ? "••••••" : formatMoney(value, currency))
@@ -220,15 +241,65 @@ function DashboardPage() {
         />
       </div>
 
-      <div className="grid gap-1 rounded-2xl border border-primary/15 bg-primary/[0.04] px-4 py-3 text-sm">
-        <p>{cashFlowMessage(income, expense)}</p>
+      <section
+        aria-labelledby="health-heading"
+        className={cn(
+          "grid gap-3 rounded-2xl border px-4 py-3.5 text-sm",
+          healthTone[health.status].box,
+        )}
+      >
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
+          <span
+            className={cn(
+              "rounded-full px-2.5 py-1 text-xs font-medium",
+              healthTone[health.status].badge,
+            )}
+          >
+            {healthLabel[health.status]}
+          </span>
+          <h2 className="font-semibold" id="health-heading">
+            {health.headline}
+          </h2>
+        </div>
+
+        {health.metrics.length > 0 && (
+          <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {health.metrics.map((metric) => (
+              <div
+                key={metric.key}
+                className="min-w-0 rounded-xl bg-background/70 px-3 py-2 ring-1 ring-foreground/5"
+              >
+                <dt className="text-xs text-muted-foreground">{metric.label}</dt>
+                <dd className="mt-0.5 text-sm font-medium tabular-nums">{metric.detail}</dd>
+              </div>
+            ))}
+          </dl>
+        )}
+
+        <ul className="grid gap-1 text-muted-foreground">
+          {health.reasons.map((reason) => (
+            <li key={reason}>{reason}</li>
+          ))}
+        </ul>
+
+        {health.nextStep && (
+          <Link
+            className="w-fit font-medium text-primary underline-offset-4 hover:underline"
+            to={health.nextStep.to}
+          >
+            {health.nextStep.label}
+          </Link>
+        )}
+
+        {health.basisNote && <p className="text-xs text-muted-foreground">{health.basisNote}</p>}
+
         {expense > 0 && remainingDays > 0 && (
-          <p className="tabular-nums text-muted-foreground">
+          <p className="tabular-nums text-xs text-muted-foreground">
             Dengan laju {money(expense / elapsedDays)} per hari, pengeluaran siklus ini diperkirakan{" "}
             {money(projectedExpense)}.
           </p>
         )}
-      </div>
+      </section>
 
       {overdueDebts.length > 0 && (
         <Card className="border border-destructive/20 bg-destructive/[0.04]">

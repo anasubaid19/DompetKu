@@ -12,9 +12,10 @@ import {
   isSeedCategory,
   walletCardFace,
 } from "@/lib/finance-options"
+import type { FinanceData, FinanceTransaction, Wallet } from "@/lib/finance-types"
+import { assessFinancialHealth, HEALTH_THRESHOLDS } from "@/lib/health"
 import {
   addMonths,
-  cashFlowMessage,
   cycleRange,
   daysUntil,
   formatCompactNumber,
@@ -122,14 +123,269 @@ test("financial presentation keeps transfers neutral and chart values meaningful
   expect(formatCompactNumber(125_000)).not.toContain("0jt")
 })
 
-test("cash-flow health uses a useful message for empty, positive, and negative periods", () => {
-  expect(cashFlowMessage(0, 0)).toBe("Mulai catat transaksi untuk melihat kondisi arus kasmu.")
-  expect(cashFlowMessage(5_000_000, 3_000_000)).toBe(
-    "Arus kasmu positif. Pertahankan ruang untuk menabung.",
-  )
-  expect(cashFlowMessage(3_000_000, 5_000_000)).toBe(
-    "Pengeluaran melebihi pemasukan. Tinjau kategori terbesar.",
-  )
+const HEALTH_NOW = new Date(2026, 9, 27)
+let healthTransactionId = 0
+
+function healthTransaction(input: {
+  date: string
+  type: "income" | "expense" | "transfer"
+  amount: number
+  wallet?: string
+  target?: string
+  category?: string
+  debt?: string
+  description?: string
+}): FinanceTransaction {
+  healthTransactionId += 1
+  return {
+    id: `health-${healthTransactionId}`,
+    type: input.type,
+    amount: input.amount,
+    fee: 0,
+    wallet_id: input.wallet ?? "daily",
+    target_wallet_id: input.target ?? null,
+    category_id: null,
+    saving_id: null,
+    debt_id: input.debt ?? null,
+    description: input.description ?? "",
+    transaction_date: input.date,
+    category_name: input.category ?? null,
+    wallet_name: "Dompet harian",
+    target_wallet_name: null,
+  }
+}
+
+function healthData(
+  transactions: FinanceTransaction[],
+  options: { balance?: number; savingBalance?: number; withSavings?: boolean } = {},
+): FinanceData {
+  const wallets: Wallet[] = [
+    {
+      id: "daily",
+      name: "Dompet harian",
+      type: "daily",
+      balance: options.balance ?? 0,
+      color: "violet",
+      icon: "wallet",
+    },
+  ]
+  if (options.withSavings !== false) {
+    wallets.push({
+      id: "saving",
+      name: "Tabungan",
+      type: "saving",
+      balance: options.savingBalance ?? 0,
+      color: "green",
+      icon: "wallet",
+    })
+  }
+  return {
+    wallets,
+    categories: [],
+    transactions,
+    debts: [],
+    budgets: [],
+    walletBudgets: [],
+    savings: [],
+    subscriptions: [],
+    settings: {
+      currency: "IDR",
+      cycle_start: 1,
+      cycle_length: 1,
+      accent: "violet",
+      hide_balance: 0,
+    },
+  }
+}
+
+describe("financial health", () => {
+  test("keeps the sourced thresholds in one configuration", () => {
+    expect(HEALTH_THRESHOLDS.debt.risk).toBe(0.35)
+    expect(HEALTH_THRESHOLDS.debt.attention).toBe(0.3)
+    expect(HEALTH_THRESHOLDS.savings.attention).toBe(0.1)
+    expect(HEALTH_THRESHOLDS.buffer.attention).toBe(4)
+  })
+
+  test("marks a balanced cycle as sehat", () => {
+    const health = assessFinancialHealth(
+      healthData(
+        [
+          healthTransaction({ date: "2026-09-05", type: "income", amount: 10_000_000 }),
+          healthTransaction({ date: "2026-09-10", type: "expense", amount: 6_500_000 }),
+          healthTransaction({ date: "2026-09-15", type: "expense", amount: 1_000_000, debt: "d1" }),
+          healthTransaction({
+            date: "2026-09-20",
+            type: "transfer",
+            amount: 1_500_000,
+            target: "saving",
+          }),
+        ],
+        { balance: 22_000_000, savingBalance: 10_000_000 },
+      ),
+      HEALTH_NOW,
+    )
+
+    expect(health.status).toBe("sehat")
+    expect(health.metrics.map((metric) => metric.status)).toEqual([
+      "sehat",
+      "sehat",
+      "sehat",
+      "sehat",
+    ])
+  })
+
+  test("flags overspending even when the balance stays positive", () => {
+    const health = assessFinancialHealth(
+      healthData(
+        [
+          healthTransaction({ date: "2026-09-05", type: "income", amount: 10_000_000 }),
+          healthTransaction({ date: "2026-09-28", type: "expense", amount: 9_500_000 }),
+        ],
+        { balance: 2_000_000 },
+      ),
+      HEALTH_NOW,
+    )
+
+    expect(health.status).toBe("berisiko")
+    expect(health.metrics.find((metric) => metric.key === "savings")?.status).toBe("berisiko")
+    expect(health.metrics.find((metric) => metric.key === "buffer")?.status).toBe("berisiko")
+  })
+
+  test("does not call a negative cash flow healthy", () => {
+    const health = assessFinancialHealth(
+      healthData(
+        [
+          healthTransaction({ date: "2026-09-05", type: "income", amount: 6_000_000 }),
+          healthTransaction({ date: "2026-09-20", type: "expense", amount: 8_000_000 }),
+        ],
+        { balance: 1_500_000 },
+      ),
+      HEALTH_NOW,
+    )
+
+    expect(health.status).toBe("berisiko")
+    expect(health.metrics.find((metric) => metric.key === "cashflow")?.status).toBe("berisiko")
+  })
+
+  test("a single high installment cannot be averaged away", () => {
+    const health = assessFinancialHealth(
+      healthData(
+        [
+          healthTransaction({ date: "2026-09-05", type: "income", amount: 10_000_000 }),
+          healthTransaction({ date: "2026-09-08", type: "expense", amount: 2_500_000 }),
+          healthTransaction({ date: "2026-09-12", type: "expense", amount: 4_500_000, debt: "d1" }),
+          healthTransaction({
+            date: "2026-09-20",
+            type: "transfer",
+            amount: 1_200_000,
+            target: "saving",
+          }),
+        ],
+        { balance: 30_000_000 },
+      ),
+      HEALTH_NOW,
+    )
+
+    expect(health.metrics.find((metric) => metric.key === "debt")?.status).toBe("berisiko")
+    expect(health.metrics.filter((metric) => metric.status === "sehat")).toHaveLength(3)
+    expect(health.status).toBe("berisiko")
+  })
+
+  test("asks for more data instead of guessing on a fresh cycle", () => {
+    const health = assessFinancialHealth(
+      healthData([
+        healthTransaction({ date: "2026-10-25", type: "income", amount: 3_000_000 }),
+        healthTransaction({ date: "2026-10-26", type: "expense", amount: 1_000_000 }),
+      ]),
+      HEALTH_NOW,
+    )
+
+    expect(health.status).toBe("data_belum_cukup")
+    expect(health.metrics).toHaveLength(0)
+  })
+
+  test("uses a three-cycle average when income is irregular", () => {
+    const health = assessFinancialHealth(
+      healthData(
+        [
+          healthTransaction({ date: "2026-07-05", type: "income", amount: 12_000_000 }),
+          healthTransaction({ date: "2026-07-20", type: "expense", amount: 4_300_000 }),
+          healthTransaction({ date: "2026-08-05", type: "income", amount: 3_000_000 }),
+          healthTransaction({ date: "2026-08-20", type: "expense", amount: 4_300_000 }),
+          healthTransaction({ date: "2026-09-05", type: "income", amount: 9_000_000 }),
+          healthTransaction({ date: "2026-09-20", type: "expense", amount: 4_300_000 }),
+        ],
+        { balance: 8_000_000, withSavings: false },
+      ),
+      HEALTH_NOW,
+    )
+
+    expect(health.basisNote).toContain("3 siklus")
+    expect(health.metrics.find((metric) => metric.key === "savings")?.status).toBe("belum_dinilai")
+    expect(health.metrics.find((metric) => metric.key === "cashflow")?.value).toBeCloseTo(0.4625, 4)
+    expect(health.status).toBe("perlu_perhatian")
+  })
+
+  test("treats borrowed money as a liability, not income", () => {
+    const health = assessFinancialHealth(
+      healthData(
+        [
+          healthTransaction({ date: "2026-09-05", type: "income", amount: 1_000_000 }),
+          healthTransaction({
+            date: "2026-09-06",
+            type: "income",
+            amount: 10_000_000,
+            category: "Pinjaman Masuk",
+            description: "Tambahan hutang: Budi",
+          }),
+          healthTransaction({ date: "2026-09-10", type: "expense", amount: 9_000_000 }),
+        ],
+        { balance: 1_000_000 },
+      ),
+      HEALTH_NOW,
+    )
+
+    expect(health.metrics.find((metric) => metric.key === "cashflow")?.value).toBeLessThan(0)
+    expect(health.status).toBe("berisiko")
+  })
+
+  test("ignores legacy debt-inflow rows from before the category split", () => {
+    const health = assessFinancialHealth(
+      healthData(
+        [
+          healthTransaction({ date: "2026-09-05", type: "income", amount: 5_000_000 }),
+          healthTransaction({
+            date: "2026-09-06",
+            type: "income",
+            amount: 5_000_000,
+            category: "Piutang Dibayar",
+            description: "Tambahan hutang: Sari",
+          }),
+          healthTransaction({ date: "2026-09-10", type: "expense", amount: 1_000_000 }),
+        ],
+        { balance: 20_000_000 },
+      ),
+      HEALTH_NOW,
+    )
+
+    expect(health.metrics.find((metric) => metric.key === "cashflow")?.value).toBeCloseTo(0.8, 4)
+  })
+
+  test("caps the verdict when no wallet can be measured", () => {
+    const data = healthData(
+      [
+        healthTransaction({ date: "2026-09-05", type: "income", amount: 10_000_000 }),
+        healthTransaction({ date: "2026-09-10", type: "expense", amount: 3_000_000 }),
+      ],
+      { withSavings: false },
+    )
+    data.wallets = []
+
+    const health = assessFinancialHealth(data, HEALTH_NOW)
+
+    expect(health.status).toBe("perlu_perhatian")
+    expect(health.reasons).toContain("Tambahkan dompet agar dana darurat bisa dinilai.")
+  })
 })
 
 test("money inputs format thousands and recover the raw integer", () => {
