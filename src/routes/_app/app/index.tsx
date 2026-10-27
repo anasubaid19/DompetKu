@@ -245,6 +245,10 @@ function DashboardPage() {
         <WalletDialog />
       </div>
 
+      {data.wallets.length > 0 && (
+        <WalletDeck balance={balance} currency={currency} hidden={hide} wallets={data.wallets} />
+      )}
+
       <section
         aria-labelledby="health-heading"
         className={cn(
@@ -431,128 +435,120 @@ function DashboardPage() {
         </div>
       )}
 
-      <div className="grid min-w-0 items-start gap-5 xl:grid-cols-[minmax(0,1.55fr)_minmax(320px,0.75fr)]">
-        <Card>
-          <CardHeader className="flex-col sm:flex-row">
-            <div>
-              <CardTitle>
-                {chartRange === "weekly" ? "Arus kas mingguan" : "Arus kas 6 siklus"}
-              </CardTitle>
-              <CardDescription>
-                {chartRange === "weekly"
-                  ? "Tujuh hari terakhir, per hari."
-                  : "Perbandingan sesuai rentang laporanmu."}
-              </CardDescription>
-            </div>
-            <SegmentedControl
-              ariaLabel="Rentang arus kas"
-              className="w-full shrink-0 sm:w-auto"
-              itemClassName="flex flex-1 items-center justify-center px-2.5 sm:flex-none"
-              onChange={setChartRange}
-              options={chartRangeOptions}
-              value={chartRange}
-            />
-          </CardHeader>
-          <CardContent>
-            {hasCashFlow ? (
+      <Card>
+        <CardHeader className="flex-col sm:flex-row">
+          <div>
+            <CardTitle>
+              {chartRange === "weekly" ? "Arus kas mingguan" : "Arus kas 6 siklus"}
+            </CardTitle>
+            <CardDescription>
+              {chartRange === "weekly"
+                ? "Tujuh hari terakhir, per hari."
+                : "Perbandingan sesuai rentang laporanmu."}
+            </CardDescription>
+          </div>
+          <SegmentedControl
+            ariaLabel="Rentang arus kas"
+            className="w-full shrink-0 sm:w-auto"
+            itemClassName="flex flex-1 items-center justify-center px-2.5 sm:flex-none"
+            onChange={setChartRange}
+            options={chartRangeOptions}
+            value={chartRange}
+          />
+        </CardHeader>
+        <CardContent>
+          {hasCashFlow ? (
+            <div
+              aria-describedby="cash-flow-summary"
+              aria-label={
+                chartRange === "weekly"
+                  ? "Grafik arus kas tujuh hari terakhir"
+                  : `Grafik arus kas enam siklus, ${data.settings.cycle_length} bulan per siklus`
+              }
+              className="flex h-64 w-full min-w-0 flex-col"
+              role="img"
+            >
+              <p className="sr-only" id="cash-flow-summary">
+                {chart
+                  .map(
+                    (item) =>
+                      `${item.label}: pemasukan ${money(item.masuk)}, pengeluaran ${money(item.keluar)}`,
+                  )
+                  .join(". ")}
+              </p>
               <div
-                aria-describedby="cash-flow-summary"
-                aria-label={
-                  chartRange === "weekly"
-                    ? "Grafik arus kas tujuh hari terakhir"
-                    : `Grafik arus kas enam siklus, ${data.settings.cycle_length} bulan per siklus`
-                }
-                className="flex h-64 w-full min-w-0 flex-col"
-                role="img"
+                aria-hidden
+                className="mb-2 flex items-center justify-end gap-4 text-xs text-muted-foreground"
               >
-                <p className="sr-only" id="cash-flow-summary">
-                  {chart
-                    .map(
-                      (item) =>
-                        `${item.label}: pemasukan ${money(item.masuk)}, pengeluaran ${money(item.keluar)}`,
-                    )
-                    .join(". ")}
-                </p>
-                <div
-                  aria-hidden
-                  className="mb-2 flex items-center justify-end gap-4 text-xs text-muted-foreground"
-                >
-                  <span className="inline-flex items-center gap-1.5">
-                    <span className="size-2 rounded-full bg-[var(--success)]" /> Pemasukan
-                  </span>
-                  <span className="inline-flex items-center gap-1.5">
-                    <span className="w-4 border-t-2 border-dashed border-[var(--destructive)]" />{" "}
-                    Pengeluaran
-                  </span>
-                </div>
-                <div className="min-h-0 min-w-0 flex-1">
-                  <ResponsiveContainer height="100%" width="100%">
-                    <AreaChart
-                      accessibilityLayer={false}
-                      data={chart}
-                      margin={{ left: 0, right: 0, top: 16, bottom: 0 }}
-                    >
-                      <defs>
-                        <linearGradient id="income" x1="0" x2="0" y1="0" y2="1">
-                          <stop offset="0%" stopColor="var(--success)" stopOpacity={0.28} />
-                          <stop offset="100%" stopColor="var(--success)" stopOpacity={0} />
-                        </linearGradient>
-                        <linearGradient id="expense" x1="0" x2="0" y1="0" y2="1">
-                          <stop offset="0%" stopColor="var(--destructive)" stopOpacity={0.22} />
-                          <stop offset="100%" stopColor="var(--destructive)" stopOpacity={0} />
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid
-                        stroke="var(--border)"
-                        strokeDasharray="3 6"
-                        vertical={false}
-                      />
-                      <XAxis
-                        axisLine={false}
-                        dataKey="label"
-                        fontSize={11}
-                        interval={chartRange === "weekly" ? "preserveStartEnd" : 0}
-                        minTickGap={24}
-                        padding={{ left: 12, right: 12 }}
-                        tick={{ fill: "var(--muted-foreground)" }}
-                        tickLine={false}
-                      />
-                      <Tooltip formatter={(value) => money(Number(value))} />
-                      <Area
-                        dataKey="masuk"
-                        fill="url(#income)"
-                        isAnimationActive={false}
-                        name="Pemasukan"
-                        stroke="var(--success)"
-                        strokeWidth={2}
-                        type="monotone"
-                      />
-                      <Area
-                        dataKey="keluar"
-                        fill="url(#expense)"
-                        isAnimationActive={false}
-                        name="Pengeluaran"
-                        stroke="var(--destructive)"
-                        strokeDasharray="5 4"
-                        strokeWidth={2}
-                        type="monotone"
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="size-2 rounded-full bg-[var(--success)]" /> Pemasukan
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="w-4 border-t-2 border-dashed border-[var(--destructive)]" />{" "}
+                  Pengeluaran
+                </span>
               </div>
-            ) : (
-              <EmptyState
-                description="Grafik akan terisi setelah ada transaksi."
-                icon={TransactionHistoryIcon}
-                text="Belum ada arus kas"
-              />
-            )}
-          </CardContent>
-        </Card>
-
-        <WalletDeck balance={balance} currency={currency} hidden={hide} wallets={data.wallets} />
-      </div>
+              <div className="min-h-0 min-w-0 flex-1">
+                <ResponsiveContainer height="100%" width="100%">
+                  <AreaChart
+                    accessibilityLayer={false}
+                    data={chart}
+                    margin={{ left: 0, right: 0, top: 16, bottom: 0 }}
+                  >
+                    <defs>
+                      <linearGradient id="income" x1="0" x2="0" y1="0" y2="1">
+                        <stop offset="0%" stopColor="var(--success)" stopOpacity={0.28} />
+                        <stop offset="100%" stopColor="var(--success)" stopOpacity={0} />
+                      </linearGradient>
+                      <linearGradient id="expense" x1="0" x2="0" y1="0" y2="1">
+                        <stop offset="0%" stopColor="var(--destructive)" stopOpacity={0.22} />
+                        <stop offset="100%" stopColor="var(--destructive)" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid stroke="var(--border)" strokeDasharray="3 6" vertical={false} />
+                    <XAxis
+                      axisLine={false}
+                      dataKey="label"
+                      fontSize={11}
+                      interval={chartRange === "weekly" ? "preserveStartEnd" : 0}
+                      minTickGap={24}
+                      padding={{ left: 12, right: 12 }}
+                      tick={{ fill: "var(--muted-foreground)" }}
+                      tickLine={false}
+                    />
+                    <Tooltip formatter={(value) => money(Number(value))} />
+                    <Area
+                      dataKey="masuk"
+                      fill="url(#income)"
+                      isAnimationActive={false}
+                      name="Pemasukan"
+                      stroke="var(--success)"
+                      strokeWidth={2}
+                      type="monotone"
+                    />
+                    <Area
+                      dataKey="keluar"
+                      fill="url(#expense)"
+                      isAnimationActive={false}
+                      name="Pengeluaran"
+                      stroke="var(--destructive)"
+                      strokeDasharray="5 4"
+                      strokeWidth={2}
+                      type="monotone"
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          ) : (
+            <EmptyState
+              description="Grafik akan terisi setelah ada transaksi."
+              icon={TransactionHistoryIcon}
+              text="Belum ada arus kas"
+            />
+          )}
+        </CardContent>
+      </Card>
 
       {hasCompare && (
         <Card>

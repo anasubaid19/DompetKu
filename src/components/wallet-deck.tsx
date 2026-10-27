@@ -34,7 +34,7 @@ export function WalletDeck({
   const grown = height + Math.max(0, deck.length - 1) * (SPREAD - PEEK) + LIFT
 
   return (
-    <Card className="order-first xl:order-last">
+    <Card>
       <CardHeader>
         <div>
           <CardTitle>Dompet</CardTitle>
