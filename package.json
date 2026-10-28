@@ -9,7 +9,8 @@
     "check": "biome check src docs package.json tsconfig.json vite.config.ts components.json",
     "fix": "biome check --write src docs package.json tsconfig.json vite.config.ts components.json",
     "typecheck": "tsc --noEmit",
-    "test": "bun test"
+    "test": "bun test",
+    "seed:dev": "bun run scripts/seed-dev.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",
