@@ -54,8 +54,8 @@ export function WalletDeck({
                 </li>
               )
             })}
-            <li className="flex min-w-[150px] max-w-[180px] snap-start items-center justify-center rounded-2xl border border-dashed border-border/60 p-3 min-h-[96px]">
-              <WalletDialog />
+            <li className="flex min-w-[150px] max-w-[180px] snap-start">
+              <WalletDialog className="flex h-full min-h-[96px] w-full flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-border/60 p-3 text-muted-foreground hover:bg-secondary/40" />
             </li>
           </ul>
           <div

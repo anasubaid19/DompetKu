@@ -43,7 +43,13 @@ import type {
 } from "@/lib/finance-types"
 import { cn, dateKey, formatNumberInput, parseNumberInput, today } from "@/lib/utils"
 
-export function WalletDialog({ wallet }: { wallet?: WalletType } = {}) {
+export function WalletDialog({
+  wallet,
+  className,
+}: {
+  wallet?: WalletType
+  className?: string
+} = {}) {
   const router = useRouter()
   const formId = useId()
   const [open, setOpen] = useState(false)
@@ -119,6 +125,7 @@ export function WalletDialog({ wallet }: { wallet?: WalletType } = {}) {
         render={
           <Button
             aria-label={wallet ? `Edit ${wallet.name}` : undefined}
+            className={className}
             size={wallet ? "icon" : "default"}
             variant={wallet ? "ghost" : "outline"}
           />
