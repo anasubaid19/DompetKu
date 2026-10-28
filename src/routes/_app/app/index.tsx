@@ -251,10 +251,6 @@ function DashboardPage() {
         </CardContent>
       </Card>
 
-      <div className="flex gap-2 lg:hidden">
-        <WalletDialog />
-      </div>
-
       {!healthDismissed && (
         <section
           aria-labelledby="health-heading"
