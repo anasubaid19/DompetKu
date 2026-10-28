@@ -11,7 +11,7 @@ import {
 import { HugeiconsIcon } from "@hugeicons/react"
 import { createFileRoute, Link } from "@tanstack/react-router"
 import { useState } from "react"
-import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis } from "recharts"
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
 import { average, CycleCompare, percentChange } from "@/components/cycle-compare"
 import { EmptyState } from "@/components/empty-state"
 import { TransactionDialog, WalletDialog } from "@/components/finance-dialogs"
@@ -28,6 +28,7 @@ import {
   cn,
   cycleRange,
   daysUntil,
+  formatCompactNumber,
   formatMoney,
   formatTransactionAmount,
   recentCycles,
@@ -85,6 +86,7 @@ const healthLabel: Record<HealthStatus, string> = {
 function DashboardPage() {
   const data = Route.useLoaderData()
   const [chartRange, setChartRange] = useState<"cycle" | "weekly">("cycle")
+  const [healthExpanded, setHealthExpanded] = useState(false)
   const currency = data.settings.currency
   const cycle = cycleRange(data.settings)
   const periodTransactions = data.transactions.filter(
@@ -182,6 +184,7 @@ function DashboardPage() {
     compareRanges.length - 1,
   )
   const hasCompare = compareRanges.some((item) => item.masuk > 0 || item.keluar > 0)
+  const hasCurrentCycleData = currentCycle.masuk > 0 || currentCycle.keluar > 0
 
   return (
     <div className="grid grid-cols-1 gap-5 pb-14 lg:pb-0">
@@ -270,42 +273,63 @@ function DashboardPage() {
           </h2>
         </div>
 
-        {health.metrics.length > 0 && (
-          <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            {health.metrics.map((metric) => (
-              <div
-                key={metric.key}
-                className="min-w-0 rounded-xl bg-background/70 px-3 py-2 ring-1 ring-foreground/5"
-              >
-                <dt className="text-xs text-muted-foreground">{metric.label}</dt>
-                <dd className="mt-0.5 text-sm font-medium tabular-nums">{metric.detail}</dd>
-              </div>
-            ))}
-          </dl>
-        )}
+        {health.reasons.length > 0 && <p className="text-muted-foreground">{health.reasons[0]}</p>}
 
-        <ul className="grid gap-1 text-muted-foreground">
-          {health.reasons.map((reason) => (
-            <li key={reason}>{reason}</li>
-          ))}
-        </ul>
+        <div className="flex flex-wrap items-center gap-2">
+          {health.nextStep && (
+            <Link
+              className="w-fit font-medium text-primary underline-offset-4 hover:underline"
+              to={health.nextStep.to}
+            >
+              {health.nextStep.label}
+            </Link>
+          )}
+          {health.metrics.length > 0 && (
+            <button
+              className="w-fit text-xs font-medium text-primary underline-offset-4 hover:underline"
+              onClick={() => setHealthExpanded((value) => !value)}
+              type="button"
+            >
+              {healthExpanded ? "Sembunyikan detail" : "Lihat detail"}
+            </button>
+          )}
+        </div>
 
-        {health.nextStep && (
-          <Link
-            className="w-fit font-medium text-primary underline-offset-4 hover:underline"
-            to={health.nextStep.to}
-          >
-            {health.nextStep.label}
-          </Link>
-        )}
+        {healthExpanded && (
+          <>
+            {health.metrics.length > 0 && (
+              <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                {health.metrics.map((metric) => (
+                  <div
+                    key={metric.key}
+                    className="min-w-0 rounded-xl bg-background/70 px-3 py-2 ring-1 ring-foreground/5"
+                  >
+                    <dt className="text-xs text-muted-foreground">{metric.label}</dt>
+                    <dd className="mt-0.5 text-sm font-medium tabular-nums">{metric.detail}</dd>
+                  </div>
+                ))}
+              </dl>
+            )}
 
-        {health.basisNote && <p className="text-xs text-muted-foreground">{health.basisNote}</p>}
+            {health.reasons.length > 1 && (
+              <ul className="grid gap-1 text-muted-foreground">
+                {health.reasons.slice(1).map((reason) => (
+                  <li key={reason}>{reason}</li>
+                ))}
+              </ul>
+            )}
 
-        {expense > 0 && remainingDays > 0 && (
-          <p className="tabular-nums text-xs text-muted-foreground">
-            Dengan laju {money(expense / elapsedDays)} per hari, pengeluaran siklus ini diperkirakan{" "}
-            {money(projectedExpense)}.
-          </p>
+            {health.basisNote && (
+              <p className="text-xs text-muted-foreground">{health.basisNote}</p>
+            )}
+
+            {expense > 0 && remainingDays > 0 && (
+              <p className="tabular-nums text-xs text-muted-foreground">
+                Dengan laju {money(expense / elapsedDays)} per hari, pengeluaran siklus ini
+                diperkirakan {money(projectedExpense)}.
+              </p>
+            )}
+          </>
         )}
       </section>
 
@@ -490,21 +514,11 @@ function DashboardPage() {
               </div>
               <div className="min-h-0 min-w-0 flex-1">
                 <ResponsiveContainer height="100%" width="100%">
-                  <AreaChart
+                  <BarChart
                     accessibilityLayer={false}
                     data={chart}
                     margin={{ left: 0, right: 0, top: 16, bottom: 0 }}
                   >
-                    <defs>
-                      <linearGradient id="income" x1="0" x2="0" y1="0" y2="1">
-                        <stop offset="0%" stopColor="var(--success)" stopOpacity={0.28} />
-                        <stop offset="100%" stopColor="var(--success)" stopOpacity={0} />
-                      </linearGradient>
-                      <linearGradient id="expense" x1="0" x2="0" y1="0" y2="1">
-                        <stop offset="0%" stopColor="var(--destructive)" stopOpacity={0.22} />
-                        <stop offset="100%" stopColor="var(--destructive)" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
                     <CartesianGrid stroke="var(--border)" strokeDasharray="3 6" vertical={false} />
                     <XAxis
                       axisLine={false}
@@ -517,26 +531,26 @@ function DashboardPage() {
                       tickLine={false}
                     />
                     <Tooltip formatter={(value) => money(Number(value))} />
-                    <Area
+                    <YAxis
+                      axisLine={false}
+                      tick={{ fill: "var(--muted-foreground)", fontSize: 10 }}
+                      tickFormatter={(value) => formatCompactNumber(Number(value))}
+                      tickLine={false}
+                      width={44}
+                    />
+                    <Bar
                       dataKey="masuk"
-                      fill="url(#income)"
-                      isAnimationActive={false}
+                      fill="var(--success)"
                       name="Pemasukan"
-                      stroke="var(--success)"
-                      strokeWidth={2}
-                      type="monotone"
+                      radius={[4, 4, 0, 0]}
                     />
-                    <Area
+                    <Bar
                       dataKey="keluar"
-                      fill="url(#expense)"
-                      isAnimationActive={false}
+                      fill="var(--destructive)"
                       name="Pengeluaran"
-                      stroke="var(--destructive)"
-                      strokeDasharray="5 4"
-                      strokeWidth={2}
-                      type="monotone"
+                      radius={[4, 4, 0, 0]}
                     />
-                  </AreaChart>
+                  </BarChart>
                 </ResponsiveContainer>
               </div>
             </div>
@@ -550,7 +564,7 @@ function DashboardPage() {
         </CardContent>
       </Card>
 
-      {hasCompare && (
+      {hasCompare && hasCurrentCycleData && (
         <Card>
           <CardHeader>
             <div>
