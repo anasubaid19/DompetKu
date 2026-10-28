@@ -3,6 +3,7 @@ import {
   ArrowUp01Icon,
   CalendarDaysIcon,
   CalendarRangeIcon,
+  HandshakeIcon,
   Invoice01Icon,
   TransactionHistoryIcon,
   UserIcon,
@@ -15,7 +16,7 @@ import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxi
 import { average, CycleCompare, percentChange } from "@/components/cycle-compare"
 import { EmptyState } from "@/components/empty-state"
 import { TransactionDialog, WalletDialog } from "@/components/finance-dialogs"
-import { CategoryLabel, WalletLabel } from "@/components/finance-visuals"
+import { CategoryIndicator } from "@/components/finance-visuals"
 import { PageHeader } from "@/components/page-header"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -30,9 +31,11 @@ import {
   daysUntil,
   formatCompactNumber,
   formatMoney,
+  formatRelativeDate,
   formatTransactionAmount,
   recentCycles,
   recentDays,
+  TRANSACTION_TYPE_LABELS,
   today,
 } from "@/lib/utils"
 
@@ -87,6 +90,7 @@ function DashboardPage() {
   const data = Route.useLoaderData()
   const [chartRange, setChartRange] = useState<"cycle" | "weekly">("cycle")
   const [healthExpanded, setHealthExpanded] = useState(false)
+  const [healthDismissed, setHealthDismissed] = useState(false)
   const currency = data.settings.currency
   const cycle = cycleRange(data.settings)
   const periodTransactions = data.transactions.filter(
@@ -143,6 +147,7 @@ function DashboardPage() {
     activeDebts
       .filter((debt) => debt.type === type)
       .reduce((sum, debt) => sum + Math.max(0, debt.amount - debt.paid_amount), 0)
+  const netWorth = balance - outstanding("hutang") + outstanding("piutang")
 
   const chartRanges = chartRange === "weekly" ? recentDays(7) : recentCycles(data.settings, 6)
   const chart = chartRanges.map(({ start, end, shortLabel }) => {
@@ -201,9 +206,9 @@ function DashboardPage() {
             </div>
           </div>
         }
-        description={`${cycle.label}. Saldo, pemasukan, dan pengeluaran siklus ini.`}
+        description="Saldo, pemasukan, dan pengeluaran siklus ini."
         eyebrow="Ringkasan"
-        title="Ringkasan keuanganmu."
+        title={cycle.label}
       />
 
       {data.wallets.length === 0 && (
@@ -223,115 +228,221 @@ function DashboardPage() {
         </Card>
       )}
 
-      <div className="grid grid-cols-2 gap-2 md:grid-cols-3 md:gap-4">
-        <SummaryCard
-          cardClassName="col-span-2 md:col-span-1"
-          icon={Wallet01Icon}
-          label="Total saldo"
-          value={money(balance)}
-        />
-        <SummaryCard
-          className="text-success"
-          icon={ArrowDown01Icon}
-          label="Pemasukan siklus ini"
-          value={money(income)}
-        />
-        <SummaryCard
-          className="text-destructive"
-          icon={ArrowUp01Icon}
-          label="Pengeluaran siklus ini"
-          value={money(expense)}
-        />
-      </div>
+      <Card>
+        <CardContent className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-3 sm:p-5">
+          <div className="min-w-0">
+            <p className="text-xs text-muted-foreground sm:text-sm">Total saldo</p>
+            <p className="mt-1 text-xl font-semibold tracking-[-0.04em] tabular-nums break-words sm:mt-2 sm:text-2xl">
+              {money(balance)}
+            </p>
+          </div>
+          <div className="min-w-0">
+            <p className="text-xs text-muted-foreground sm:text-sm">Pemasukan siklus ini</p>
+            <p className="mt-1 text-xl font-semibold tracking-[-0.04em] tabular-nums break-words text-success sm:mt-2 sm:text-2xl">
+              {money(income)}
+            </p>
+          </div>
+          <div className="min-w-0">
+            <p className="text-xs text-muted-foreground sm:text-sm">Pengeluaran siklus ini</p>
+            <p className="mt-1 text-xl font-semibold tracking-[-0.04em] tabular-nums break-words text-destructive sm:mt-2 sm:text-2xl">
+              {money(expense)}
+            </p>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="flex gap-2 lg:hidden">
         <WalletDialog />
       </div>
 
-      {data.wallets.length > 0 && (
-        <WalletDeck balance={balance} currency={currency} hidden={hide} wallets={data.wallets} />
-      )}
-
-      <section
-        aria-labelledby="health-heading"
-        className={cn(
-          "grid gap-3 rounded-2xl border px-4 py-3.5 text-sm",
-          healthTone[health.status].box,
-        )}
-      >
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
-          <span
-            className={cn(
-              "rounded-full px-2.5 py-1 text-xs font-medium",
-              healthTone[health.status].badge,
-            )}
-          >
-            {healthLabel[health.status]}
-          </span>
-          <h2 className="font-semibold" id="health-heading">
-            {health.headline}
-          </h2>
-        </div>
-
-        {health.reasons.length > 0 && <p className="text-muted-foreground">{health.reasons[0]}</p>}
-
-        <div className="flex flex-wrap items-center gap-2">
-          {health.nextStep && (
-            <Link
-              className="w-fit font-medium text-primary underline-offset-4 hover:underline"
-              to={health.nextStep.to}
-            >
-              {health.nextStep.label}
-            </Link>
+      {!healthDismissed && (
+        <section
+          aria-labelledby="health-heading"
+          className={cn(
+            "grid gap-3 rounded-2xl border px-4 py-3.5 text-sm",
+            healthTone[health.status].box,
           )}
-          {health.metrics.length > 0 && (
+        >
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
+            <span
+              className={cn(
+                "rounded-full px-2.5 py-1 text-xs font-medium",
+                healthTone[health.status].badge,
+              )}
+            >
+              {healthLabel[health.status]}
+            </span>
+            <h2 className="font-semibold" id="health-heading">
+              {health.headline}
+            </h2>
             <button
-              className="w-fit text-xs font-medium text-primary underline-offset-4 hover:underline"
-              onClick={() => setHealthExpanded((value) => !value)}
+              aria-label="Tutup banner kesehatan"
+              className="ml-auto grid size-7 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+              onClick={() => setHealthDismissed(true)}
               type="button"
             >
-              {healthExpanded ? "Sembunyikan detail" : "Lihat detail"}
+              ×
             </button>
+          </div>
+
+          {health.reasons.length > 0 && (
+            <p className="text-muted-foreground">{health.reasons[0]}</p>
           )}
-        </div>
 
-        {healthExpanded && (
-          <>
+          <div className="flex flex-wrap items-center gap-2">
+            {health.nextStep && (
+              <Link
+                className="w-fit font-medium text-primary underline-offset-4 hover:underline"
+                to={health.nextStep.to}
+              >
+                {health.nextStep.label}
+              </Link>
+            )}
             {health.metrics.length > 0 && (
-              <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                {health.metrics.map((metric) => (
-                  <div
-                    key={metric.key}
-                    className="min-w-0 rounded-xl bg-background/70 px-3 py-2 ring-1 ring-foreground/5"
+              <button
+                className="w-fit text-xs font-medium text-primary underline-offset-4 hover:underline"
+                onClick={() => setHealthExpanded((value) => !value)}
+                type="button"
+              >
+                {healthExpanded ? "Sembunyikan detail" : "Lihat detail"}
+              </button>
+            )}
+          </div>
+
+          {healthExpanded && (
+            <>
+              {health.metrics.length > 0 && (
+                <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  {health.metrics.map((metric) => (
+                    <div
+                      key={metric.key}
+                      className="min-w-0 rounded-xl bg-background/70 px-3 py-2 ring-1 ring-foreground/5"
+                    >
+                      <dt className="text-xs text-muted-foreground">{metric.label}</dt>
+                      <dd className="mt-0.5 text-sm font-medium tabular-nums">{metric.detail}</dd>
+                    </div>
+                  ))}
+                </dl>
+              )}
+
+              {health.reasons.length > 1 && (
+                <ul className="grid gap-1 text-muted-foreground">
+                  {health.reasons.slice(1).map((reason) => (
+                    <li key={reason}>{reason}</li>
+                  ))}
+                </ul>
+              )}
+
+              {health.basisNote && (
+                <p className="text-xs text-muted-foreground">{health.basisNote}</p>
+              )}
+
+              {expense > 0 && remainingDays > 0 && (
+                <p className="tabular-nums text-xs text-muted-foreground">
+                  Dengan laju {money(expense / elapsedDays)} per hari, pengeluaran siklus ini
+                  diperkirakan {money(projectedExpense)}.
+                </p>
+              )}
+            </>
+          )}
+        </section>
+      )}
+
+      <Card>
+        <CardHeader>
+          <div>
+            <CardTitle>Transaksi terbaru</CardTitle>
+            <CardDescription>Aktivitas terakhir dari semua dompet.</CardDescription>
+          </div>
+          {data.transactions.length > 0 && (
+            <Button render={<Link to="/app/transactions" />} size="sm" variant="ghost">
+              Lihat semua
+            </Button>
+          )}
+        </CardHeader>
+        <CardContent className="grid grid-cols-1 gap-1">
+          {data.transactions.slice(0, 5).map((item) => {
+            const category = item.category_id ? categoriesById.get(item.category_id) : undefined
+            const wallet = walletsById.get(item.wallet_id)
+            const targetWallet = item.target_wallet_id
+              ? walletsById.get(item.target_wallet_id)
+              : undefined
+            return (
+              <div
+                className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 border-b py-3 last:border-0"
+                key={item.id}
+              >
+                <span
+                  className={cn(
+                    "grid size-10 place-items-center rounded-xl",
+                    item.type === "income"
+                      ? "bg-success/10 text-success"
+                      : item.type === "expense"
+                        ? "bg-destructive/10 text-destructive"
+                        : "bg-primary/10 text-primary",
+                  )}
+                >
+                  {category ? (
+                    <CategoryIndicator category={category} />
+                  ) : (
+                    <HugeiconsIcon
+                      icon={
+                        item.type === "income"
+                          ? ArrowDown01Icon
+                          : item.type === "expense"
+                            ? ArrowUp01Icon
+                            : TransactionHistoryIcon
+                      }
+                    />
+                  )}
+                </span>
+                <div className="min-w-0">
+                  <p
+                    className="truncate text-sm font-medium"
+                    title={item.description || item.category_name || "Transfer dompet"}
                   >
-                    <dt className="text-xs text-muted-foreground">{metric.label}</dt>
-                    <dd className="mt-0.5 text-sm font-medium tabular-nums">{metric.detail}</dd>
-                  </div>
-                ))}
-              </dl>
-            )}
-
-            {health.reasons.length > 1 && (
-              <ul className="grid gap-1 text-muted-foreground">
-                {health.reasons.slice(1).map((reason) => (
-                  <li key={reason}>{reason}</li>
-                ))}
-              </ul>
-            )}
-
-            {health.basisNote && (
-              <p className="text-xs text-muted-foreground">{health.basisNote}</p>
-            )}
-
-            {expense > 0 && remainingDays > 0 && (
-              <p className="tabular-nums text-xs text-muted-foreground">
-                Dengan laju {money(expense / elapsedDays)} per hari, pengeluaran siklus ini
-                diperkirakan {money(projectedExpense)}.
-              </p>
-            )}
-          </>
-        )}
-      </section>
+                    {item.description || item.category_name || "Transfer dompet"}
+                  </p>
+                  <p className="text-caption mt-1 truncate">
+                    {category?.name ?? TRANSACTION_TYPE_LABELS[item.type]}
+                    {wallet ? ` • ${wallet.name}` : ""}
+                    {targetWallet ? ` → ${targetWallet.name}` : ""}
+                    {" · "}
+                    {formatRelativeDate(item.transaction_date)}
+                  </p>
+                </div>
+                <p
+                  className={cn(
+                    "min-w-0 text-sm font-semibold tabular-nums break-words text-right",
+                    item.type === "income" && "text-success",
+                    item.type === "expense" && "text-destructive",
+                  )}
+                >
+                  {formatTransactionAmount(item.type, item.amount, currency, hide)}
+                </p>
+              </div>
+            )
+          })}
+          {data.transactions.length === 0 && (
+            <EmptyState
+              action={
+                data.wallets.length > 0 ? (
+                  <TransactionDialog
+                    categories={data.categories}
+                    recentTransactions={data.transactions}
+                    wallets={data.wallets}
+                  />
+                ) : (
+                  <WalletDialog />
+                )
+              }
+              description="Mulai catat pemasukan atau pengeluaranmu."
+              icon={TransactionHistoryIcon}
+              text="Belum ada transaksi"
+            />
+          )}
+        </CardContent>
+      </Card>
 
       {overdueDebts.length > 0 && (
         <Card className="border border-destructive/20 bg-destructive/[0.04]">
@@ -432,20 +543,41 @@ function DashboardPage() {
       {activeDebts.length > 0 && (
         <Card>
           <CardContent className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
-            <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-secondary text-muted-foreground">
-              <HugeiconsIcon icon={UserIcon} />
+            <span
+              className={cn(
+                "grid size-11 shrink-0 place-items-center rounded-2xl",
+                outstanding("hutang") > balance
+                  ? "bg-destructive/10 text-destructive"
+                  : "bg-secondary text-muted-foreground",
+              )}
+            >
+              <HugeiconsIcon icon={HandshakeIcon} />
             </span>
             <div className="min-w-0 flex-1">
               <h2 className="font-semibold">Kewajiban aktif</h2>
+              <p className="mt-1 text-xl font-semibold tabular-nums break-words">
+                <span className="text-muted-foreground text-sm font-normal">Net worth </span>
+                {money(netWorth)}
+              </p>
               <p className="text-caption mt-1 tabular-nums">
                 Hutang {money(outstanding("hutang"))} · Piutang {money(outstanding("piutang"))}
               </p>
+              {outstanding("hutang") > balance && (
+                <p className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-destructive">
+                  <HugeiconsIcon icon={Invoice01Icon} className="size-3.5" />
+                  Utang melebihi saldo
+                </p>
+              )}
             </div>
             <Button render={<Link to="/app/planning" />} size="sm" variant="outline">
               Lihat di Rencana
             </Button>
           </CardContent>
         </Card>
+      )}
+
+      {data.wallets.length > 0 && (
+        <WalletDeck currency={currency} hidden={hide} wallets={data.wallets} />
       )}
 
       {data.wallets.length > 0 && (
@@ -592,129 +724,6 @@ function DashboardPage() {
           </CardContent>
         </Card>
       )}
-
-      <Card>
-        <CardHeader>
-          <div>
-            <CardTitle>Transaksi terbaru</CardTitle>
-            <CardDescription>Aktivitas terakhir dari semua dompet.</CardDescription>
-          </div>
-          {data.transactions.length > 0 && (
-            <Button render={<Link to="/app/transactions" />} size="sm" variant="ghost">
-              Lihat semua
-            </Button>
-          )}
-        </CardHeader>
-        <CardContent className="grid grid-cols-1 gap-1">
-          {data.transactions.slice(0, 6).map((item) => {
-            const category = item.category_id ? categoriesById.get(item.category_id) : undefined
-            const wallet = walletsById.get(item.wallet_id)
-            const targetWallet = item.target_wallet_id
-              ? walletsById.get(item.target_wallet_id)
-              : undefined
-            return (
-              <div
-                className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 border-b py-3 last:border-0"
-                key={item.id}
-              >
-                <span className="grid size-10 place-items-center rounded-xl bg-secondary">
-                  <HugeiconsIcon
-                    icon={
-                      item.type === "income"
-                        ? ArrowDown01Icon
-                        : item.type === "expense"
-                          ? ArrowUp01Icon
-                          : TransactionHistoryIcon
-                    }
-                  />
-                </span>
-                <div className="min-w-0">
-                  <p
-                    className="truncate text-sm font-medium"
-                    title={item.description || item.category_name || "Transfer dompet"}
-                  >
-                    {item.description || item.category_name || "Transfer dompet"}
-                  </p>
-                  <div className="text-caption mt-1 flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1">
-                    {category &&
-                      item.description.trim() &&
-                      item.description.trim() !== category.name && (
-                        <>
-                          <CategoryLabel category={category} />
-                          <span aria-hidden>·</span>
-                        </>
-                      )}
-                    {wallet && <WalletLabel wallet={wallet} />}
-                    {targetWallet && <span aria-hidden>→</span>}
-                    {targetWallet && <WalletLabel wallet={targetWallet} />}
-                    <span aria-hidden>·</span>
-                    <span className="tabular-nums">{item.transaction_date}</span>
-                  </div>
-                </div>
-                <p
-                  className={
-                    item.type === "income"
-                      ? "min-w-0 text-sm font-semibold tabular-nums break-words text-right text-success"
-                      : "min-w-0 text-sm font-semibold tabular-nums break-words text-right"
-                  }
-                >
-                  {formatTransactionAmount(item.type, item.amount, currency, hide)}
-                </p>
-              </div>
-            )
-          })}
-          {data.transactions.length === 0 && (
-            <EmptyState
-              action={
-                data.wallets.length > 0 ? (
-                  <TransactionDialog
-                    categories={data.categories}
-                    recentTransactions={data.transactions}
-                    wallets={data.wallets}
-                  />
-                ) : (
-                  <WalletDialog />
-                )
-              }
-              description="Mulai catat pemasukan atau pengeluaranmu."
-              icon={TransactionHistoryIcon}
-              text="Belum ada transaksi"
-            />
-          )}
-        </CardContent>
-      </Card>
     </div>
-  )
-}
-
-function SummaryCard({
-  label,
-  value,
-  icon,
-  className,
-  cardClassName,
-}: {
-  label: string
-  value: string
-  icon: typeof Wallet01Icon
-  className?: string
-  cardClassName?: string
-}) {
-  return (
-    <Card className={cardClassName}>
-      <CardContent className="flex items-start justify-between gap-2 p-3 sm:gap-3 sm:p-4 md:p-5">
-        <div className="min-w-0">
-          <p className="text-xs text-muted-foreground sm:text-sm">{label}</p>
-          <p className="mt-1 text-base font-semibold tracking-[-0.04em] tabular-nums break-words sm:mt-2 sm:text-lg md:mt-3 md:text-2xl">
-            {value}
-          </p>
-        </div>
-        <span
-          className={`hidden size-9 place-items-center rounded-2xl bg-secondary sm:grid sm:size-10 ${className ?? "text-primary"}`}
-        >
-          <HugeiconsIcon icon={icon} />
-        </span>
-      </CardContent>
-    </Card>
   )
 }
