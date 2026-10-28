@@ -5,14 +5,14 @@ import { WalletDialog } from "@/components/finance-dialogs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { walletCardFace } from "@/lib/finance-options"
 import type { Wallet } from "@/lib/finance-types"
-import { cn, formatMoney } from "@/lib/utils"
+import { formatMoney } from "@/lib/utils"
 
 const CARD_H = 110
 const PEEK = 28
-const SPREAD = 62
+const SPREAD = 72
 const POCKET_H = 112
 const LIFT = 24
-const TOP = 12
+const TOP = 8
 
 function prefersReducedMotion() {
   return (
@@ -45,8 +45,7 @@ export function WalletDeck({
   if (capped) cards.push({ kind: "seeAll", count: sorted.length })
 
   const n = cards.length
-  // pocket top = closedHeight - POCKET_H; front card peeks PEEK above pocket top
-  const pocketTop = TOP + Math.max(0, n - 1) * PEEK + CARD_H - PEEK + 4
+  const pocketTop = TOP + n * PEEK
   const closedHeight = pocketTop + POCKET_H
   const openHeight = closedHeight + Math.max(0, n - 1) * (SPREAD - PEEK) + LIFT
 
@@ -67,6 +66,7 @@ export function WalletDeck({
         // ignore
       }
     }
+    if (open) setShowAll(false)
     setOpen((v) => !v)
   }
 
@@ -122,16 +122,16 @@ export function WalletDeck({
           variant="ghost"
         />
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-0">
         <div
           className="relative w-full overflow-hidden transition-[height] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none"
           style={{ height: open ? openHeight : closedHeight }}
         >
           {cards.map((card, index) => {
             const fromFront = n - 1 - index
-            const closedY = pocketTop - (n - index) * PEEK
+            const closedY = TOP + index * PEEK
             const openY = TOP + index * SPREAD
-            const tilt = open ? (index - (n - 1) / 2) * 3.5 : 0
+            const tilt = open ? (index - (n - 1) / 2) * 2.5 : 0
             const scale = open ? 1 : 1 - fromFront * 0.03
             const y = open ? openY : closedY
             const isSeeAll = card.kind === "seeAll"
@@ -162,7 +162,7 @@ export function WalletDeck({
               return (
                 <button
                   aria-label={`Lihat semua ${c.count} dompet`}
-                  className="absolute rounded-2xl border border-dashed border-white/30 bg-zinc-900/80 p-4 text-left text-white shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+                  className="absolute rounded-2xl border border-dashed border-white/30 bg-zinc-900 p-4 text-left text-white shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
                   key="see-all"
                   onClick={() => setShowAll(true)}
                   style={cardStyle}
@@ -193,40 +193,38 @@ export function WalletDeck({
                 }}
                 trigger={
                   <div className="flex h-full flex-col justify-between">
-                    <div className="min-w-0">
-                      {/* compact strip (visible when closed) */}
-                      <div
-                        className="flex items-center justify-between gap-2 transition-opacity duration-200"
-                        style={{ opacity: open ? 0 : 1 }}
+                    {/* compact strip (visible when closed) */}
+                    <div
+                      className="flex items-center justify-between gap-2 transition-opacity duration-200"
+                      style={{ opacity: open ? 0 : 1 }}
+                    >
+                      <p
+                        className="min-w-0 truncate text-[12px] font-semibold uppercase leading-none tracking-wide"
+                        style={{ lineHeight: 1, paddingTop: 6 }}
+                        title={w.name}
                       >
-                        <p
-                          className="min-w-0 truncate text-[12px] font-semibold uppercase leading-none tracking-wide"
-                          style={{ lineHeight: 1, paddingTop: 6 }}
-                          title={w.name}
-                        >
-                          {w.name}
-                        </p>
-                        <p
-                          className="shrink-0 text-[12px] font-semibold tabular-nums leading-none"
-                          style={{ lineHeight: 1, paddingTop: 6 }}
-                        >
-                          {money(w.balance)}
-                        </p>
-                      </div>
-                      {/* full face (visible when open) */}
-                      <div
-                        className="mt-2 transition-opacity duration-200"
-                        style={{ opacity: open ? 1 : 0 }}
+                        {w.name}
+                      </p>
+                      <p
+                        className="shrink-0 text-[12px] font-semibold tabular-nums leading-none"
+                        style={{ lineHeight: 1, paddingTop: 6 }}
                       >
-                        <p
-                          className="truncate text-sm font-extrabold uppercase italic tracking-wide"
-                          title={w.name}
-                        >
-                          {w.name}
-                        </p>
-                      </div>
+                        {money(w.balance)}
+                      </p>
                     </div>
-                    <div className="min-w-0" style={{ opacity: open ? 1 : 0 }}>
+                    {/* full face (visible when open) */}
+                    <div
+                      className="transition-opacity duration-200"
+                      style={{ opacity: open ? 1 : 0, marginTop: open ? 0 : -20 }}
+                    >
+                      <p
+                        className="truncate text-sm font-extrabold uppercase italic tracking-wide"
+                        title={w.name}
+                      >
+                        {w.name}
+                      </p>
+                    </div>
+                    <div style={{ opacity: open ? 1 : 0 }}>
                       <p className="text-[clamp(1.1rem,3vw,1.5rem)] font-bold tabular-nums leading-tight">
                         {money(w.balance)}
                       </p>
@@ -250,8 +248,7 @@ export function WalletDeck({
             className="absolute inset-x-0 bottom-0 flex h-[112px] flex-col items-center justify-center overflow-hidden rounded-[20px] outline-none focus-visible:ring-2 focus-visible:ring-white/60"
             onClick={toggle}
             style={{
-              background:
-                "linear-gradient(160deg, #1C1C1C 0%, #0A0A0A 45%, rgba(120,20,30,0.55) 100%)",
+              background: "linear-gradient(160deg, #1C1C1C 0%, #0A0A0A 45%, #3A1015 100%)",
               boxShadow: "inset 0 1px 0 rgba(255,255,255,0.14)",
               zIndex: 10,
             }}
@@ -287,10 +284,7 @@ export function WalletDeck({
             >
               <HugeiconsIcon
                 aria-hidden
-                className={cn(
-                  "size-3 transition-transform duration-300",
-                  open ? "rotate-180" : "rotate-0",
-                )}
+                className={`size-3 transition-transform duration-300 ${open ? "rotate-180" : "rotate-0"}`}
                 icon={ChevronDownIcon}
               />
               {open ? "Sembunyikan kartu" : "Tampilkan kartu"}
