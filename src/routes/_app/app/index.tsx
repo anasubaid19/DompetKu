@@ -79,13 +79,6 @@ const healthTone: Record<HealthStatus, { box: string; badge: string }> = {
   data_belum_cukup: { box: "border-border bg-muted/40", badge: "bg-muted text-muted-foreground" },
 }
 
-const healthLabel: Record<HealthStatus, string> = {
-  sehat: "Sehat",
-  perlu_perhatian: "Perlu perhatian",
-  berisiko: "Berisiko",
-  data_belum_cukup: "Data belum cukup",
-}
-
 function DashboardPage() {
   const data = Route.useLoaderData()
   const [chartRange, setChartRange] = useState<"cycle" | "weekly">("cycle")
@@ -263,34 +256,28 @@ function DashboardPage() {
         <section
           aria-labelledby="health-heading"
           className={cn(
-            "grid gap-3 rounded-2xl border px-4 py-3.5 text-sm",
+            "grid gap-2 rounded-2xl border px-4 py-3 text-sm",
             healthTone[health.status].box,
           )}
         >
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
-            <span
-              className={cn(
-                "rounded-full px-2.5 py-1 text-xs font-medium",
-                healthTone[health.status].badge,
-              )}
-            >
-              {healthLabel[health.status]}
-            </span>
-            <h2 className="font-semibold" id="health-heading">
+          <div className="flex items-start gap-2">
+            <h2 className="flex-1 font-semibold leading-tight" id="health-heading">
               {health.headline}
             </h2>
             <button
-              aria-label="Tutup banner kesehatan"
-              className="ml-auto grid size-7 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+              aria-label="Tutup"
+              className="grid size-11 shrink-0 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
               onClick={() => setHealthDismissed(true)}
               type="button"
             >
-              ×
+              <span aria-hidden className="text-lg leading-none">
+                ×
+              </span>
             </button>
           </div>
 
           {health.reasons.length > 0 && (
-            <p className="text-muted-foreground">{health.reasons[0]}</p>
+            <p className="line-clamp-2 text-muted-foreground">{health.reasons[0]}</p>
           )}
 
           <div className="flex flex-wrap items-center gap-2">
