@@ -46,9 +46,11 @@ import { cn, dateKey, formatNumberInput, parseNumberInput, today } from "@/lib/u
 export function WalletDialog({
   wallet,
   className,
+  variant,
 }: {
   wallet?: WalletType
   className?: string
+  variant?: "default" | "outline" | "ghost" | "destructive"
 } = {}) {
   const router = useRouter()
   const formId = useId()
@@ -127,7 +129,7 @@ export function WalletDialog({
             aria-label={wallet ? `Edit ${wallet.name}` : undefined}
             className={className}
             size={wallet ? "icon" : "default"}
-            variant={wallet ? "ghost" : "outline"}
+            variant={variant ?? (wallet ? "ghost" : "outline")}
           />
         }
       >
