@@ -292,16 +292,11 @@ describe("financial health", () => {
   })
 
   test("asks for more data instead of guessing on a fresh cycle", () => {
-    const health = assessFinancialHealth(
-      healthData([
-        healthTransaction({ date: "2026-10-25", type: "income", amount: 3_000_000 }),
-        healthTransaction({ date: "2026-10-26", type: "expense", amount: 1_000_000 }),
-      ]),
-      HEALTH_NOW,
-    )
+    const health = assessFinancialHealth(healthData([]), HEALTH_NOW)
 
     expect(health.status).toBe("data_belum_cukup")
     expect(health.metrics).toHaveLength(0)
+    expect(health.reasons[0]).toContain("Belum ada transaksi")
   })
 
   test("uses a three-cycle average when income is irregular", () => {

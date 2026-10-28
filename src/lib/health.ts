@@ -173,8 +173,12 @@ export function assessFinancialHealth(data: FinanceData, now = new Date()): Heal
   })
 
   if (complete.length === 0) {
-    const elapsed = Math.max(1, 1 - daysUntil(current.cycle.start, now))
-    return insufficient(`Siklus ini baru berjalan ${elapsed} hari. Catat sampai siklus selesai.`)
+    if (current.sums.income === 0 && current.sums.expense === 0 && current.sums.savings === 0) {
+      return insufficient(
+        "Belum ada transaksi di siklus ini. Catat transaksi agar penilaian muncul.",
+      )
+    }
+    // Siklus berjalan sudah punya data: beri perkiraan awal alih-alih menunggu siklus penuh.
   }
 
   const unstable =
@@ -183,7 +187,11 @@ export function assessFinancialHealth(data: FinanceData, now = new Date()): Heal
       HEALTH_THRESHOLDS.stability.stableCv
   const currentHasIncome = current.sums.income > 0
   const basis =
-    unstable || !currentHasIncome ? complete.slice(-HEALTH_THRESHOLDS.smoothingCycles) : [current]
+    complete.length === 0
+      ? [current]
+      : unstable || !currentHasIncome
+        ? complete.slice(-HEALTH_THRESHOLDS.smoothingCycles)
+        : [current]
 
   const income = mean(basis.map((entry) => entry.sums.income))
   const expense = mean(basis.map((entry) => entry.sums.expense))
@@ -296,11 +304,14 @@ export function assessFinancialHealth(data: FinanceData, now = new Date()): Heal
       ? null
       : nextStepByMetric[worst.key]
 
-  const basisNote = unstable
-    ? "Dinilai dari rata-rata 3 siklus karena pemasukanmu tidak tetap."
-    : currentHasIncome
-      ? null
-      : "Dinilai dari siklus terakhir yang lengkap."
+  const basisNote =
+    complete.length === 0
+      ? "Perkiraan awal dari siklus yang sedang berjalan."
+      : unstable
+        ? "Dinilai dari rata-rata 3 siklus karena pemasukanmu tidak tetap."
+        : currentHasIncome
+          ? null
+          : "Dinilai dari siklus terakhir yang lengkap."
 
   return {
     status,
