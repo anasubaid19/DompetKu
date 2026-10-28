@@ -13,8 +13,10 @@ import { useState } from "react"
 import { PullToRefresh } from "@/components/pull-to-refresh"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Button } from "@/components/ui/button"
+import { useSound } from "@/hooks/use-sound"
 import { authClient } from "@/lib/auth-client"
 import { cn } from "@/lib/utils"
+import { clickSoftSound } from "@/sounds/click-soft"
 
 const navigation = [
   { to: "/app", label: "Beranda", icon: Home01Icon },
@@ -53,6 +55,7 @@ export function AppShell({
 }) {
   const router = useRouter()
   const [signingOut, setSigningOut] = useState(false)
+  const [playClick] = useSound(clickSoftSound)
 
   async function signOut() {
     setSigningOut(true)
@@ -171,6 +174,7 @@ export function AppShell({
                 : item.label
             }
             className="group relative flex h-14 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl shadow-md outline-none transition-[transform,background-color,color,box-shadow] duration-300 ease-entrance pointer-fine:hover:-translate-y-2 pointer-fine:hover:scale-110 focus-visible:-translate-y-2 focus-visible:scale-110 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-[0.96] motion-reduce:transform-none"
+            onClick={() => playClick()}
             inactiveProps={{
               className: "bg-secondary text-muted-foreground pointer-fine:hover:bg-secondary/80",
             }}
