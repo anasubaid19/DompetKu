@@ -229,24 +229,32 @@ function DashboardPage() {
       )}
 
       <Card>
-        <CardContent className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-3 sm:p-5">
+        <CardContent className="grid gap-3 p-4 sm:p-5">
           <div className="min-w-0">
             <p className="text-xs text-muted-foreground sm:text-sm">Total saldo</p>
-            <p className="mt-1 text-xl font-semibold tracking-[-0.04em] tabular-nums break-words sm:mt-2 sm:text-2xl">
+            <p className="mt-1 text-2xl font-semibold tracking-[-0.04em] tabular-nums break-words sm:text-3xl">
               {money(balance)}
             </p>
           </div>
-          <div className="min-w-0">
-            <p className="text-xs text-muted-foreground sm:text-sm">Pemasukan siklus ini</p>
-            <p className="mt-1 text-xl font-semibold tracking-[-0.04em] tabular-nums break-words text-success sm:mt-2 sm:text-2xl">
-              {money(income)}
-            </p>
-          </div>
-          <div className="min-w-0">
-            <p className="text-xs text-muted-foreground sm:text-sm">Pengeluaran siklus ini</p>
-            <p className="mt-1 text-xl font-semibold tracking-[-0.04em] tabular-nums break-words text-destructive sm:mt-2 sm:text-2xl">
-              {money(expense)}
-            </p>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="min-w-0 rounded-xl bg-secondary/40 p-3">
+              <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                <HugeiconsIcon icon={ArrowDown01Icon} className="size-3.5 text-success" />
+                Pemasukan
+              </p>
+              <p className="mt-1 text-base font-semibold tabular-nums break-words text-success sm:text-lg">
+                {money(income)}
+              </p>
+            </div>
+            <div className="min-w-0 rounded-xl bg-secondary/40 p-3">
+              <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                <HugeiconsIcon icon={ArrowUp01Icon} className="size-3.5 text-destructive" />
+                Pengeluaran
+              </p>
+              <p className="mt-1 text-base font-semibold tabular-nums break-words text-destructive sm:text-lg">
+                {money(expense)}
+              </p>
+            </div>
           </div>
         </CardContent>
       </Card>
