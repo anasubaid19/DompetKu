@@ -60,20 +60,20 @@ for (const c of cycles) {
   const pad = (v: number) => String(v).padStart(2, "0")
   db.run(
     "INSERT INTO transactions (id,user_id,type,amount,fee,wallet_id,category_id,description,transaction_date) VALUES (?,?,?,?,?,?,?,?,?)",
-    [`seed-inc-${n}`, userId, "income", c.income, 0, walletId, gaji, "Gaji bulanan", `2026-${pad(c.month)}-05`],
+    [`seed-${userId.slice(0,6)}-inc-${n}`, userId, "income", c.income, 0, walletId, gaji, "Gaji bulanan", `2026-${pad(c.month)}-05`],
   )
   n++
   if (c.month === 7) {
     db.run(
       "INSERT INTO transactions (id,user_id,type,amount,fee,wallet_id,category_id,description,transaction_date) VALUES (?,?,?,?,?,?,?,?,?)",
-      [`seed-bonus-${n}`, userId, "income", 1_500_000, 0, walletId, bonus, "Bonus proyek", `2026-07-20`],
+      [`seed-${userId.slice(0,6)}-bonus-${n}`, userId, "income", 1_500_000, 0, walletId, bonus, "Bonus proyek", `2026-07-20`],
     )
     n++
   }
   for (const [catId, amount] of c.expenses) {
     db.run(
       "INSERT INTO transactions (id,user_id,type,amount,fee,wallet_id,category_id,description,transaction_date) VALUES (?,?,?,?,?,?,?,?,?)",
-      [`seed-exp-${n}`, userId, "expense", amount, 0, walletId, catId, "Pengeluaran rutin", `2026-${pad(c.month)}-15`],
+      [`seed-${userId.slice(0,6)}-exp-${n}`, userId, "expense", amount, 0, walletId, catId, "Pengeluaran rutin", `2026-${pad(c.month)}-15`],
     )
     n++
   }
@@ -81,17 +81,17 @@ for (const c of cycles) {
   if (c.month === 10) {
     db.run(
       "INSERT INTO transactions (id,user_id,type,amount,fee,wallet_id,category_id,description,transaction_date) VALUES (?,?,?,?,?,?,?,?,?)",
-      [`seed-exp-${n}`, userId, "expense", 85_000, 0, walletId, makanan, "Makan siang", "2026-10-28"],
+      [`seed-${userId.slice(0,6)}-exp-${n}`, userId, "expense", 85_000, 0, walletId, makanan, "Makan siang", "2026-10-28"],
     )
     n++
     db.run(
       "INSERT INTO transactions (id,user_id,type,amount,fee,wallet_id,category_id,description,transaction_date) VALUES (?,?,?,?,?,?,?,?,?)",
-      [`seed-exp-${n}`, userId, "expense", 45_000, 0, walletId, transportasi, "Ojek online", "2026-10-27"],
+      [`seed-${userId.slice(0,6)}-exp-${n}`, userId, "expense", 45_000, 0, walletId, transportasi, "Ojek online", "2026-10-27"],
     )
     n++
     db.run(
       "INSERT INTO transactions (id,user_id,type,amount,fee,wallet_id,category_id,description,transaction_date) VALUES (?,?,?,?,?,?,?,?,?)",
-      [`seed-inc-${n}`, userId, "income", 200_000, 0, walletId, bonus, "Bonus kecil", "2026-10-26"],
+      [`seed-${userId.slice(0,6)}-inc-${n}`, userId, "income", 200_000, 0, walletId, bonus, "Bonus kecil", "2026-10-26"],
     )
     n++
   }
@@ -100,19 +100,27 @@ for (const c of cycles) {
 // debts
 db.run(
   "INSERT INTO debts (id,user_id,type,contact,amount,paid_amount,due_date,note,status) VALUES (?,?,?,?,?,?,?,?,?)",
-  ["seed-hutang", userId, "hutang", "Seed Bank", 2_169_000, 500_000, "2026-12-15", "Cicilan kendaraan", "active"],
+  ["seed-${userId.slice(0,6)}-hutang", userId, "hutang", "Seed Bank", 2_169_000, 500_000, "2026-12-15", "Cicilan kendaraan", "active"],
 )
 db.run(
   "INSERT INTO debts (id,user_id,type,contact,amount,paid_amount,due_date,note,status) VALUES (?,?,?,?,?,?,?,?,?)",
-  ["seed-piutang", userId, "piutang", "Seed Teman", 1_000_000, 0, "2026-11-30", "Pinjaman ke teman", "active"],
+  ["seed-${userId.slice(0,6)}-piutang", userId, "piutang", "Seed Teman", 1_000_000, 0, "2026-11-30", "Pinjaman ke teman", "active"],
 )
 
 // Recurring subscription
 const subCat = cat("Tagihan", "expense")
 db.run(
   "INSERT INTO subscriptions (id,user_id,name,amount,wallet_id,category_id,next_due_date,interval_months,direction,active) VALUES (?,?,?,?,?,?,?,?,?,?)",
-  ["seed-sub", userId, "Internet rumah", 350_000, walletId, subCat, "2026-11-10", 1, "expense", 1],
+  ["seed-${userId.slice(0,6)}-sub", userId, "Internet rumah", 350_000, walletId, subCat, "2026-11-10", 1, "expense", 1],
 )
 
-console.log(`Seeded ${n} transactions, 2 debts, 1 subscription.`)
+// Update wallet balance to reflect seeded transactions
+const bal = db
+  .query(
+    "SELECT COALESCE(SUM(CASE WHEN type='income' THEN amount WHEN type='expense' THEN -amount ELSE -fee END),0) AS b FROM transactions WHERE user_id = ? AND wallet_id = ?",
+  )
+  .get(userId, walletId) as { b: number }
+db.run("UPDATE wallets SET balance = ? WHERE id = ?", [bal.b, walletId])
+
+console.log(`Seeded ${n} transactions, 2 debts, 1 subscription. Wallet balance: ${bal.b}.`)
 db.close()
