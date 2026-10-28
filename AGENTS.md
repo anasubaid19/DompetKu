@@ -24,9 +24,17 @@
 
 ## Current State
 
-Completed on 2026-10-27 (financial health scoring):
+Completed on 2026-10-28 (home restructure + a11y polish):
 
-- Replaced the binary `cashFlowMessage` strip (`income >= expense`) with a scored health card on Ringkasan. New `src/lib/health.ts` (pure, no `db`) returns one of `sehat` / `perlu_perhatian` / `berisiko` / `data_belum_cukup` from four metrics: cash-flow surplus, savings rate, debt-installment ratio, and liquid buffer in months.
+- Hero card menggabungkan Total saldo + Pemasukan + Pengeluaran siklus ini dalam satu kartu; judul redundan "Ringkasan keuanganmu." diganti rentang siklus.
+- Kartu risiko jadi banner ringkas (maks 2 baris) dengan CTA dan tombol tutup (session), detail 4 indikator dibuka via "Lihat detail".
+- "Transaksi terbaru" dipindah ke atas (setelah banner), pakai ikon kategori, tanggal relatif, nominal berwarna, metadata satu baris.
+- "Kewajiban aktif" menampilkan net worth sebagai angka utama, ikon Handshake, indikator non-warna "Utang melebihi saldo" bila utang > saldo.
+- Dompet jadi horizontal scroll (snap) dengan chip "Tambah dompet" di akhir; hapus tumpukan kartu hitam.
+- Arus kas jadi grouped bar chart dengan sumbu Y ringkas; perbandingan siklus disembunyikan saat siklus berjalan belum punya data.
+- Verifikasi: `check` ✓, `typecheck` ✓, `bun test` 27 lulus / 91 asersi ✓, `build` ✓.
+
+Completed on 2026-10-27 (financial health scoring):
 - Status is the worst assessed metric, never an average, so one severe indicator cannot be hidden by healthy ones. `sehat` requires at least two assessed metrics plus at least one wallet; a fresh user with no complete cycle gets `data_belum_cukup` with no metric chips. When income is irregular (CV > 20%) or the current cycle has no income, all ratios use the last three complete cycles and the card says so.
 - Thresholds live in `HEALTH_THRESHOLDS` with sources in comments: OJK "Periksa Dompet" (installments < 35% of income, savings > 10%, assets >= 4 months of spending) and OJK "Periksa Anggaran" (installments 30% of the budget). The 10% cash-flow and 20% CV limits are product recommendations, marked as such. A test asserts the numbers so they cannot drift silently.
 - Root-cause fix: a new debt disbursed into a wallet used to be booked as income under "Piutang Dibayar", so borrowing made the old strip say "Arus kasmu positif". `applyDebtMoneyMovement` now files it under a "Pinjaman Masuk" category (created on demand, no schema change), and `health.ts` also excludes legacy `Tambahan hutang:` rows from income.
