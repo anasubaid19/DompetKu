@@ -162,3 +162,13 @@ export function daysUntil(value: string, now = new Date()) {
   const start = new Date(now.getFullYear(), now.getMonth(), now.getDate())
   return Math.round((target.getTime() - start.getTime()) / 86_400_000)
 }
+
+export function formatRelativeDate(value: string, now = new Date()) {
+  const [year, month, day] = value.split("-").map(Number)
+  const date = new Date(year, month - 1, day)
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const diff = Math.round((today.getTime() - date.getTime()) / 86_400_000)
+  if (diff === 0) return "Hari ini"
+  if (diff === 1) return "Kemarin"
+  return new Intl.DateTimeFormat("id-ID", { day: "numeric", month: "short" }).format(date)
+}

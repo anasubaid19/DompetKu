@@ -10,7 +10,7 @@ import { createFileRoute, useRouter } from "@tanstack/react-router"
 import { useDeferredValue, useState } from "react"
 import { toast } from "sonner"
 import { TransactionDialog, WalletDialog } from "@/components/finance-dialogs"
-import { CategoryLabel, WalletLabel } from "@/components/finance-visuals"
+import { CategoryIndicator, CategoryLabel } from "@/components/finance-visuals"
 import { PageHeader } from "@/components/page-header"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -38,6 +38,7 @@ import {
   cn,
   cycleRange,
   formatMoney,
+  formatRelativeDate,
   formatTransactionAmount,
   TRANSACTION_TYPE_LABELS,
 } from "@/lib/utils"
@@ -134,110 +135,129 @@ function TransactionsPage() {
       <Card>
         <CardContent className="p-2 sm:p-3">
           <div className="grid grid-cols-1 gap-1">
-            {transactions.map((item) => {
-              const category = item.category_id ? categoriesById.get(item.category_id) : undefined
-              const wallet = walletsById.get(item.wallet_id)
-              const targetWallet = item.target_wallet_id
-                ? walletsById.get(item.target_wallet_id)
-                : undefined
-              return (
-                <article
-                  className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-3 rounded-2xl p-3 transition-colors hover:bg-secondary/55 sm:grid-cols-[auto_minmax(0,1fr)_auto]"
-                  key={item.id}
-                >
-                  <span
-                    className={cn(
-                      "grid size-11 place-items-center rounded-2xl",
-                      item.type === "income"
-                        ? "bg-success/10 text-success"
-                        : item.type === "expense"
-                          ? "bg-destructive/10 text-destructive"
-                          : "bg-primary/10 text-primary",
-                    )}
-                  >
-                    <HugeiconsIcon
-                      icon={
-                        item.type === "income"
-                          ? ArrowDown01Icon
-                          : item.type === "expense"
-                            ? ArrowUp01Icon
-                            : TransactionHistoryIcon
-                      }
-                    />
-                  </span>
-                  <div className="min-w-0">
-                    <div className="flex min-w-0 items-center gap-2">
-                      <p
-                        className="truncate text-sm font-medium"
-                        title={item.description || item.category_name || "Transfer antar-dompet"}
-                      >
-                        {item.description || item.category_name || "Transfer antar-dompet"}
-                      </p>
-                      {category &&
-                      item.description.trim() &&
-                      item.description.trim() !== category.name ? (
-                        <Badge className="min-w-0 max-w-full gap-1.5">
-                          <CategoryLabel category={category} />
-                        </Badge>
-                      ) : !category ? (
-                        <Badge className="min-w-0 max-w-full gap-1.5">
-                          {TRANSACTION_TYPE_LABELS[item.type]}
-                        </Badge>
-                      ) : null}
-                    </div>
-                    <div className="text-caption mt-1 flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1">
-                      {wallet && <WalletLabel wallet={wallet} />}
-                      {targetWallet && <span aria-hidden>→</span>}
-                      {targetWallet && <WalletLabel wallet={targetWallet} />}
-                      <span aria-hidden>·</span>
-                      <span>
-                        {new Intl.DateTimeFormat("id-ID", { dateStyle: "medium" }).format(
-                          new Date(`${item.transaction_date}T00:00:00`),
-                        )}
-                      </span>
-                    </div>
+            {(() => {
+              const groups: { date: string; items: typeof transactions }[] = []
+              for (const item of transactions) {
+                const last = groups.at(-1)
+                if (last && last.date === item.transaction_date) last.items.push(item)
+                else groups.push({ date: item.transaction_date, items: [item] })
+              }
+              return groups.map((group) => (
+                <div className="grid grid-cols-1 gap-1" key={group.date}>
+                  <div className="sticky top-0 z-10 -mx-2 bg-card/95 px-2 py-1.5 backdrop-blur supports-[backdrop-filter]:bg-card/80">
+                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                      {formatRelativeDate(group.date)}
+                    </p>
                   </div>
-                  <div className="col-start-2 flex min-w-0 items-center justify-between gap-3 sm:col-start-3 sm:row-start-1">
-                    <div className="min-w-0 text-right">
-                      <p
-                        className={cn(
-                          "text-sm font-semibold tabular-nums break-words",
-                          item.type === "income" && "text-success",
-                          item.type === "expense" && "text-destructive",
-                        )}
+                  {group.items.map((item) => {
+                    const category = item.category_id
+                      ? categoriesById.get(item.category_id)
+                      : undefined
+                    const wallet = walletsById.get(item.wallet_id)
+                    const targetWallet = item.target_wallet_id
+                      ? walletsById.get(item.target_wallet_id)
+                      : undefined
+                    return (
+                      <article
+                        className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-3 rounded-2xl p-3 transition-colors hover:bg-secondary/55 sm:grid-cols-[auto_minmax(0,1fr)_auto]"
+                        key={item.id}
                       >
-                        {formatTransactionAmount(
-                          item.type,
-                          item.amount,
-                          data.settings.currency,
-                          Boolean(data.settings.hide_balance),
-                        )}
-                      </p>
-                      {item.type === "transfer" && item.fee > 0 && (
-                        <p className="text-caption mt-0.5 tabular-nums break-words">
-                          Biaya transfer {money(item.fee)}
-                        </p>
-                      )}
-                    </div>
-                    <div className="flex shrink-0 items-center gap-1">
-                      {item.saving_id ? (
-                        <Badge>Target tabungan</Badge>
-                      ) : (
-                        <>
-                          <TransactionDialog
-                            categories={data.categories}
-                            recentTransactions={data.transactions}
-                            transaction={item}
-                            wallets={data.wallets}
-                          />
-                          <DeleteTransactionDialog transaction={item} />
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </article>
-              )
-            })}
+                        <span
+                          className={cn(
+                            "grid size-11 place-items-center rounded-2xl",
+                            item.type === "income"
+                              ? "bg-success/10 text-success"
+                              : item.type === "expense"
+                                ? "bg-destructive/10 text-destructive"
+                                : "bg-primary/10 text-primary",
+                          )}
+                        >
+                          {category ? (
+                            <CategoryIndicator category={category} />
+                          ) : (
+                            <HugeiconsIcon
+                              icon={
+                                item.type === "income"
+                                  ? ArrowDown01Icon
+                                  : item.type === "expense"
+                                    ? ArrowUp01Icon
+                                    : TransactionHistoryIcon
+                              }
+                            />
+                          )}
+                        </span>
+                        <div className="min-w-0">
+                          <div className="flex min-w-0 items-center gap-2">
+                            <p
+                              className="truncate text-sm font-medium"
+                              title={
+                                item.description || item.category_name || "Transfer antar-dompet"
+                              }
+                            >
+                              {item.description || item.category_name || "Transfer antar-dompet"}
+                            </p>
+                            {category &&
+                            item.description.trim() &&
+                            item.description.trim() !== category.name ? (
+                              <Badge className="min-w-0 max-w-full gap-1.5">
+                                <CategoryLabel category={category} />
+                              </Badge>
+                            ) : !category ? (
+                              <Badge className="min-w-0 max-w-full gap-1.5">
+                                {TRANSACTION_TYPE_LABELS[item.type]}
+                              </Badge>
+                            ) : null}
+                          </div>
+                          <p className="text-caption mt-1 truncate">
+                            {category?.name ?? TRANSACTION_TYPE_LABELS[item.type]}
+                            {wallet ? ` • ${wallet.name}` : ""}
+                            {targetWallet ? ` → ${targetWallet.name}` : ""}
+                          </p>
+                        </div>
+                        <div className="col-start-2 flex min-w-0 items-center justify-between gap-3 sm:col-start-3 sm:row-start-1">
+                          <div className="min-w-0 text-right">
+                            <p
+                              className={cn(
+                                "text-sm font-semibold tabular-nums break-words",
+                                item.type === "income" && "text-success",
+                                item.type === "expense" && "text-destructive",
+                              )}
+                            >
+                              {formatTransactionAmount(
+                                item.type,
+                                item.amount,
+                                data.settings.currency,
+                                Boolean(data.settings.hide_balance),
+                              )}
+                            </p>
+                            {item.type === "transfer" && item.fee > 0 && (
+                              <p className="text-caption mt-0.5 tabular-nums break-words">
+                                Biaya transfer {money(item.fee)}
+                              </p>
+                            )}
+                          </div>
+                          <div className="flex shrink-0 items-center gap-1">
+                            {item.saving_id ? (
+                              <Badge>Target tabungan</Badge>
+                            ) : (
+                              <>
+                                <TransactionDialog
+                                  categories={data.categories}
+                                  recentTransactions={data.transactions}
+                                  transaction={item}
+                                  wallets={data.wallets}
+                                />
+                                <DeleteTransactionDialog transaction={item} />
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </article>
+                    )
+                  })}
+                </div>
+              ))
+            })()}
             {transactions.length === 0 && (
               <div className="grid place-items-center py-12 text-center sm:py-16">
                 <span className="grid size-12 place-items-center rounded-2xl bg-secondary text-muted-foreground">
