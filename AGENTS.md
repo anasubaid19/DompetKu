@@ -148,6 +148,8 @@ Latest result: all commands passed; tests reported 27 passed, 0 failed, and 91 a
 
 For UI changes, also inspect desktop and mobile layouts in both themes, including dialogs and the fixed mobile navigation.
 
+Dev seed data: `bun run seed:dev [email]` (fills 6 cycles of transactions, 1 debt, 1 receivable). Dev-only, never in production build.
+
 ## Editing Rules
 
 Exact-match edits (`oldString`) fail whenever the text is not copied verbatim from the file's current bytes. Root causes seen here: prior `bun run fix` reformatting, re-indentation by an earlier edit, memory-constructed text, and repeated lines that make a short `oldString` non-unique (`finance.functions.ts` has e.g. `.handler(async ({ data }) => {` 26 times).
