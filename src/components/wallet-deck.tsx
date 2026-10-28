@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react"
 import { WalletDialog } from "@/components/finance-dialogs"
 import { WalletLogo } from "@/components/finance-visuals"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -14,6 +15,11 @@ export function WalletDeck({
   currency: string
   hidden: boolean
 }) {
+  const scrollRef = useRef<HTMLUListElement>(null)
+  useEffect(() => {
+    if (scrollRef.current) scrollRef.current.scrollLeft = 0
+  }, [])
+
   const money = (value: number) => (hidden ? "••••••" : formatMoney(value, currency))
 
   if (wallets.length === 0) return null
@@ -28,7 +34,10 @@ export function WalletDeck({
       </CardHeader>
       <CardContent>
         <div className="relative">
-          <ul className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <ul
+            ref={scrollRef}
+            className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 pl-1 pr-8 scroll-px-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          >
             {wallets.map((wallet) => {
               const face = walletCardFace(wallet.icon, wallet.color)
               return (
