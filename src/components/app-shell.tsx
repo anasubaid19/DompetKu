@@ -156,7 +156,7 @@ export function AppShell({
 
       <nav
         aria-label="Navigasi seluler"
-        className="translucent fixed inset-x-4 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-40 mx-auto flex w-full max-w-md items-end gap-1 rounded-2xl bg-card/80 p-2 shadow-xl shadow-black/10 ring-1 ring-foreground/8 backdrop-blur-xl lg:hidden"
+        className="translucent fixed inset-x-4 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-40 mx-auto flex max-w-md items-end gap-1 rounded-2xl bg-card/80 p-2 shadow-xl shadow-black/10 ring-1 ring-foreground/8 backdrop-blur-xl lg:hidden"
       >
         {navigation.map((item) => (
           <Link
