@@ -17,7 +17,7 @@ import { authClient } from "@/lib/auth-client"
 import { cn } from "@/lib/utils"
 
 const navigation = [
-  { to: "/app", label: "Ringkasan", icon: Home01Icon },
+  { to: "/app", label: "Beranda", icon: Home01Icon },
   { to: "/app/transactions", label: "Transaksi", icon: TransactionHistoryIcon },
   { to: "/app/planning", label: "Rencana", icon: Target01Icon },
   { to: "/app/reports", label: "Laporan", icon: Chart03Icon },
@@ -156,7 +156,7 @@ export function AppShell({
 
       <nav
         aria-label="Navigasi seluler"
-        className="translucent fixed inset-x-4 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-40 mx-auto flex w-fit items-end gap-3 rounded-2xl bg-card/80 p-2 shadow-xl shadow-black/10 ring-1 ring-foreground/8 backdrop-blur-xl lg:hidden"
+        className="translucent fixed inset-x-4 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-40 mx-auto flex w-full max-w-md items-end gap-1 rounded-2xl bg-card/80 p-2 shadow-xl shadow-black/10 ring-1 ring-foreground/8 backdrop-blur-xl lg:hidden"
       >
         {navigation.map((item) => (
           <Link
@@ -170,7 +170,7 @@ export function AppShell({
                 ? `${item.label}, ${dueCount} jatuh tempo`
                 : item.label
             }
-            className="group relative grid h-14 w-12 place-items-center gap-0.5 rounded-xl shadow-md outline-none transition-[transform,background-color,color,box-shadow] duration-300 ease-entrance pointer-fine:hover:-translate-y-2 pointer-fine:hover:scale-110 focus-visible:-translate-y-2 focus-visible:scale-110 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-[0.96] motion-reduce:transform-none"
+            className="group relative flex h-14 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl shadow-md outline-none transition-[transform,background-color,color,box-shadow] duration-300 ease-entrance pointer-fine:hover:-translate-y-2 pointer-fine:hover:scale-110 focus-visible:-translate-y-2 focus-visible:scale-110 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-[0.96] motion-reduce:transform-none"
             inactiveProps={{
               className: "bg-secondary text-muted-foreground pointer-fine:hover:bg-secondary/80",
             }}
@@ -178,7 +178,9 @@ export function AppShell({
             to={item.to}
           >
             <HugeiconsIcon aria-hidden icon={item.icon} className="size-[18px]" />
-            <span className="text-[10px] font-medium leading-none">{item.label}</span>
+            <span className="w-full truncate text-center text-[10px] font-medium leading-none">
+              {item.label}
+            </span>
             <span
               aria-hidden
               className="absolute -bottom-0.5 size-1 rounded-full bg-primary-foreground opacity-0 transition-opacity group-aria-[current=page]:opacity-100"
