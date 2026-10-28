@@ -146,7 +146,7 @@ export function AppShell({
         </header>
 
         <main
-          className="mx-auto min-h-[calc(100svh-4rem)] max-w-[1200px] px-4 pb-28 pt-6 sm:px-6 lg:px-9 lg:pb-10"
+          className="mx-auto min-h-[calc(100svh-4rem)] max-w-[1200px] px-4 pb-32 pt-6 sm:px-6 lg:px-9 lg:pb-10"
           id="main-content"
           tabIndex={-1}
         >
@@ -170,7 +170,7 @@ export function AppShell({
                 ? `${item.label}, ${dueCount} jatuh tempo`
                 : item.label
             }
-            className="group relative grid size-11 place-items-center rounded-xl shadow-md outline-none transition-[transform,background-color,color,box-shadow] duration-300 ease-entrance pointer-fine:hover:-translate-y-2 pointer-fine:hover:scale-110 focus-visible:-translate-y-2 focus-visible:scale-110 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-[0.96] motion-reduce:transform-none"
+            className="group relative grid h-14 w-12 place-items-center gap-0.5 rounded-xl shadow-md outline-none transition-[transform,background-color,color,box-shadow] duration-300 ease-entrance pointer-fine:hover:-translate-y-2 pointer-fine:hover:scale-110 focus-visible:-translate-y-2 focus-visible:scale-110 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-[0.96] motion-reduce:transform-none"
             inactiveProps={{
               className: "bg-secondary text-muted-foreground pointer-fine:hover:bg-secondary/80",
             }}
@@ -178,6 +178,11 @@ export function AppShell({
             to={item.to}
           >
             <HugeiconsIcon aria-hidden icon={item.icon} className="size-[18px]" />
+            <span className="text-[10px] font-medium leading-none">{item.label}</span>
+            <span
+              aria-hidden
+              className="absolute -bottom-0.5 size-1 rounded-full bg-primary-foreground opacity-0 transition-opacity group-aria-[current=page]:opacity-100"
+            />
             {item.to === "/app/planning" && dueCount > 0 && (
               <DueBadge
                 aria-hidden
