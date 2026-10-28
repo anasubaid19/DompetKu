@@ -1,6 +1,8 @@
 import {
   ArrowDown01Icon,
+  ArrowDownLeft01Icon,
   ArrowUp01Icon,
+  ArrowUpRight01Icon,
   CalendarDaysIcon,
   CalendarRangeIcon,
   HandshakeIcon,
@@ -223,16 +225,10 @@ function DashboardPage() {
 
       <Card>
         <CardContent className="grid gap-3 p-4 sm:p-5">
-          <div className="min-w-0">
-            <p className="text-xs text-muted-foreground sm:text-sm">Total saldo</p>
-            <p className="mt-1 text-2xl font-semibold tracking-[-0.04em] tabular-nums break-words sm:text-3xl">
-              {money(balance)}
-            </p>
-          </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="min-w-0 rounded-xl bg-secondary/40 p-3">
               <p className="flex items-center gap-1 text-xs text-muted-foreground">
-                <HugeiconsIcon icon={ArrowDown01Icon} className="size-3.5 text-success" />
+                <HugeiconsIcon icon={ArrowDownLeft01Icon} className="size-3.5 text-success" />
                 Pemasukan
               </p>
               <p className="mt-1 text-base font-semibold tabular-nums break-words text-success sm:text-lg">
@@ -241,7 +237,7 @@ function DashboardPage() {
             </div>
             <div className="min-w-0 rounded-xl bg-secondary/40 p-3">
               <p className="flex items-center gap-1 text-xs text-muted-foreground">
-                <HugeiconsIcon icon={ArrowUp01Icon} className="size-3.5 text-destructive" />
+                <HugeiconsIcon icon={ArrowUpRight01Icon} className="size-3.5 text-destructive" />
                 Pengeluaran
               </p>
               <p className="mt-1 text-base font-semibold tabular-nums break-words text-destructive sm:text-lg">
@@ -568,7 +564,7 @@ function DashboardPage() {
       )}
 
       {data.wallets.length > 0 && (
-        <WalletDeck currency={currency} hidden={hide} wallets={data.wallets} />
+        <WalletDeck balance={balance} currency={currency} hidden={hide} wallets={data.wallets} />
       )}
 
       {data.wallets.length > 0 && (
