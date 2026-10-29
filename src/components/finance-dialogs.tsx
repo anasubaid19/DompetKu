@@ -47,10 +47,18 @@ export function WalletDialog({
   wallet,
   className,
   variant,
+  size,
+  trigger,
+  style,
+  ariaLabel,
 }: {
   wallet?: WalletType
   className?: string
   variant?: "default" | "outline" | "ghost" | "destructive"
+  size?: "default" | "sm" | "lg" | "icon"
+  trigger?: React.ReactNode
+  style?: React.CSSProperties
+  ariaLabel?: string
 } = {}) {
   const router = useRouter()
   const formId = useId()
@@ -126,14 +134,19 @@ export function WalletDialog({
       <DialogTrigger
         render={
           <Button
-            aria-label={wallet ? `Edit ${wallet.name}` : undefined}
+            aria-label={ariaLabel ?? (wallet && !trigger ? `Edit ${wallet.name}` : undefined)}
             className={className}
-            size={wallet ? "icon" : "default"}
-            variant={variant ?? (wallet ? "ghost" : "outline")}
+            size={size ?? (wallet && !trigger ? "icon" : "default")}
+            style={style}
+            variant={variant ?? (wallet && !trigger ? "ghost" : "outline")}
           />
         }
       >
-        <HugeiconsIcon icon={wallet ? Edit02Icon : Add01Icon} /> {!wallet && "Tambah dompet"}
+        {trigger ?? (
+          <>
+            <HugeiconsIcon icon={wallet ? Edit02Icon : Add01Icon} /> {!wallet && "Tambah dompet"}
+          </>
+        )}
       </DialogTrigger>
       <DialogContent>
         {confirmingDelete && wallet ? (

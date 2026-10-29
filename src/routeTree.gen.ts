@@ -19,6 +19,7 @@ import { Route as AppAppPlanningRouteImport } from './routes/_app/app/planning'
 import { Route as AppAppReportsRouteImport } from './routes/_app/app/reports'
 import { Route as AppAppSettingsRouteImport } from './routes/_app/app/settings'
 import { Route as AppAppTransactionsRouteImport } from './routes/_app/app/transactions'
+import { Route as AppAppWalletsRouteImport } from './routes/_app/app/wallets'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 
 const IndexRoute = IndexRouteImport.update({
@@ -70,6 +71,11 @@ const AppAppTransactionsRoute = AppAppTransactionsRouteImport.update({
   path: '/app/transactions',
   getParentRoute: () => AppRoute,
 } as any)
+const AppAppWalletsRoute = AppAppWalletsRouteImport.update({
+  id: '/app/wallets',
+  path: '/app/wallets',
+  getParentRoute: () => AppRoute,
+} as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
@@ -85,6 +91,7 @@ export interface FileRoutesByFullPath {
   '/app/reports': typeof AppAppReportsRoute
   '/app/settings': typeof AppAppSettingsRoute
   '/app/transactions': typeof AppAppTransactionsRoute
+  '/app/wallets': typeof AppAppWalletsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/app/': typeof AppAppIndexRoute
 }
@@ -97,6 +104,7 @@ export interface FileRoutesByTo {
   '/app/reports': typeof AppAppReportsRoute
   '/app/settings': typeof AppAppSettingsRoute
   '/app/transactions': typeof AppAppTransactionsRoute
+  '/app/wallets': typeof AppAppWalletsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/app': typeof AppAppIndexRoute
 }
@@ -111,6 +119,7 @@ export interface FileRoutesById {
   '/_app/app/reports': typeof AppAppReportsRoute
   '/_app/app/settings': typeof AppAppSettingsRoute
   '/_app/app/transactions': typeof AppAppTransactionsRoute
+  '/_app/app/wallets': typeof AppAppWalletsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/_app/app/': typeof AppAppIndexRoute
 }
@@ -125,6 +134,7 @@ export interface FileRouteTypes {
     | '/app/reports'
     | '/app/settings'
     | '/app/transactions'
+    | '/app/wallets'
     | '/api/auth/$'
     | '/app/'
   fileRoutesByTo: FileRoutesByTo
@@ -137,6 +147,7 @@ export interface FileRouteTypes {
     | '/app/reports'
     | '/app/settings'
     | '/app/transactions'
+    | '/app/wallets'
     | '/api/auth/$'
     | '/app'
   id:
@@ -150,6 +161,7 @@ export interface FileRouteTypes {
     | '/_app/app/reports'
     | '/_app/app/settings'
     | '/_app/app/transactions'
+    | '/_app/app/wallets'
     | '/api/auth/$'
     | '/_app/app/'
   fileRoutesById: FileRoutesById
@@ -235,6 +247,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAppTransactionsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/app/wallets': {
+      id: '/_app/app/wallets'
+      path: '/app/wallets'
+      fullPath: '/app/wallets'
+      preLoaderRoute: typeof AppAppWalletsRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/api/auth/$': {
       id: '/api/auth/$'
       path: '/api/auth/$'
@@ -250,6 +269,7 @@ interface AppRouteChildren {
   AppAppReportsRoute: typeof AppAppReportsRoute
   AppAppSettingsRoute: typeof AppAppSettingsRoute
   AppAppTransactionsRoute: typeof AppAppTransactionsRoute
+  AppAppWalletsRoute: typeof AppAppWalletsRoute
   AppAppIndexRoute: typeof AppAppIndexRoute
 }
 
@@ -258,6 +278,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppAppReportsRoute: AppAppReportsRoute,
   AppAppSettingsRoute: AppAppSettingsRoute,
   AppAppTransactionsRoute: AppAppTransactionsRoute,
+  AppAppWalletsRoute: AppAppWalletsRoute,
   AppAppIndexRoute: AppAppIndexRoute,
 }
 
