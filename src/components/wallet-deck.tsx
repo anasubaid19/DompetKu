@@ -1,5 +1,6 @@
 import { ChevronDownIcon, PlusIcon } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
+import { Link } from "@tanstack/react-router"
 import { useEffect, useState } from "react"
 import { WalletDialog } from "@/components/finance-dialogs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -32,13 +33,13 @@ export function WalletDeck({
   hidden: boolean
 }) {
   const [open, setOpen] = useState(false)
-  const [showAll, setShowAll] = useState(false)
   const [entered, setEntered] = useState(false)
   const reduced = prefersReducedMotion()
   const money = (value: number) => (hidden ? "••••••" : formatMoney(value, currency))
 
   const sorted = [...wallets].sort((a, b) => b.balance - a.balance)
-  const capped = !showAll && sorted.length > 4
+  // Always cap at 4 cards when >4 wallets: 3 wallets + "Lihat semua".
+  const capped = sorted.length > 4
   const deck = capped ? sorted.slice(0, 3) : sorted
   const cards: Array<{ kind: "wallet"; wallet: Wallet } | { kind: "seeAll"; count: number }> =
     deck.map((wallet) => ({ kind: "wallet", wallet }))
@@ -66,7 +67,6 @@ export function WalletDeck({
         // ignore
       }
     }
-    if (open) setShowAll(false)
     setOpen((v) => !v)
   }
 
@@ -141,8 +141,8 @@ export function WalletDeck({
 
             const cardStyle: React.CSSProperties = {
               height: CARD_H,
-              left: 12,
-              width: "calc(100% - 24px)",
+              left: 8,
+              width: "calc(100% - 16px)",
               zIndex: index + 1,
               transform: entered
                 ? `translateY(${y}px) rotate(${tilt}deg) scale(${scale})`
@@ -160,19 +160,18 @@ export function WalletDeck({
             if (isSeeAll) {
               const c = card as { kind: "seeAll"; count: number }
               return (
-                <button
+                <Link
                   aria-label={`Lihat semua ${c.count} dompet`}
                   className="absolute rounded-2xl border border-dashed border-white/30 bg-zinc-900 p-4 text-left text-white shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
                   key="see-all"
-                  onClick={() => setShowAll(true)}
                   style={cardStyle}
-                  type="button"
+                  to="/app/wallets"
                 >
                   <p className="text-sm font-extrabold uppercase italic tracking-wide">
                     Lihat semua
                   </p>
                   <p className="mt-1 text-xs opacity-80">{c.count} dompet</p>
-                </button>
+                </Link>
               )
             }
 
